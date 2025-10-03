@@ -1,0 +1,289 @@
+/* RESET */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* FONT IMPORTS (dynamic look) */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600&family=Roboto:wght@400;500&display=swap');
+
+/* LAYOUT */
+body, html {
+    height: 100%;
+    font-family: 'Roboto', sans-serif;
+    background: var(--bg-dark);
+    color: var(--text-main);
+    display: flex;
+    overflow: hidden;
+}
+
+label, a {
+    /* The key property to prevent text selection */
+    -webkit-user-select: none; /* For older Safari/Chrome */
+    -moz-user-select: none;    /* For older Firefox */
+    user-select: none;         /* Standard property */
+}
+
+.preview {
+    flex: 0 0 40%;
+    height: 100vh;
+}
+
+.preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.login-box {
+    justify-self: end;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 4rem;
+    text-align: center;
+    gap: 1rem;
+}
+
+/* TITLES */
+.login-box h1 {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 2px;
+    text-shadow: 0 0 10px var(--primary);
+}
+
+.highlight {
+    color: var(--primary);
+}
+
+.subtitle {
+    color: var(--text-muted);
+    margin-bottom: 2rem;
+    font-size: 1rem;
+}
+
+.error {
+    color: var(--error);
+    margin: 1rem 0;
+}
+
+/* FORM */
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    width: 80%;
+    max-width: 400px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+}
+
+.form-group label {
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"] {
+    padding: 0.75rem;
+    border: 2px solid var(--text-muted);
+    border-radius: 0.5rem;
+    background: var(--bg-surface);
+    color: var(--text-main);
+    transition: border 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease;
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 12px var(--primary-hover);
+    transform: scale(1.02);
+    outline: none;
+}
+
+/* REMEMBER + LINKS */
+.forgot-link {
+    font-size: 0.85rem;
+    color: var(--fun-accent);
+    text-decoration: none;
+}
+
+.forgot-link:hover {
+    color: var(--primary-hover);
+    text-shadow: 0 0 8px var(--fun-accent);
+}
+
+.sign-link {
+    font-size: 0.85rem;
+    color: var(--warning);
+    text-decoration: none;
+}
+
+.sign-link:hover {
+    color: var(--primary-hover);
+    text-shadow: 0 0 8px var(--warning);
+}
+
+.remember {
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-muted);
+}
+
+.remember  {
+    cursor: pointer;
+}
+
+.remember input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    align-self: center;
+    cursor: pointer;
+    accent-color: var(--fun-accent);
+    
+    -webkit-appearance: none; /* For Chrome, Safari, Opera */
+    -moz-appearance: none;    /* For Firefox */
+    appearance: none;         /* Standard property */
+    border: 1px solid var(--fun-accent);
+    border-radius: 0.5rem;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.remember input[type="checkbox"]:checked {
+    background-color: var(--fun-accent);
+    border-color: var(--primary);
+}
+/* Position links row */
+.form-links {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* SOCIAL LOGIN */
+.social-login-container {
+    margin: 1.5rem 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 60%;
+    max-width: 200px;
+}
+.social-login {
+    display: inline-flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 0 0.5rem;
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: var(--fun-accent) 2px solid;
+    border-radius: 100%;
+    width: 50px;
+    height: 50px;
+    background-position: center;
+}
+
+.social-login:hover {
+    background-position: center;
+    box-shadow: 0 0 12px var(--error);
+    transform: translateY(-3px) scale(1.1);
+    border-color: var(--error);
+}
+
+.google {
+    background-image: url('../img/google-icon-logo-svgrepo-com.svg');
+    background-size: cover;
+    background-repeat: no-repeat;
+    transition: all 0.3s ease;
+    background-size: 80%; 
+}
+
+.google:hover {
+    background-image: url('../img/google-icon-logo-svgrepo-com\ \(2\).svg');
+}
+
+.apple {
+    background-image: url('../img/apple-black-logo-svgrepo-com\ \(2\).svg');
+    background-size: cover;
+    background-repeat: no-repeat;
+    transition: all 0.3s ease;
+    background-size: 80%;
+}
+
+.apple:hover {
+    background-image: url('../img/apple-black-logo-svgrepo-com\ \(1\).svg');
+}
+
+.github {
+    background-image: url('../img/github-svgrepo-com\ \(1\).svg');
+    background-size: cover;
+    background-repeat: no-repeat;
+    transition: all 0.3s ease;
+    background-size: 80%;
+}
+
+.github:hover {    
+    background-image: url('../img/github-svgrepo-com.svg');
+}
+
+
+/* BUTTONS */
+.btn-primary {
+    padding: 0.9rem;
+    border: none;
+    border-radius: 0.5rem;
+    background: var(--primary);
+    color: var(--text-main);
+    font-weight: bold;
+    cursor: pointer;
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 1px;
+    transition: background 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+}
+
+.btn-primary:hover {
+    background: var(--primary-hover);
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 0 16px var(--primary-hover);
+}
+
+/* Divider */
+.divider {
+    margin: 2rem 0;
+    color: var(--text-muted);
+    position: relative;
+    text-align: center;
+}
+
+.divider::before,
+.divider::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 40%;
+    height: 1px;
+    background: var(--text-muted);
+}
+
+.divider::before {
+    left: 0;
+}
+.divider::after {
+    right: 0;
+}

@@ -1,0 +1,12 @@
+:root {
+    --bg-dark: #0F172A;
+    --bg-surface: #1E293B;
+    --text-main: #F8FAFC;
+    --text-muted: #94A3B8;
+    --primary: #6366F1;
+    --primary-hover: #A855F7;
+    --success: #22D3EE;
+    --warning: #FACC15;
+    --error: #F43F5E;
+    --fun-accent: #10B981;
+}
