@@ -99,7 +99,7 @@ $basePath = '/sxumarcade/public';
                     <div class="form-section">
                         <h3>💰 Pricing</h3>
                         <div class="form-group">
-                            <label for="price">Price (USD)</label>
+                            <label for="price">Price (ETB)</label>
                             <input type="number" name="price" id="price" min="0" step="0.01" value="<?= htmlspecialchars($game['price'] ?? '0') ?>" class="form-input" style="max-width: 200px;">
                             <small>Set to 0 for free games</small>
                         </div>

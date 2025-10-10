@@ -108,7 +108,7 @@ $reviewCount = count($reviews ?? []);
                             <div class="meta-item">
                                 <span class="meta-label">Price:</span>
                                 <strong class="meta-value price-tag">
-                                    <?= $game['price'] > 0 ? '$' . number_format($game['price'], 2) : 'Free' ?>
+                                    <?= $game['price'] > 0 ? 'ETB' . number_format($game['price'], 2) : 'Free' ?>
                                 </strong>
                             </div>
                         </div>
@@ -117,7 +117,7 @@ $reviewCount = count($reviews ?? []);
                     <aside class="game-action-panel">
                         <p class="price-action-tag">
                             <?= $game['price'] > 0 
-                                ? 'Purchase Price: <strong>$' . number_format($game['price'], 2) . '</strong>' 
+                                ? 'Purchase Price: <strong>ETB' . number_format($game['price'], 2) . '</strong>' 
                                 : 'Get it for <strong>Free</strong>' ?>
                         </p>
                         

@@ -96,7 +96,7 @@ $basePath = '/sxumarcade/public';
                         <h3>💰 Pricing & Categories</h3>
                         
                         <div class="form-group">
-                            <label for="price">Price ($ USD)</label>
+                            <label for="price">Price (ETB )</label>
                             <input type="number" name="price" id="price" min="0" step="0.01" value="<?= htmlspecialchars($_POST['price'] ?? '0') ?>" 
                                    class="form-input" style="max-width: 200px;">
                             <small>Set to 0 for free games. You'll receive 70% of sales revenue.</small>

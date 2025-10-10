@@ -5,7 +5,7 @@ session_start();
 require_once __DIR__ . '/../../app/models/User.php';
 require_once __DIR__ . '/../../app/helpers/auth.php';
 
-define('GEMINI_API_KEY', 'AIzaSyBcVG8NlnhDsrHXLnZXACsfFI4hoAgvdVA');
+define('GEMINI_API_KEY', 'FAKE');
 define('GEMINI_MODEL', 'gemini-2.5-flash');
 
 $userId = currentUserId();

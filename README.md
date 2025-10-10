@@ -1,4 +1,76 @@
+# Axum Arcade
 
+[🌐 Live Demo](https://axumarcade.wuaze.com/public/) 
+
+Axum Arcade is a **web-based platform for hosting, sharing, and playing indie games**. It provides a complete ecosystem for developers to upload their creations and for players to discover new games, leave reviews, and interact with the community.
+
+---
+
+## Features
+
+- **User Authentication**: Secure user registration and login system.
+- **Game Upload and Management**: Developers can upload, edit, and manage their games.
+- **Game Discovery**: Players can browse, search, and filter games.
+- **Game Pages**: Each game has a dedicated page with details, screenshots, and download links.
+- **Reviews and Ratings**: Users can rate games and write reviews to share their feedback.
+- **Admin Panel**: A dashboard for administrators to manage users, games, and reviews.
+- **AI Chat Support**: An integrated AI assistant, **Axum**, to help users navigate the site.
+
+---
+
+## Tech Stack
+
+- **Backend**: PHP  
+- **Frontend**: HTML, CSS, JavaScript (vanilla, no framework)  
+- **Database**: MySQL  
+- **AI**: Google Gemini API  
+
+---
+
+## Project Structure
+
+/
+├── app/
+│ ├── config/
+│ │ ├── db.php
+│ │ └── chat_handler.php
+│ ├── controllers/
+│ │ ├── AdminController.php
+│ │ ├── CategoryController.php
+│ │ ├── GameController.php
+│ │ ├── SearchController.php
+│ │ └── UserController.php
+│ ├── helpers/
+│ │ └── auth.php
+│ └── models/
+│ ├── BaseModel.php
+│ ├── Category.php
+│ ├── Game.php
+│ ├── GameCategory.php
+│ ├── ModerationAction.php
+│ ├── Purchase.php
+│ ├── Review.php
+│ └── User.php
+├── public/
+│ ├── .htaccess
+│ ├── index.php
+│ ├── api/
+│ │ └── chat_handler.php
+│ ├── assets/
+│ │ ├── css/
+│ │ ├── img/
+│ │ └── js/
+│ └── uploads/
+│ ├── avatars/
+│ ├── covers/
+│ └── games/
+└── views/
+├── admin/
+├── game/
+├── layout/
+├── library/
+├── others/
+└── user/
 ---
 
 ## Database Schema
@@ -54,3 +126,7 @@ Contributions are welcome! You can:
 Please follow standard coding conventions and add clear commit messages.
 
 ---
+
+## License
+
+*(Optional: add your license information here if applicable.)*

@@ -52,7 +52,7 @@ $basePath = '/sxumarcade/public';
                                 <p class="game-description"><?= htmlspecialchars($game['short_description'] ?? $game['description']) ?></p>
                                 <div class="game-meta">
                                     <span class="game-price">
-                                        <?= $game['price'] > 0 ? '$' . number_format($game['price'], 2) : 'Free' ?>
+                                        <?= $game['price'] > 0 ? 'ETB' . number_format($game['price'], 2) : 'Free' ?>
                                     </span>
                                     <span class="game-downloads">
                                         📥 <?= $game['download_count'] ?> downloads
