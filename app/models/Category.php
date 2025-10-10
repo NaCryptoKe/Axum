@@ -1,4 +1,5 @@
 <?php
+// Manages game categories in the database.
 require_once __DIR__ . '/BaseModel.php';
 
 class Category extends BaseModel
@@ -6,16 +7,16 @@ class Category extends BaseModel
     protected string $table = "categories";
 
     public function create(
-        $name, 
+        $name,
         $desc = null
-    ) : bool {
+    ): bool {
         $stmt = $this->db->prepare("INSERT INTO {$this->table} (name, description) VALUES (?, ?)");
         return $stmt->execute([$name, $desc]);
     }
 
     public function findById(
         $id
-    ) : array {
+    ): array {
         $stmt = $this->db->prepare("SELECT * FROM {$this->table} WHERE id = ?");
         $stmt->execute([$id]);
         return $stmt->fetch() ?: [];
@@ -24,7 +25,7 @@ class Category extends BaseModel
     public function editDescription(
         $id,
         $desc
-    ) : bool {
+    ): bool {
         $stmt = $this->db->prepare("UPDATE {$this->table} SET description = ? WHERE id = ?");
         return $stmt->execute([$desc, $id]);
     }

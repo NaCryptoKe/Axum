@@ -1,69 +1,56 @@
-/project-root
-│
-├── /public              # Publicly accessible stuff (root for Apache/Nginx)
-│   ├── index.php        # Entry point (front controller)
-│   ├── login.php        # Login form (calls controller)
-│   ├── signup.php       # Signup form
-│   ├── logout.php
-│   ├── game.php         # Game detail page (or modal trigger)
-│   ├── profile.php      # User profile page
-│   ├── library.php      # User’s games
-│   ├── admin.php        # Admin panel entry
-│   ├── uploads/         # Uploaded game files/screenshots (with .htaccess!)
-│   └── assets/
-│       ├── css/         # Stylesheets (add later)
-│       ├── js/          # Scripts (add later)
-│       ├── img/         # Logos, icons, default avatars
-│       └── fonts/
-│
-├── /app                 # Core PHP application code
-│   ├── /config/
-│   │   ├── db.php       # Database connection
-│   │   └── mail.php     # Mail/OTP config
-│   │
-│   ├── /controllers/    # Business logic (handle requests)
-│   │   ├── UserController.php
-│   │   ├── GameController.php
-│   │   ├── ReviewController.php
-│   │   └── AdminController.php
-│   │
-│   ├── /models/         # Database models (CRUD)
-│   │   ├── User.php
-│   │   ├── Game.php
-│   │   ├── Review.php
-│   │   └── Transaction.php
-│   │
-│   └── /helpers/        # Utilities shared across app
-│       ├── auth.php     # Session management
-│       ├── otp.php      # OTP/email handling
-│       ├── file.php     # Upload & file validation
-│       └── utils.php    # Misc (sanitize, redirect, etc.)
-│
-├── /views               # HTML templates
-│   ├── layout/          # Shared UI
-│   │   ├── header.php
-│   │   ├── footer.php
-│   │   └── navbar.php
-│   │
-│   ├── user/            # Pages for users
-│   │   ├── signup.php
-│   │   ├── login.php
-│   │   └── profile.php
-│   │
-│   ├── game/            # Pages for games
-│   │   ├── upload.php
-│   │   ├── list.php     # Homepage / explore
-│   │   └── detail.php
-│   │
-│   └── admin/           # Admin-only pages
-│       ├── dashboard.php
-│       └── users.php
-│
-├── /storage             # Non-public files
-│   ├── logs/            # Error logs, app logs
-│   ├── cache/           # Sessions, cached queries
-│   └── backups/         # DB backups if you want
-│
-├── .env                 # Environment variables (DB creds, API keys)
-├── composer.json        # If you use composer (mailer, dotenv, etc.)
-└── README.md            # Project overview
+
+---
+
+## Database Schema
+
+The database consists of tables for:
+
+- Users
+- Games
+- Categories
+- Purchases
+- Reviews
+- Moderation Actions  
+
+The full schema is available in [`Table.md`](Table.md).
+
+---
+
+## Setup Instructions
+
+### Database Setup
+
+1. Create a MySQL database named `axum_arcade`.
+2. Import the schema from the `Table.md` file.
+3. Update the database credentials in `app/config/db.php`.
+
+### Web Server Configuration
+
+1. Configure your web server (Apache, Nginx, etc.) to use the `public` directory as the document root.
+2. Enable URL rewriting (e.g., `mod_rewrite` for Apache) so the front controller (`index.php`) handles all requests.
+
+### API Keys
+
+1. Obtain a **Google Gemini API key**.
+2. Add the API key to `app/config/chat_handler.php`.
+
+### Dependencies
+
+- PHP `curl` extension is required for API requests. Ensure it is installed and enabled.
+
+### Running the Application
+
+Once configured, access the application through your web server URL.
+
+---
+
+## How to Contribute
+
+Contributions are welcome! You can:
+
+- Submit a **pull request**.
+- Open an **issue** for bugs or feature requests.
+
+Please follow standard coding conventions and add clear commit messages.
+
+---

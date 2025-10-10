@@ -1,4 +1,5 @@
 <?php
+// Manages the database connection using a singleton pattern.
 class Database
 {
     private static ?Database $instance = null;
@@ -10,7 +11,6 @@ class Database
     private string $pass = "";
     private string $charset = "utf8mb4";
 
-    // private constructor (singleton)
     private function __construct()
     {
         $dsn = "mysql:host={$this->host};dbname={$this->dbName};charset={$this->charset}";
@@ -24,7 +24,6 @@ class Database
         $this->connection = new PDO($dsn, $this->user, $this->pass, $options);
     }
 
-    // Get instance (singleton)
     public static function getInstance(): Database
     {
         if (self::$instance === null) {
@@ -33,7 +32,6 @@ class Database
         return self::$instance;
     }
 
-    // Get raw PDO connection
     public function getConnection(): PDO
     {
         return $this->connection;

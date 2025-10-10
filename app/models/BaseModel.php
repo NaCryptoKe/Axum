@@ -1,5 +1,5 @@
 <?php
-// app/models/BaseModel.php
+// Defines the base model with database connection logic.
 require_once __DIR__ . "/../config/db.php";
 
 abstract class BaseModel

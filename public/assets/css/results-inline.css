@@ -1,0 +1,79 @@
+/* results-inline.css */
+
+/* Main padding for results page */
+main {
+    padding: 20px;
+}
+
+/* Page header */
+.page-header {
+    margin-bottom: 30px;
+}
+.page-header h1 {
+    font-size: 2rem;
+    margin-bottom: 5px;
+}
+
+/* Results section */
+.results-section {
+    margin-bottom: 40px;
+}
+
+/* Titles */
+.results-title {
+    font-size: 1.5rem;
+    border-bottom: 2px solid var(--border-light);
+    padding-bottom: 5px;
+    margin-bottom: 15px;
+}
+
+/* Horizontal scroll / flex grid */
+.horizontal-scroll {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    padding-bottom: 10px;
+}
+
+/* Result card */
+.result-card {
+    width: 200px;
+    background: var(--bg-surface);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s, box-shadow 0.2s;
+    text-align: center;
+}
+.result-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+}
+.result-card a {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+}
+.result-card img {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+}
+.user-avatar {
+    width: 100px;
+    height: auto;
+    border-radius: 0;
+}
+.card-title {
+    padding: 10px 15px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text-main);
+}
+.empty-state {
+    padding: 20px;
+    color: var(--text-muted);
+}

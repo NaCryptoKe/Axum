@@ -1,4 +1,5 @@
 <?php
+// Manages the relationship between games and categories.
 require_once __DIR__ . '/BaseModel.php';
 
 class GameCategory extends BaseModel
@@ -8,15 +9,15 @@ class GameCategory extends BaseModel
     public function assign(
         $game_id,
         $cat_id
-    ) : bool {
+    ): bool {
         $stmt = $this->db->prepare("INSERT IGNORE INTO {$this->table} (game_id, category_id) VALUES (?, ?)");
         return $stmt->execute([$game_id, $cat_id]);
     }
 
     public function remove(
-        $game_id, 
+        $game_id,
         $cat_id
-    ) : bool {
+    ): bool {
         $stmt = $this->db->prepare("DELETE FROM {$this->table} WHERE game_id=? AND category_id=?");
         return $stmt->execute([$game_id, $cat_id]);
     }
