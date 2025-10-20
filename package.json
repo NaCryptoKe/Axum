@@ -1,0 +1,30 @@
+{
+  "name": "axumarcade",
+  "version": "1.0.0",
+  "description": "[🌐 Live Demo](https://axumarcade.wuaze.com/public/)",
+  "main": "index.js",
+  "scripts": {
+    "start": "nodemon server/server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NaCryptoKe/AxumArcade.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/NaCryptoKe/AxumArcade/issues"
+  },
+  "homepage": "https://github.com/NaCryptoKe/AxumArcade#readme",
+  "dependencies": {
+    "ejs": "^3.1.10",
+    "express": "^5.1.0",
+    "express-session": "^1.18.2",
+    "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
