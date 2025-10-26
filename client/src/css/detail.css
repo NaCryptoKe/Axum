@@ -1,0 +1,53 @@
+.block {
+    background: linear-gradient(
+        rgba(var(--bg-lightest-card), 0.7) 60%,
+        transparent 100%
+    );
+    position: absolute;
+    top: calc(50% - (15dvh));
+    width: 600px;
+    height: 50dvh;
+    left: 96px;
+    padding: 50px;
+    border-radius: 25px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    color: var(--text);
+}
+
+.block h1 {
+    font-size: 64px;
+    font-weight: bold;
+    margin-bottom: 35px;
+}
+
+.block .det {
+    display: flex;
+    justify-content: space-evenly;
+}
+
+.block p {
+    font-size: 14px;
+}
+
+.block .CTA {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+}
+
+.CTA button {
+    background-color: var(--brand-1);
+    border: none;
+    border-radius: 25px;
+    padding: 5px 15px;
+    font-size: 22px;
+    font-weight: bold;
+    color: var(--text);
+}
+
+.CTA h2 {
+    color: var(--brand-2);
+    font-size: 22px;
+}

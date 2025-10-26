@@ -1,0 +1,49 @@
+header {
+    position: fixed;
+    top: 0;
+    background: var(--bg-lightest);
+    height: 5dvh;
+    max-height: 5dvh;
+    width: 100dvw;
+    padding: 32px 96px;
+    z-index: 1000;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    color: var(--text);
+}
+
+.header {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    gap: 32px;
+}
+
+header nav ul {
+    display: flex;
+    justify-content: end;
+
+    gap: 16px;
+}
+
+header nav ul li {
+    list-style: none;
+}
+
+header nav ul li a {
+    text-decoration: none;
+    color: var(--text);
+    font-size: 20px;
+}
+
+.side {
+    flex: 2;
+}
+
+h2 {
+    color: var(--brand-1);
+}
