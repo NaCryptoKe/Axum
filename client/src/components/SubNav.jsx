@@ -1,24 +1,30 @@
-import '../css/nav.css'
+import '../css/subnav.css';
+import searchIcon from '../assets/search.svg';
 
 export default function SubNav() {
-    return (
-        <div className='sub-nav'>
-            <div className='main-sub'>
-                <nav className="sub">
-                    <ul>
-                        <li><a href="#">HOME</a></li>
-                        <li><a href="#">BROWSE</a></li>
-                        <li><a href="#">DISCOVER</a></li>
-                        <li><a href="#">NEWS</a></li>
-                        <form action="">
-                            <input className='search' type="text" name="" id="" placeholder='   Search Games'/>
-                            <button className='search-button'>search</button>
-                        </form>
-                    </ul>
-                </nav>
-            </div>
+  return (
+    <nav className="subnav">
+      <div className="subnav-left">
+        <ul className="subnav-links">
+          <li><a href="#" className="active">Home</a></li>
+          <li><a href="#">Browse</a></li>
+          <li><a href="#">Discover</a></li>
+          <li><a href="#">News</a></li>
+        </ul>
 
-            <a className='setting' href="#">Setting</a>
-        </div>
-    );
+        <form className="search-form" action="">
+          <input 
+            type="text" 
+            placeholder="Search games..." 
+            className="search-input" 
+          />
+          <button className="search-btn" type="button">
+            <img src={searchIcon} alt="Search" className="search-icon" />
+          </button>
+        </form>
+      </div>
+
+      <a className="settings-link" href="#">Settings</a>
+    </nav>
+  );
 }
