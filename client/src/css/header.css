@@ -80,11 +80,13 @@
 .icon {
   height: 32px;
   width: 32px;
+  filter: invert(1);
 }
 
 .icon-btn {
   height: 32px;
   width: 32px;
+  filter: invert(1);
   transition: transform 0.2s ease, filter 0.3s ease;
 }
 
@@ -94,8 +96,10 @@
 
 /* --- PROFILE BUTTON --- */
 .profile {
-  border-radius: 10% 15%;
-  border: 1px solid var(--bg-darkest);
+  height: 50px;
+  width: 50px;
+  border-radius: 50px;
+  border: 1px solid var(--text);
     object-fit: cover;
-  transition: all 0.3s ease;
+  transition: transform 0.2s ease, filter 0.3s ease;
 }

@@ -34,5 +34,6 @@
 body {
     font-family:'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
     background: var(--bg-darkest);
+    width: 100dvw;
     scroll-behavior: smooth;
 }

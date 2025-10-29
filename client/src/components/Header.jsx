@@ -7,6 +7,7 @@ import download from '../assets/cloud-download.svg';
 import library from '../assets/library.svg';
 import cart from '../assets/shopping-cart.svg';
 import user from '../assets/ghost-of-yotei-game-5762x2880-19048.jpg';
+import { Link } from "react-router-dom";
 
 export default function Header() {
   return (
@@ -73,9 +74,9 @@ export default function Header() {
             </a>
           </li>
           <li>
-            <a href="#">
-              <img src={ user } className="profile icon-btn" />
-            </a>
+            <Link to='/login'>
+              <img src={ user } className="profile" />
+            </Link>
           </li>
         </ul>
       </nav>

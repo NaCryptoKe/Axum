@@ -1,23 +1,24 @@
 const express = require('express');
-const session = require('express-session');
-const bcrypt = require('bcrypt');
+const cors = require('cors');
+const cookieParser = require('cookie-parser'); // 👈 import it
+const authRoutes = require('./routes/authRouter');
+const log = require('./middlewares/logRoute')
+
 const app = express();
-const port = 3000;
 
-const user = require('./routes/userRoute');
-const game = require('./routes/gameRoute');
-const chat = require('./routes/chatRoute');
-const payment = require('./routes/paymentRoute');
-const search = require('./routes/searchRoute');
-const admin = require('./routes/adminRoute');
+app.use(cors({
+    origin: 'http://localhost:5173',
+    credentials: true // allow cookies
+}));
 
-app.use('/', user);
-app.use('/game', game);
-app.use('/chat', chat);
-app.use('/payment', payment);
-app.use('/search', search);
-app.use('/admin', admin);
+app.use(express.json());
+app.use(cookieParser()); // 👈 must come before routes
+app.use(log);
 
-app.listen(port, () => {
-    console.log(`Listening on port https://localhost:${port}`);
+app.use('/api/auth', authRoutes);
+app.get('/', (req, res) => {
+    res.send('Welcome to the server!');
 });
+
+const PORT = 3000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

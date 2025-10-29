@@ -41,6 +41,7 @@ CREATE TABLE core.users (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   username        TEXT NOT NULL UNIQUE CHECK (username ~ '^[a-zA-Z0-9_]{3,30}$'),
   email           TEXT NOT NULL UNIQUE CHECK (email ~* '^[^@]+@[^@]+\.[^@]+$'), -- Simplified, robust regex
+  email_verified  BOOLEAN NOT NULL DEFAULT false,
   display_name    TEXT NOT NULL,
   hashed_password TEXT NULL, -- Hashing (e.g., Argon2) is handled by the application layer
   avatar_url      TEXT,
@@ -51,6 +52,17 @@ CREATE TABLE core.users (
   created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+-- This table is for email verification OTPs (e.g., 6-digit codes)
+CREATE TABLE core.email_verifications (
+  user_id     UUID PRIMARY KEY REFERENCES core.users(id) ON DELETE CASCADE,
+  otp_hash    TEXT NOT NULL, -- Store a HASH of the OTP, not the plaintext
+  expires_at  TIMESTAMPTZ NOT NULL,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  attempts    SMALLINT NOT NULL DEFAULT 0 -- To prevent brute-force attacks
+);
+
+-- Index to quickly find expired tokens for cleanup
+CREATE INDEX ON core.email_verifications (expires_at);
 
 -- Authentication & Session Tables
 CREATE TABLE core.sessions (
