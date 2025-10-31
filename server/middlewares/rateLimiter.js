@@ -2,7 +2,7 @@
 // Used for limiting a certain ip from spamming the server
 const rateLimit = require('express-rate-limit');
 
-const otpResendLimiter = rateLimit({
+const rateLimiter = rateLimit({
     windowMs: 60 * 1000, // 60 seconds
     max: 1,               // 1 request per window per IP
     message: {
@@ -12,4 +12,4 @@ const otpResendLimiter = rateLimit({
     legacyHeaders: false,  // Disable `X-RateLimit-*` headers
 });
 
-module.exports = { otpResendLimiter };
+module.exports = { rateLimiter };

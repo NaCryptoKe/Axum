@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const argon2 = require('argon2');
-const { findByIdentifier, createUser } = require('../models/userModel');
+const { findByIdentifier, createUser, getUserByUsername } = require('../models/userModel');
 
 const ARGON2_OPTS = {
     type: argon2.argon2id,
@@ -70,7 +70,6 @@ const login = async (req, res) => {
     }
 };
 
-
 const register = async (req, res) => {
     const { username, email, display_name, password } = req.body;
 
@@ -136,5 +135,22 @@ const authenticate = (req, res) => {
     }
 };
 
+const getUserProfile = async (req, res) => {
+    const { username } = req.params;
+    console.log('Fetching profile for:', username);
 
-module.exports = { login, register, authenticate };
+    try {
+        const user = await getUserByUsername(username);
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        res.json(user);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+module.exports = { login, register, authenticate, getUserProfile };

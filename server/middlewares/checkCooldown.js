@@ -4,7 +4,7 @@ const { getEmailVerification, createEmailVerification } = require('../models/ema
 
 const RESEND_COOLDOWN_MS = 60 * 1000; // 60 seconds
 
-const checkOtpCooldown = async (req, res, next) => {
+const checkCooldown = async (req, res, next) => {
     const { user_id } = req.body;
     if (!user_id) return res.status(400).json({ message: "Missing user_id" });
 
@@ -22,4 +22,4 @@ const checkOtpCooldown = async (req, res, next) => {
     next();
 };
 
-module.exports = { checkOtpCooldown };
+module.exports = { checkCooldown };

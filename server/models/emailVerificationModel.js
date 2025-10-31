@@ -1,5 +1,5 @@
 const pool = require('../config/db');
-const { generateHashedOTP, hashOTP } = require('../otpGenerator');
+const { generateHashedOTP, hashOTP } = require('../utils/otpGenerator');
 
 // Create a new OTP record
 const createEmailVerification = async (user_id, expires_at) => {

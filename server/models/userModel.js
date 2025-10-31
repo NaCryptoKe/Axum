@@ -38,4 +38,37 @@ const verifyUserEmail = async (user_id) => {
     return result.rows[0]; // returns the updated user info
 };
 
-module.exports = { findByIdentifier , createUser, verifyUserEmail };
+const getUserById = async (id) => {
+    const result = await pool.query('SELECT username, email FROM core.users WHERE id = $1', [id]);
+
+    return result.rows[0];
+}
+
+const getUserByUsername = async (username) => {
+    // First, check if a user exists at all
+    const userCheck = await pool.query(
+        `SELECT id, username, email, display_name, role, avatar_url, bio, email_verified, is_deleted
+         FROM core.users
+         WHERE username = $1`,
+        [username]
+    );
+
+    if (userCheck.rows.length === 0) {
+        // No user found
+        return { error: 'No user found' };
+    }
+
+    const user = userCheck.rows[0];
+
+    if (user.is_deleted) {
+        // User is soft-deleted
+        return { error: 'User has deactivated account' };
+    }
+
+    // Remove is_deleted from response if you want
+    delete user.is_deleted;
+
+    return user;
+};
+
+module.exports = { findByIdentifier , createUser, verifyUserEmail, getUserById, getUserByUsername };

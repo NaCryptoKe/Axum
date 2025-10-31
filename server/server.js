@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser'); // 👈 import it
 const authRoutes = require('./routes/authRouter');
+const passwordResetRoutes = require('./routes/passwordResetRouter');
 const log = require('./middlewares/logRoute')
 
 const app = express();
@@ -16,6 +17,7 @@ app.use(cookieParser()); // 👈 must come before routes
 app.use(log);
 
 app.use('/api/auth', authRoutes);
+app.use('/api/passwordReset', passwordResetRoutes);
 app.get('/', (req, res) => {
     res.send('Welcome to the server!');
 });
