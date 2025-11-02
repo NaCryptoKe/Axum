@@ -15,7 +15,9 @@ const ARGON2_OPTS = {
 passport.use(
     new GoogleStrategy(
         {
-
+            clientID: "736040441877-i5bn5cptbctkd04dkc4a223j690q98uu.apps.googleusercontent.com",
+            clientSecret: "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",
+            callbackURL: "http://localhost:3000/api/auth/google/callback",
         },
         async (accessToken, refreshToken, profile, done) => {
             try {

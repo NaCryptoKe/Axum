@@ -72,7 +72,10 @@ CREATE TABLE core.sessions (
   ip_address    INET,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
   last_seen_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
-  expires_at    TIMESTAMPTZ NOT NULL
+  expires_at    TIMESTAMPTZ NOT NULL,
+  add column browser text,
+  add column device text,
+  COLUMN is_online boolean DEFAULT false
 );
 
 CREATE TABLE core.oauth_accounts (
