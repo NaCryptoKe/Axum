@@ -19,6 +19,20 @@ const createUser = async ({ username, email, display_name, hashed_password }) =>
     return result.rows[0];
 };
 
+const updatePassword = async (id, hashedPassword) => {
+    const result = await pool.query(
+        `UPDATE core.users
+         SET hashed_password = $1,
+             updated_at = NOW()
+         WHERE id = $2
+         RETURNING id, username, email, display_name`,
+        [hashedPassword, id]
+    );
+
+    return result.rows[0];
+};
+
+
 /**
  * Marks a user's email as verified
  * @param {string} user_id - UUID of the user
@@ -71,4 +85,11 @@ const getUserByUsername = async (username) => {
     return user;
 };
 
-module.exports = { findByIdentifier , createUser, verifyUserEmail, getUserById, getUserByUsername };
+module.exports = {
+    findByIdentifier,
+    createUser,
+    verifyUserEmail,
+    getUserById,
+    getUserByUsername,
+    updatePassword,
+};

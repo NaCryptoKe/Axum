@@ -1,0 +1,39 @@
+const pool = require('../config/db');
+const UAParser = require('ua-parser-js');
+
+const createSession = async (user_id, user_agent, ip_address, expires_at) => {
+    const parser = new UAParser(user_agent);
+    const browser = parser.getBrowser().name || 'Unknown';
+    const device = parser.getDevice().model || parser.getOS().name || 'Unknown';
+
+    const result = await pool.query(
+        `INSERT INTO core.sessions (user_id, user_agent, ip_address, expires_at, browser, device)
+         VALUES ($1, $2, $3, $4, $5, $6)
+             RETURNING *`,
+        [user_id, user_agent, ip_address, expires_at, browser, device]
+    );
+
+    return result.rows[0];
+};
+
+const updateLastSeen = async (session_id) => {
+    const result = await pool.query(
+        `UPDATE core.sessions
+         SET last_seen_at = NOW()
+         WHERE id = $1
+         RETURNING *`,
+        [session_id]
+    );
+
+    return result.rows[0];
+};
+
+const expireSession = async (session_id) => {
+    await pool.query(
+        `UPDATE core.sessions SET expires_at = NOW() WHERE id = $1`,
+        [session_id]
+    );
+};
+
+
+module.exports = { createSession, updateLastSeen, expireSession };

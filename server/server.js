@@ -1,26 +1,41 @@
 const express = require('express');
 const cors = require('cors');
-const cookieParser = require('cookie-parser'); // 👈 import it
+const cookieParser = require('cookie-parser'); // 👈 for reading cookies
+const passport = require('passport');           // 👈 import passport
+require('./controllers/authController');       // 👈 loads GoogleStrategy
+
 const authRoutes = require('./routes/authRouter');
 const passwordResetRoutes = require('./routes/passwordResetRouter');
-const log = require('./middlewares/logRoute')
+const userRoute = require('./routes/userRoute');
+const log = require('./middlewares/logRoute');
+
+const updateLastSeen = require('./middlewares/updateLastSeenMiddleware');
 
 const app = express();
 
+// ✅ CORS
 app.use(cors({
     origin: 'http://localhost:5173',
-    credentials: true // allow cookies
+    credentials: true, // allow cookies
 }));
 
 app.use(express.json());
-app.use(cookieParser()); // 👈 must come before routes
+app.use(cookieParser()); // must come before routes
 app.use(log);
+app.use(updateLastSeen);
 
+// ✅ Initialize Passport
+app.use(passport.initialize());
+
+// ✅ Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/passwordReset', passwordResetRoutes);
+app.use('/api', userRoute);
+
 app.get('/', (req, res) => {
     res.send('Welcome to the server!');
 });
 
+// ✅ Start server
 const PORT = 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
