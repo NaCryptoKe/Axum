@@ -1,5 +1,4 @@
-const {isUserOnline} = require("../utils/onlineChecker");
-const {lastSeen} = require("../utils/lastSeen");
+const {lastSeen, isUserOnline} = require("../models/lastSeenModel");
 const { findByIdentifier, createUser, getUserByUsername } = require('../models/userModel');
 
 const getUserProfile = async (req, res) => {

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
+import api from '../api/api';
 
 function OtpVerificationPage() {
     const [otp, setOtp] = useState(new Array(6).fill(''));
@@ -36,13 +37,17 @@ function OtpVerificationPage() {
         console.log(`API call to verify OTP for User ID: ${userId}`, fullOtp);
 
         try {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            // MOCK Success: Email verified, redirect to profile
-            navigate('/profile');
+            const res = await api.post('/auth/verify_otp',
+                {user_id: userId,otp: fullOtp}
+            );
+            console.log('NAHOM');
+            const username = res.data.username;
+            console.log(username);
+            navigate(`/@${username}`);
 
         } catch (err) {
             setError('Invalid or expired code. Please try resending.');
+        } finally {
             setLoading(false);
         }
     };

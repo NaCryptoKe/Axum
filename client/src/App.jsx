@@ -23,8 +23,12 @@ function App() {
             <Route path="/verify-otp/:userId" element={<OtpVerificationPage />} />
 
             {/* Authenticated/Profile Routes */}
-            <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/@:username" element={<ProfilePage />} />
+            <Route 
+                path="/:username" 
+                element={
+                    <ProfilePage />
+                } 
+            />
         </Routes>
     );
 }

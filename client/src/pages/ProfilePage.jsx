@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import api from '../api/api';
+import { useParams } from 'react-router-dom';
 
 const MOCK_USER = {
     id: '1a2b3c4d-e5f6-7890-1234-567890abcdef',
@@ -10,29 +12,42 @@ const MOCK_USER = {
     role: 'player',
     avatarUrl: 'https://placehold.co/100x100/3182CE/ffffff?text=U', // Placeholder
     emailVerified: true,
-    createdAt: '2024-01-15T10:00:00Z'
 };
 
 function ProfilePage() {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const navigate = useNavigate();
 
-    useEffect(() => {
-        setLoading(true);
-        // MOCK: Simulate API fetch of user data
-        setTimeout(() => {
-            // In a real app, you would fetch the user associated with the current session/token
-            setUser(MOCK_USER);
-            setLoading(false);
-        }, 800);
-    }, []);
+    const {username} = useParams();
+    console.log (username);
 
-    const handleLogout = () => {
-        // MOCK: Clear session/token and redirect
-        console.log("MOCK: User logged out.");
-        setUser(null);
-        navigate('/login');
+    useEffect(() => {
+        const getUser = async (e) => {
+            setLoading(true);
+            setError(null);
+
+            try {
+                const res = await api.get(`/${username}`);
+                setUser(res.data);
+            } catch (err) {
+                console.error(err);
+                setError(err.response?.data?.message || 'Network Error');
+            } finally {
+                setLoading (false);
+            }
+        };
+        getUser();
+    }, [username]); // <-- empty array means "run once on mount"    
+ 
+    const handleLogout = async () => {
+        try {
+            await api.post('/auth/logout');
+            navigate('/login');
+        } catch ( err ) {
+            console.error (`Logout Failed: ${err}`);
+        }
     };
 
     if (loading) {
@@ -56,13 +71,14 @@ function ProfilePage() {
 
                 <div className="user-info-section">
                     <img
-                        src={user.avatarUrl}
+                        src={user.avatar_url}
                         alt="User Avatar"
                         className="profile-avatar"
+                        style={{width: "300px"}}
                     />
 
                     <div className="basic-details">
-                        <h2 className="display-name">{user.displayName}</h2>
+                        <h2 className="display-name">{user.display_name}</h2>
                         <span className={`role-badge role-${user.role}`}>{user.role}</span>
                     </div>
                 </div>
@@ -70,12 +86,12 @@ function ProfilePage() {
                 <div className="details-grid">
 
                     <div className="detail-item">
-                        <span className="detail-label">Username</span>
+                        <span className="detail-label">Username: </span>
                         <span className="detail-value">@{user.username}</span>
                     </div>
 
                     <div className="detail-item">
-                        <span className="detail-label">Email Address</span>
+                        <span className="detail-label">Email Address: </span>
                         <span className="detail-value">
                             {user.email}
                             {user.emailVerified && <span className="verified-status">(Verified)</span>}
@@ -83,13 +99,8 @@ function ProfilePage() {
                     </div>
 
                     <div className="detail-item full-width">
-                        <span className="detail-label">Bio</span>
+                        <span className="detail-label">Bio: </span>
                         <p className="bio-text">{user.bio || 'No bio provided.'}</p>
-                    </div>
-
-                    <div className="detail-item">
-                        <span className="detail-label">Member Since</span>
-                        <span className="detail-value">{new Date(user.createdAt).toLocaleDateString()}</span>
                     </div>
 
                 </div>

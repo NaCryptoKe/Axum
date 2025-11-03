@@ -3,9 +3,19 @@ const UAParser = require('ua-parser-js');
 
 const createSession = async (user_id, user_agent, ip_address, expires_at) => {
     const parser = new UAParser(user_agent);
-    const browser = parser.getBrowser().name || 'Unknown';
-    const device = parser.getDevice().model || parser.getOS().name || 'Unknown';
+    const browser = parser.getBrowser().name;
+    const device = parser.getDevice().model || parser.getOS().name;
 
+    // 🧹 Step 1: Remove any duplicate session from same device
+    await pool.query(
+        `DELETE FROM core.sessions
+         WHERE user_id = $1
+           AND ip_address = $2
+           AND user_agent = $3`,
+        [user_id, ip_address, user_agent]
+    );
+
+    // 🆕 Step 2: Insert new session
     const result = await pool.query(
         `INSERT INTO core.sessions (user_id, user_agent, ip_address, expires_at, browser, device)
          VALUES ($1, $2, $3, $4, $5, $6)

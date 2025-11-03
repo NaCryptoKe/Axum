@@ -1,22 +1,23 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import api from '../api/api';
 
 function RegisterPage() {
     const [form, setForm] = useState({
-        email: '', username: '', displayName: '', password: '', confirmPassword: '',
+        email: '', username: '', display_name: '', password: '', confirmPassword: '',
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const navigate = useNavigate();
 
     const handleChange = (e) => {
-        setForm({ ...form, [e.target.name]: e.target.value });
-        if (error) setError('');
-    };
+            setForm({ ...form, [e.target.name]: e.target.value });
+            if (error) setError('');
+        };
 
-    const handleRegister = async (e) => {
+        const handleRegister = async (e) => {
         e.preventDefault();
-        setError('');
+        setError(null);
         setLoading(true);
 
         if (form.password !== form.confirmPassword) {
@@ -25,20 +26,23 @@ function RegisterPage() {
             return;
         }
 
-        // --- MOCK API CALL (http://localhost:3000/api/auth/register) ---
-        console.log('API call to /api/auth/register initiated:', form);
+        const { username, email, display_name, password } = form;
 
         try {
-            await new Promise(resolve => setTimeout(resolve, 1500));
-
-            // MOCK Success: Redirect to OTP page (passing a mock ID)
-            navigate('/verify-otp/new_user_id_123');
-
+            const res = await api.post('/auth/register', { username, email, display_name, password });
+            console.log('Register response:', res.data);
+            const user_id = res.data.user.id;
+            await api.post('/auth/generate_otp', 
+                {user_id}
+            )
+            navigate(`/verify-otp/${user_id}`); // optionally redirect after successful register
         } catch (err) {
-            setError('Registration failed. Username or email may already be in use.');
+            setError(err.response?.data?.message || 'Registration failed. Username or email may already be in use.');
+        } finally {
             setLoading(false);
         }
     };
+
 
     return (
         <div className="page-wrapper">
@@ -56,7 +60,7 @@ function RegisterPage() {
                     </div>
 
                     <div className="input-group"><label htmlFor="displayName" className="input-label">Display Name</label>
-                        <input name="displayName" type="text" required onChange={handleChange} placeholder="The name others will see" className="text-input" />
+                        <input name="display_name" type="text" required onChange={handleChange} placeholder="The name others will see" className="text-input" />
                     </div>
 
                     <div className="input-group"><label htmlFor="password" className="input-label">Password</label>

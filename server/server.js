@@ -8,7 +8,6 @@ const authRoutes = require('./routes/authRouter');
 const passwordResetRoutes = require('./routes/passwordResetRouter');
 const userRoute = require('./routes/userRoute');
 const log = require('./middlewares/logRoute');
-
 const updateLastSeen = require('./middlewares/updateLastSeenMiddleware');
 
 const app = express();

@@ -66,19 +66,19 @@ const login = async (req, res) => {
         const tokenExpiry = rememberMe ? '30d' : '1d';
         const cookieMaxAge = rememberMe ? 30 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000;
 
-        // 2️⃣ Sign JWT
-        const tokenPayload = { id: user.id, username: user.username, role: user.role };
-        const token = jwt.sign(tokenPayload,  'super_secret_long_random_string', {
-            algorithm: 'HS256',
-            expiresIn: tokenExpiry
-        });
-
         // 3️⃣ Store session in DB
         const userAgent = req.headers['user-agent'];
         const ipAddress = req.ip;
         const expiresAt = new Date(Date.now() + cookieMaxAge);
 
-        await createSession(user.id, userAgent, ipAddress, expiresAt);
+        const session = await createSession(user.id, userAgent, ipAddress, expiresAt);
+
+        // 2️⃣ Sign JWT
+        const tokenPayload = { id: user.id, username: user.username, role: user.role, sessionId: session.id };
+        const token = jwt.sign(tokenPayload,  'super_secret_long_random_string', {
+            algorithm: 'HS256',
+            expiresIn: tokenExpiry,
+        });
 
         // 4️⃣ Set cookie
         res.cookie('token', token, {
@@ -88,7 +88,7 @@ const login = async (req, res) => {
             maxAge: cookieMaxAge
         });
 
-        res.json({ message: 'Login successful', token,
+        return res.json({ message: 'Login successful', token,
         user : {
             id: user.id,
             username: user.username,
@@ -159,64 +159,71 @@ const authenticate = (req, res) => {
 const google = passport.authenticate("google", { scope: ["profile", "email"] });
 
 const googleCallback = (req, res, next) => {
-    passport.authenticate("google", { session: false }, async (err, user) => {
-        if (err || !user) {
-            console.error("Google callback error:", err);
+    passport.authenticate("google", { session: false }, async (err, profile) => {
+        if (err || !profile) {
+            console.error("Google OAuth error:", err);
             return res.status(400).json({ message: "OAuth failed or no user found" });
         }
 
         try {
-            // Check if the user already exists in your DB
-            const existingUser = await findByIdentifier(user.email);
+            const email = profile.emails?.[0]?.value?.toLowerCase();
+            const displayName = profile.displayName || "New User";
+            if (!email) return res.status(400).json({ message: "Google account has no email" });
 
-            let savedUser = existingUser;
+            // ✅ Check if user exists
+            let user = await findByIdentifier(email);
             let message;
 
-            if (!existingUser) {
-                // Create a new one
-                savedUser = await createUser({
-                    username: user.username.toLowerCase().trim(),
-                    email: user.email.toLowerCase().trim(),
-                    display_name: user.username,
-                    hashed_password: null, // OAuth user
-                    avatar_url: user.avatar_url || null
+            if (!user) {
+                user = await createUser({
+                    username: displayName.toLowerCase().replace(/\s+/g, "_"),
+                    email,
+                    display_name: displayName,
+                    hashed_password: null,
+                    avatar_url: profile.photos?.[0]?.value || null
                 });
                 message = "Hello new user 👋";
             } else {
                 message = "Welcome back 👀";
             }
 
-            // Generate token
+            // ✅ Create session for online tracking
+            const userAgent = req.headers["user-agent"];
+            const ipAddress = req.ip;
+            const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 1 day by default
+            const session = await createSession(user.id, userAgent, ipAddress, expiresAt);
+
+            // ✅ Generate JWT including sessionId
             const token = jwt.sign(
-                { id: savedUser.id, username: savedUser.username, role: savedUser.role },
+                { id: user.id, username: user.username, role: user.role, sessionId: session.id },
                 "super_secret_long_random_string",
                 { expiresIn: "1d" }
             );
 
+            // ✅ Set cookie
             res.cookie("token", token, {
-                httpOnly: false,
-                secure: false,
+                httpOnly: true,
+                secure: process.env.NODE_ENV === "production",
                 sameSite: "Lax",
-                maxAge: 24 * 60 * 60 * 1000,
+                maxAge: 24 * 60 * 60 * 1000
             });
 
             return res.status(200).json({
                 message,
                 token,
                 user: {
-                    username: savedUser.username,
-                    email: savedUser.email,
-                    display_name: savedUser.display_name,
-                    avatar_url: savedUser.avatar_url,
-                },
+                    username: user.username,
+                    email: user.email,
+                    display_name: user.display_name,
+                    avatar_url: user.avatar_url
+                }
             });
         } catch (dbErr) {
-            console.error("DB error in OAuth:", dbErr);
+            console.error("DB error in Google OAuth:", dbErr);
             return res.status(500).json({ message: "Server error during OAuth" });
         }
     })(req, res, next);
 };
-
 module.exports = {
     login,
     register,

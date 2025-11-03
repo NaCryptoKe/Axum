@@ -35,7 +35,8 @@ router.post('/register', register);
 router.get('/authenticate', authenticate);
 
 // --- EMAIL VERIFICATION ---
-router.post('/generate_otp', rateLimiter, checkCooldown, generateOtp);
+//router.post('/generate_otp', rateLimiter, checkCooldown, generateOtp);
+router.post('/generate_otp', generateOtp);
 router.post('/verify_otp', submitOtp);
 
 // Logout route example

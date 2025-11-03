@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import api from '../api/api';
 
 function LoginPage() {
     const [identifier, setIdentifier] = useState('');
@@ -14,17 +15,17 @@ function LoginPage() {
         setLoading(true);
         setError(null);
 
-        // --- MOCK API CALL (http://localhost:3000/api/auth/login) ---
-        console.log('API call to /api/auth/login initiated:', { identifier, password, rememberMe });
-
         try {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            // MOCK Success:
-            navigate('/profile');
+            const res = await api.post('/auth/login', 
+                { identifier, password, rememberMe });
+            console.log('Login Response:', res.data.user.username);
+            navigate(`/@${res.data.user.username}`);
 
         } catch (err) {
-            setError('Invalid credentials or network error.');
-            setLoading(false);
+            console.error(err);
+            setError(err.response?.data?.message || 'Network Error');
+        } finally {
+            setLoading (false);
         }
     };
 
