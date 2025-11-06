@@ -7,7 +7,8 @@ const {
     register,
     authenticate,
     google,
-    googleCallback
+    googleCallback,
+    getAllUsersSessions
 } = require('../controllers/authController');
 
 const {
@@ -33,6 +34,7 @@ router.get( "/google/callback", googleCallback );
 router.post('/login', login);
 router.post('/register', register);
 router.get('/authenticate', authenticate);
+router.get('/sessions', getAllUsersSessions);
 
 // --- EMAIL VERIFICATION ---
 //router.post('/generate_otp', rateLimiter, checkCooldown, generateOtp);

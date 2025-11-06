@@ -38,6 +38,16 @@ const updateLastSeen = async (session_id) => {
     return result.rows[0];
 };
 
+const getAllUsersSession = async (user_id) => {
+    const result = await pool.query(
+        `SELECT * FROM core.sessions
+        WHERE user_id = $1`,
+        [user_id]
+    )
+
+    return result.rows;
+}
+
 const expireSession = async (session_id) => {
     await pool.query(
         `UPDATE core.sessions SET expires_at = NOW() WHERE id = $1`,
@@ -46,4 +56,4 @@ const expireSession = async (session_id) => {
 };
 
 
-module.exports = { createSession, updateLastSeen, expireSession };
+module.exports = { createSession, updateLastSeen, expireSession, getAllUsersSession };
