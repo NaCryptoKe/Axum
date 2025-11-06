@@ -1,0 +1,1 @@
+`GET /users/last-seen` why is this even needed

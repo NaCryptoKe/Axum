@@ -3,7 +3,7 @@ const argon2 = require('argon2');
 const passport = require('passport');
 const { Strategy: GoogleStrategy } = require('passport-google-oauth20');
 const { findByIdentifier, createUser, getUserByUsername } = require('../models/userModel');
-const {createSession} = require('../models/sessionModel')
+const {createSession, getAllUsersSession} = require('../models/sessionModel')
 
 const ARGON2_OPTS = {
     type: argon2.argon2id,
@@ -47,7 +47,7 @@ passport.use(
 // ======================
 const login = async (req, res) => {
     try {
-        let { identifier, password, rememberMe } = req.body;
+        let { identifier, password, remember_me } = req.body;
 
         if (!identifier || !password)
             return res.status(400).json({ message: 'Missing required field' });
@@ -63,8 +63,8 @@ const login = async (req, res) => {
             return res.status(401).json({ message: 'Incorrect password' });
 
         // 1️⃣ JWT expiration
-        const tokenExpiry = rememberMe ? '30d' : '1d';
-        const cookieMaxAge = rememberMe ? 30 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000;
+        const tokenExpiry = remember_me ? '30d' : '1d';
+        const cookieMaxAge = remember_me ? 30 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000;
 
         // 3️⃣ Store session in DB
         const userAgent = req.headers['user-agent'];
@@ -224,10 +224,42 @@ const googleCallback = (req, res, next) => {
         }
     })(req, res, next);
 };
+
+const getAllUsersSessions = async (req, res) => {
+    const { token } = req.cookies;
+
+    try {
+        if (!token) return res.status(401).json({ message: 'No token found' });
+
+        const decoded = jwt.verify(token, 'super_secret_long_random_string');
+        const user_id = decoded.id;
+
+        const sessions = await getAllUsersSession(user_id);
+
+        if (!sessions || sessions.length === 0)
+            return res.status(404).json({ message: 'No sessions found' });
+
+        // Map each session to a cleaner JSON format
+        const formattedSessions = sessions.map(session => ({
+            session_id: session.id,
+            ip_address: session.ip_address,
+            device: session.device,
+            created_at: session.created_at,
+            last_seen_at: session.last_seen_at || null, // optional if you track last activity
+        }));
+
+        return res.status(200).json(formattedSessions);
+    } catch (error) {
+        console.error("Get All User Sessions Error:", error);
+        return res.status(500).json({ message: 'Server error' });
+    }
+};
+
 module.exports = {
     login,
     register,
     authenticate,
     google,
-    googleCallback
+    googleCallback,
+    getAllUsersSessions
 };

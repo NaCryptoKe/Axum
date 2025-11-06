@@ -8,6 +8,42 @@ const findByIdentifier = async (identifier) => {
     return result.rows[0]; // return a single user
 };
 
+const updateUserProfile = async ({ id, username, email, bio, display_name }) => {
+    const result = await pool.query(
+        `UPDATE core.users
+         SET username = $1, email = $2, display_name = $3, bio = $4
+         WHERE id = $5
+             RETURNING id, username, email, display_name, role, bio, email_verified`,
+        [username, email, display_name, bio, id]
+    );
+
+    return result.rows[0];
+};
+
+const updateUserProfilePicture = async ({ id, avatar_url }) => {
+    const result = await pool.query(
+        `UPDATE core.users
+        SET avatar_url = $2
+        WHERE id = $1
+        RETURNING id, username, avatar_url`,
+        [id, avatar_url]
+    );
+
+    return result.rows[0];
+}
+
+const softDeleteUser = async (username) => {
+    const result = await pool.query(
+        `UPDATE core.users
+         SET is_deleted = true, deleted_at = NOW()
+         WHERE username = $1
+             RETURNING id, username, is_deleted, deleted_at;`,
+        [username]
+    );
+
+    return result.rows[0]; // returns user info if updated
+};
+
 const createUser = async ({ username, email, display_name, hashed_password }) => {
     const result = await pool.query(
         `INSERT INTO core.users (username, email, display_name, hashed_password)
@@ -85,6 +121,18 @@ const getUserByUsername = async (username) => {
     return user;
 };
 
+const getAllUsers = async () => {
+    const result = await pool.query('SELECT * FROM core.users');
+
+    return result.rows;
+}
+
+const getAllActiveUsers = async () => {
+    const result = await pool.query('SELECT * FROM core.users WHERE is_deleted = false');
+
+    return result.rows;
+}
+
 module.exports = {
     findByIdentifier,
     createUser,
@@ -92,4 +140,9 @@ module.exports = {
     getUserById,
     getUserByUsername,
     updatePassword,
+    updateUserProfile,
+    getAllUsers,
+    getAllActiveUsers,
+    updateUserProfilePicture,
+    softDeleteUser,
 };

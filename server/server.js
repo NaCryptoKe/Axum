@@ -7,6 +7,7 @@ require('./controllers/authController');       // 👈 loads GoogleStrategy
 const authRoutes = require('./routes/authRouter');
 const passwordResetRoutes = require('./routes/passwordResetRouter');
 const userRoute = require('./routes/userRoute');
+const adminRoute = require('./routes/adminRoute');
 const log = require('./middlewares/logRoute');
 const updateLastSeen = require('./middlewares/updateLastSeenMiddleware');
 
@@ -30,6 +31,7 @@ app.use(passport.initialize());
 app.use('/api/auth', authRoutes);
 app.use('/api/passwordReset', passwordResetRoutes);
 app.use('/api', userRoute);
+app.use('/api/admin', adminRoute);
 
 app.get('/', (req, res) => {
     res.send('Welcome to the server!');

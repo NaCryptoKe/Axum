@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const {getUserProfile,onlineStatus,allUsers, allActiveUsers} = require('../controllers/userController');
+const {getUserProfile,onlineStatus,allUsers, allActiveUsers, updateProfile} = require('../controllers/userController');
 
 router.get('/', (req, res) => {
     res.send ('USER WORKING');
@@ -8,7 +8,6 @@ router.get('/', (req, res) => {
 
 router.get('/@:username', getUserProfile);
 router.get('/@:username/status', onlineStatus);
-router.get('/users', allUsers);
-router.get('/users/active', allActiveUsers);
+router.patch('/@:username/update', updateProfile);
 
 module.exports = router;
