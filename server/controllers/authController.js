@@ -3,7 +3,7 @@ const argon2 = require('argon2');
 const passport = require('passport');
 const { Strategy: GoogleStrategy } = require('passport-google-oauth20');
 const { findByIdentifier, createUser, getUserByUsername } = require('../models/userModel');
-const {createSession, getAllUsersSession} = require('../models/sessionModel')
+const {createSession, getAllUsersSession, deleteSession} = require('../models/sessionModel')
 
 const ARGON2_OPTS = {
     type: argon2.argon2id,
@@ -255,11 +255,29 @@ const getAllUsersSessions = async (req, res) => {
     }
 };
 
+const deleteUserSession = async (req, res) => {
+    const { session_id } = req.params;
+
+    try {
+        if (!session_id) return res.status(400).json({ message: 'Session id required' });
+
+        const result = await deleteSession(session_id);
+        if (!result || result.length === 0) return res.status(404).json({ message: 'No sessions found' });
+
+        return res.status(200).json({message: "Session revoked successfully"})
+
+    } catch (error) {
+        console.error("Get All User Sessions Error:", error);
+        return res.status(500).json({ message: "Server error" });
+    }
+}
+
 module.exports = {
     login,
     register,
     authenticate,
     google,
     googleCallback,
-    getAllUsersSessions
+    getAllUsersSessions,
+    deleteUserSession,
 };

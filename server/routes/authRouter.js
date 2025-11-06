@@ -8,7 +8,8 @@ const {
     authenticate,
     google,
     googleCallback,
-    getAllUsersSessions
+    getAllUsersSessions,
+    deleteUserSession,
 } = require('../controllers/authController');
 
 const {
@@ -35,6 +36,7 @@ router.post('/login', login);
 router.post('/register', register);
 router.get('/authenticate', authenticate);
 router.get('/sessions', getAllUsersSessions);
+router.delete('/sessions/:session_id', deleteUserSession);
 
 // --- EMAIL VERIFICATION ---
 //router.post('/generate_otp', rateLimiter, checkCooldown, generateOtp);

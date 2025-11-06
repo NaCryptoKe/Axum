@@ -32,10 +32,6 @@ router.post('/pay', async (req, res) => {
             tx_ref: TEXT_REF,
             callback_url: `${CALLBACK_URL}/${TEXT_REF}`,
             //return_url: RETURN_URL,
-            customization: {
-                title: "Paid For Game",
-                description: "PAYMENT WORKING"
-            }
         };
 
         const response = await axios.post(CHAPA_URL, data, config);
@@ -45,7 +41,7 @@ router.post('/pay', async (req, res) => {
             tx_ref: TEXT_REF
         });
     } catch (err) {
-        console.error("Payment initialization error:", err.message);
+        console.error("Payment initialization error:", err.response?.data || err.message);
         res.status(500).json({ error: "Payment initialization failed" });
     }
 });
