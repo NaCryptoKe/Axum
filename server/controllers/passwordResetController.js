@@ -12,7 +12,7 @@ const ARGON2_OPTS = {
 };
 
 // ✅ Generate password reset token
-const generatePasswordResetToken = async (req, res) => {
+const   generatePasswordResetToken = async (req, res) => {
     try {
         const { user_id } = req.body;
 

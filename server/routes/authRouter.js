@@ -1,63 +1,75 @@
 const express = require('express');
-const passport = require('passport');
-const { Strategy: GoogleStrategy } = require('passport-google-oauth20');
-
 const {
     login,
     register,
-    authenticate,
+    authenticate, // The "who am I" endpoint
     google,
     googleCallback,
     getAllUsersSessions,
     deleteUserSession,
+    healthCheck,
+    logout, // <-- Add this new function
+    authenticateMiddleware // The route protection
 } = require('../controllers/authController');
 
 const {
     generateOtp,
-    submitOtp
+    verifyOtp // Renamed from submitOtp to match your file
 } = require('../controllers/emailVerificationController');
 
+// --- Middlewares ---
+// You may not need these here if they are only used on one route,
+// but it's good practice to import them at the top.
 const { rateLimiter } = require('../middlewares/rateLimiter');
 const { checkCooldown } = require('../middlewares/checkCooldown');
 
 const router = express.Router();
 
-// ✅ Routes
-router.get('/', (req, res) => {
-    res.send('API AUTH');
-});
+// =================================================================
+// 🌎 PUBLIC ROUTES
+// =================================================================
+// Health check for the auth system
+router.get('/', healthCheck);
 
-// --- GOOGLE OAUTH ---
-router.get( "/google", google );
-router.get( "/google/callback", googleCallback );
-
-// --- NORMAL AUTH ---
-router.post('/login', login);
+// =================================================================
+// 🔐 AUTHENTICATION
+// =================================================================
+// --- Standard Auth ---
 router.post('/register', register);
+router.post('/login', login);
+
+// --- OAuth (Google) ---
+router.get("/google", google);
+router.get("/google/callback", googleCallback);
+
+// =================================================================
+// ✉️ EMAIL VERIFICATION
+// =================================================================
+// NOTE: Re-add your rateLimiter and checkCooldown when ready
+// router.post('/generate-otp', rateLimiter, checkCooldown, generateOtp);
+router.post('/generate-otp', generateOtp);
+router.post('/verify-otp', verifyOtp);
+
+// =================================================================
+// 🛡️ PROTECTED ROUTES
+// (All routes below require a valid JWT)
+// =================================================================
+router.use(authenticateMiddleware);
+
+// --- User & Session Management ---
+
+// Verify token and get user info ("who am I")
+// NOTE: This route is protected. It will fail with a 401
+// if the middleware fails, which is correct.
 router.get('/authenticate', authenticate);
+
+// Get all active sessions for the logged-in user
 router.get('/sessions', getAllUsersSessions);
+
+// Delete a specific session (e.g., "log out this device")
 router.delete('/sessions/:session_id', deleteUserSession);
 
-// --- EMAIL VERIFICATION ---
-//router.post('/generate_otp', rateLimiter, checkCooldown, generateOtp);
-router.post('/generate_otp', generateOtp);
-router.post('/verify_otp', submitOtp);
-
-// Logout route example
-router.post('/logout', (req, res) => {
-    const token = req.cookies.token;
-    // 1️⃣ Clear the cookie
-    res.clearCookie('token', {
-        httpOnly: false, // same as when you set it
-        secure: false,   // same as when you set it
-        sameSite: 'Lax'
-    });
-
-    // 2️⃣ Optionally remove server-side session if you track sessions
-    // await deleteSession(user_id);
-
-    res.json({ message: 'Logged out, cookie removed',
-    token: token});
-});
+// Log out the *current* session
+router.post('/logout', logout);
 
 module.exports = router;

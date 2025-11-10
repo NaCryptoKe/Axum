@@ -44,12 +44,12 @@ const softDeleteUser = async (username) => {
     return result.rows[0]; // returns user info if updated
 };
 
-const createUser = async ({ username, email, display_name, hashed_password }) => {
+const createUser = async ({ username, email, hashedPassword }) => {
     const result = await pool.query(
         `INSERT INTO core.users (username, email, display_name, hashed_password)
      VALUES ($1, $2, $3, $4)
      RETURNING id, username, email, display_name, role, bio, email_verified`,
-        [username, email, display_name, hashed_password]
+        [username, email, email, hashedPassword]
     );
 
     return result.rows[0];

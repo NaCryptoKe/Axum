@@ -38,7 +38,7 @@ const getEmailVerification = async (user_id) => {
 };
 
 // Verify OTP
-const verifyOtp = async (user_id, submittedOtp) => {
+const checkOtp = async (user_id, submittedOtp) => {
     const record = await getEmailVerification(user_id);
 
     if (!record) {
@@ -72,5 +72,5 @@ module.exports = {
     createEmailVerification,
     incrementVerificationAttempts,
     getEmailVerification,
-    verifyOtp
+    checkOtp
 };
