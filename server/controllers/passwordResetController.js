@@ -11,13 +11,25 @@ const ARGON2_OPTS = {
     parallelism: 1
 };
 
-// ✅ Generate password reset token
-const   generatePasswordResetToken = async (req, res) => {
+/**
+ * Generates a password reset token for a user and returns it along with the user's email and token expiration time.
+ * Expects `user_id` in the request body.
+ * Responds with 201 on success, 400 if user_id is missing, 502 if token generation fails, and 500 on server error.
+ */
+const generatePasswordResetToken = async (req, res) => {
     try {
         const { user_id } = req.body;
 
         if (!user_id) {
-            return res.status(400).json({ message: 'user_id is required' });
+            return res.status(400).json({
+                success: false,
+                message: 'Missing user id',
+                data: null,
+                error: {
+                    code: 400,
+                    message: 'Missing user id'
+                }
+            });
         }
 
         const token = uuidv4();
@@ -25,96 +37,139 @@ const   generatePasswordResetToken = async (req, res) => {
 
         const result = await generateNewToken(user_id, token, expiresAt);
 
-        console.log(`${user_id}\n ${token}\n ${expiresAt}\n`);
-        console.log(result);
-
         if (!result) {
-            return res.status(400).json({ message: 'Could not generate token' });
+            return res.status(502).json({
+                success: false,
+                message: 'Bad Gateway',
+                data: null,
+                error: {
+                    code: 502,
+                    message: 'Failed to generate a password reset token'
+                }
+            });
         }
 
         const { email } = await getUserById(user_id);
-        await sendResetNotification(email, token)
+        //await sendResetNotification(email, token)
 
         return res.status(201).json({
+            success: true,
             message: 'Password reset token generated',
-            token,
-            expiresAt,
+            data: {
+                token: token,
+                email: email,
+                expiresAt: expiresAt,
+            },
+            error: null
         });
-    } catch (err) {
-        console.error(err);
-        return res.status(500).json({ message: 'Server error' });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            success: false,
+            message: 'Server error',
+            data: null,
+            error: {
+                code: 500,
+                message: 'Server Error',
+            }
+        });
     }
 };
 
-// ✅ Verify password reset token
-const verifyPasswordResetToken = async (req, res) => {
-    await randomDelay();
+
+/**
+ * Resets the user's password using a valid token.
+ * Expects `token` in the request params and `password` in the request body.
+ * Performs password strength validation and updates the password if valid.
+ * Responds with 200 on success, 400 for missing credentials or invalid token, 422 for unprocessable inputs, and 500 on server error.
+ */
+const resetPassword = async (req, res) => {
     try {
-        const { token } = req.body;
+        const { token } = req.params;
+        console.log(token);
+        const { password } = req.body;
+        const unprocessableErrors = [];
 
-        if (!token) {
-            return res.status(400).json({ message: 'Token is required' });
+        if (!token || !password) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing Credentials',
+                data: null,
+                error: {
+                    code: 400,
+                    message: 'Missing token and the new password'
+                }
+            });
         }
 
-        const result = await verifyToken(token);
+        const tokenResult = await verifyToken(token);
 
-        if (!result || !result.valid) {
-            return res.status(400).json({ message: 'Invalid or expired token' });
+        if (!tokenResult.valid) {
+            return res.status(400).json({
+                success: false,
+                message: 'Bad Request',
+                data: null,
+                error: {
+                    code: 400,
+                    message: 'Token expired or invalid'
+                }
+            });
         }
 
-        // Mark token as used so it can't be reused
+        if (password.length < 8) unprocessableErrors.push ('Password length should be at least 8 characters.');
+
+        if (!/[A-Z]/.test(password)) unprocessableErrors.push ('Password should contain a capital letter.');
+
+        if (!/[a-z]/.test(password)) unprocessableErrors.push('Password should contain a small letter.');
+
+        if (!/[^a-zA-Z0-9]/.test(password)) unprocessableErrors.push ('Password should contain a special character.');
+
+        if (!/\d/.test(password)) unprocessableErrors.push ('Password should contain a number.');
+
+        if (unprocessableErrors.length > 0)
+            return res.status(422).json({
+                success: false,
+                message: "Unprocessable inputs",
+                data: null,
+                error: {
+                    code: 422,
+                    details: unprocessableErrors
+                }
+            });
+
+        const user_id = tokenResult.reset.user_id;
+
+        const hashedPassword = await argon2.hash(password, ARGON2_OPTS);
+
+        await updatePassword(user_id, hashedPassword);
+
         await markUsed(token);
         await invalidateToken(token);
 
         return res.status(200).json({
-            message: 'Token verified successfully',
-            user_id: result.user_id,
+            success: true,
+            message: 'Successfully validated token',
+            data: {
+                detail: 'Successfully updated password',
+            },
+            error: null
         });
-    } catch (err) {
-        console.error(err);
-        return res.status(500).json({ message: 'Server error' });
-    }
-};
-
-const resetPassword = async (req, res) => {
-    try {
-        const { token, newPassword } = req.body;
-
-        if (!token || !newPassword) {
-            return res.status(400).json({ message: 'Token and new password are required' });
-        }
-
-        // 1️⃣ Verify token
-        const tokenResult = await verifyToken(token);
-        if (!tokenResult.valid) {
-            return res.status(400).json({ message: 'Invalid or expired token' });
-        }
-
-        if (newPassword.length < 8 || !/[A-Z]/.test(newPassword) || !/\d/.test(newPassword)) {
-            return res.status(400).json({ message: 'Weak password. Must have 8+ chars, 1 uppercase, 1 number.' });
-        }
-
-        const user_id = tokenResult.reset.user_id;
-
-        // 2️⃣ Hash the new password
-        const hashedPassword = await argon2.hash(newPassword, ARGON2_OPTS);
-
-        // 3️⃣ Update user's password
-        await updatePassword(user_id, hashedPassword);
-
-        // 4️⃣ Mark token as used and/or delete
-        await markUsed(token);
-        await invalidateToken(token);
-
-        return res.status(200).json({ message: 'Password updated successfully' });
-    } catch (err) {
-        console.error('Reset password error:', err);
-        return res.status(500).json({ message: 'Server error' });
+    }  catch (error) {
+        console.error(error);
+        return res.status(500).json(
+            {
+                success: false,
+                message: 'Server error',
+                data: null,
+                error: {
+                    code: 500,
+                    message: 'Internal Server Error',
+                }
+            });
     }
 };
 
 module.exports = {
     generatePasswordResetToken,
-    verifyPasswordResetToken,
     resetPassword
 };

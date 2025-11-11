@@ -4,24 +4,86 @@ const jwt = require("jsonwebtoken");
 
 const getUserProfile = async (req, res) => {
     const { username } = req.params;
-    console.log('Fetching profile for:', username);
+    const { username_cookie } = req.user;
 
     try {
         const user = await getUserByUsername(username);
-        if (!user) return res.status(404).json({ message: 'User not found' });
 
-        res.json(user);
+        if (!user) return res.status(404).json({
+            success: false,
+            message: 'User not found',
+            data: null,
+            error: {
+                code: 404,
+                details: `User by the name of ${username} does not exist`,
+            }
+        });
+        if (user.is_deleted) return res.status(404).json({
+            success: false,
+            message: 'Deactivated user',
+            data: null,
+            error: {
+                code: 404,
+                details: `User by the name of ${username} has deactivated their account`,
+            }
+        });
+
+        if (username !== username_cookie) {
+            return res.status(200).json({
+                success: true,
+                message: 'User data',
+                data: {
+                    username: username,
+                    displayName: user.displayName,
+                    role: user.role,
+                    avatar_url: user.avatar_url,
+                    bio: user.bio
+                },
+                error: null
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: 'User data',
+            data: {
+                username: username,
+                email: user.email,
+                displayName: user.displayName,
+                email_verified: user.email_verified,
+                role: user.role,
+                avatar_url: user.avatar_url,
+                bio: user.bio
+            },
+            error: null
+        });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server error' });
+        return res.status(500).json({
+            success: false,
+            message: 'Server Error',
+            data: null,
+            error: {
+                code: 500,
+                details: `Server Error`,
+            }
+        })
     }
 };
 
 const softDelete = async (req, res) => {
     const { username } = req.params;
+    const { username_cookie } = req.user;
 
     try {
-        if (!username) return res.status(400).json({ message: 'Username required' });
+        if (!username) return res.status(404).json({
+            success: false,
+            message: 'User not found',
+            data: null,
+            error: {
+                code: 404,
+                details: `User by the name of ${username} does not exist`,
+            }
+        });
         const result = await softDeleteUser(username);
 
         if (!result) return res.status(400).json({ message: 'User not found' });
@@ -44,17 +106,37 @@ const onlineStatus = async (req, res) => {
         const { username } = req.params;
         const user = await getUserByUsername(username);
 
-        if (!user || user.error) {
-            return res.status(404).json({ message: 'User not found' });
-        }
+        if (!user) return res.status(404).json({
+            success: false,
+            message: 'User not found',
+            data: null,
+            error: {
+                code: 404,
+                details: `User by the name of ${username} does not exist`,
+            }
+        });
 
         const online = await isUserOnline(user.id);
         const lastSeenAt = await lastSeen(user.id);
 
-        res.json({ username, online, lastSeenAt });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'Server error' });
+        return res.status(200).json({
+            success: true,
+            message: 'User online status',
+            data: {
+                username: username,
+                online: online ? 'Online' : `Offline, Last Seen At ${lastSeenAt}`,
+            }
+        })
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: 'Server Error',
+            data: null,
+            error: {
+                code: 500,
+                details: `Server Error`,
+            }
+        });
     }
 };
 

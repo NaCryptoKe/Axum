@@ -30,7 +30,7 @@ app.use(passport.initialize());
 
 // ✅ Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/passwordReset', passwordResetRoutes);
+app.use('/api/password-reset', passwordResetRoutes);
 app.use('/api', userRoute);
 app.use('/api/finance', financeRoute);
 app.use('/api/debug', debugRoute);

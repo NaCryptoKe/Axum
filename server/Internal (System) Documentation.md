@@ -534,7 +534,7 @@ Deletes a particular session using a session id passed by the url.
   "data": null,
   "error": {
     "code": 404,
-    "details": 'No session found'
+    "details": "No session found"
   }
 }
 ```
@@ -746,5 +746,187 @@ The OTP was correct and the user's account is now verified.
   "message": "Server error",
   "data": null,
   "error": { "code": 500, "details": "Error message from server" }
+}
+```
+
+---
+
+## 🔐 Password Reset Routes
+
+### Generate Password Reset Token
+
+**Purpose**:  
+
+Generates a password reset token for a user, returning the token, user's email, and token expiration time.  
+
+**Request**:
+
+- Method: `POST`
+- URL: `/password-reset/generate-password-reset`
+- Headers: `Content-Type: application/json`
+- Body:
+
+```json
+{
+  "user_id": "string (required)"
+}
+````
+
+**Response**:
+
+1. **Success** (201 Created):
+
+```json
+{
+  "success": true,
+  "message": "Password reset token generated",
+  "data": {
+    "token": "string",
+    "email": "string",
+    "expiresAt": "ISO 8601 date string"
+  },
+  "error": null
+}
+```
+
+2. **Client Error** (400 Bad Request):
+
+```json
+{
+  "success": false,
+  "message": "Missing user id",
+  "data": null,
+  "error": {
+    "code": 400,
+    "message": "Missing user id"
+  }
+}
+```
+
+3. **Server Error** (502 Bad Gateway):
+
+```json
+{
+  "success": false,
+  "message": "Bad Gateway",
+  "data": null,
+  "error": {
+    "code": 502,
+    "message": "Failed to generate a password reset token"
+  }
+}
+```
+
+4. **Server Error** (500 Internal Server Error):
+
+```json
+{
+  "success": false,
+  "message": "Server error",
+  "data": null,
+  "error": {
+    "code": 500,
+    "message": "Server Error"
+  }
+}
+```
+
+---
+
+### Reset Password
+
+**Purpose**:
+
+Resets a user's password using a valid token. Performs password strength validation and updates the password securely.
+
+**Request**:
+
+* Method: `POST`
+* URL: `/password-reset/update-password/:token`
+* Headers: `Content-Type: application/json`
+* Body:
+
+```json
+{
+  "password": "string (min 8 chars, includes uppercase, lowercase, number, special char)"
+}
+```
+
+**Response**:
+
+1. **Success** (200 OK):
+
+```json
+{
+  "success": true,
+  "message": "Successfully validated token",
+  "data": {
+    "detail": "Successfully updated password"
+  },
+  "error": null
+}
+```
+
+2. **Client Errors** (400 Bad Request):
+
+* Missing Credentials:
+
+```json
+{
+  "success": false,
+  "message": "Missing Credentials",
+  "data": null,
+  "error": {
+    "code": 400,
+    "message": "Missing token and the new password"
+  }
+}
+```
+
+* Invalid/Expired Token:
+
+```json
+{
+  "success": false,
+  "message": "Bad Request",
+  "data": null,
+  "error": {
+    "code": 400,
+    "message": "Token expired or invalid"
+  }
+}
+```
+
+3. **Unprocessable Inputs** (422 Unprocessable Entity):
+
+```json
+{
+  "success": false,
+  "message": "Unprocessable inputs",
+  "data": null,
+  "error": {
+    "code": 422,
+    "details": [
+      "Password length should be at least 8 characters.",
+      "Password should contain a capital letter.",
+      "Password should contain a small letter.",
+      "Password should contain a special character.",
+      "Password should contain a number."
+    ]
+  }
+}
+```
+
+4. **Server Error** (500 Internal Server Error):
+
+```json
+{
+  "success": false,
+  "message": "Server error",
+  "data": null,
+  "error": {
+    "code": 500,
+    "message": "Internal Server Error"
+  }
 }
 ```

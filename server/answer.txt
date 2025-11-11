@@ -1,2 +1,0 @@
-`GET /users/last-seen` why is this even needed
-`GET /dev/emails` why is this necessary, who in their right mind will use this

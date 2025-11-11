@@ -313,8 +313,6 @@ const register = async (req, res) => {
 
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) unprocessableErrors.push('Email addresses should follow, example@example.com')
 
-
-
         if (!/^[A-Za-z0-9_]{4,}$/.test(username)) unprocessableErrors.push('Usernames can only have alphanumeric characters and underscores.');
 
         if (password.length < 8) unprocessableErrors.push ('Password length should be at least 8 characters.');
@@ -491,7 +489,7 @@ const authenticateMiddleware = (req, res, next) => {
 
         req.user = {
             id: decoded.id,
-            username: decoded.username,
+            username_cookie: decoded.username,
             sessionId: decoded.sessionId,
         };
 

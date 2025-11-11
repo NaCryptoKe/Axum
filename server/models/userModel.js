@@ -103,20 +103,7 @@ const getUserByUsername = async (username) => {
         [username]
     );
 
-    if (userCheck.rows.length === 0) {
-        // No user found
-        return { error: 'No user found' };
-    }
-
     const user = userCheck.rows[0];
-
-    if (user.is_deleted) {
-        // User is soft-deleted
-        return { error: 'User has deactivated account' };
-    }
-
-    // Remove is_deleted from response if you want
-    delete user.is_deleted;
 
     return user;
 };
