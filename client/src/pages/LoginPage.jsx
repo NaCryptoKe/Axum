@@ -1,6 +1,15 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/api';
+import '../css/page.css'
+
+import NavbarComponent from '../Components/NavbarComponent.jsx';
+import ButtonComponent from '../Components/ButtonComponent.jsx';
+import InputFieldComponent from '../Components/InputFieldComponent.jsx';
+
+/* Image Imports */
+import googleLogo from '../assets/google-logo.svg';
+
 
 function LoginPage() {
     const [identifier, setIdentifier] = useState('');
@@ -30,43 +39,36 @@ function LoginPage() {
     };
 
     return (
-        <div className="page-wrapper">
-            <div className="form-container">
-                <h1 className="form-title">Sign In</h1>
+        <>
+            <NavbarComponent/>
+
+            <div className="page-wrapper">
                 <form onSubmit={handleLogin} className="form-body">
+                    <InputFieldComponent type="text" placeholder="Username or Email" required={true}/>
+                    <InputFieldComponent type="password" placeholder="Password" required={true}/>
 
-                    <div className="input-group">
-                        <label htmlFor="identifier" className="input-label">Username / Email</label>
-                        <input id="identifier" type="text" required value={identifier} onChange={(e) => setIdentifier(e.target.value)} placeholder="Enter your username or email" className="text-input" />
-                    </div>
-
-                    <div className="input-group">
-                        <label htmlFor="password" className="input-label">Password</label>
-                        <input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="text-input" />
-                    </div>
-
-                    <div className="form-options">
-                        <div className="checkbox-group">
-                            <input id="remember-me" type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} className="checkbox-input" />
-                            <label htmlFor="remember-me" className="checkbox-label">Remember Me</label>
-                        </div>
-
-                        <Link to="/forgot-password" className="link-text">Forgot password?</Link>
-                    </div>
+                    <Link to="/forgot-password" className="link-text">Forgot password?</Link>
 
                     {error && <p className="error-message">{error}</p>}
 
-                    <button type="submit" disabled={loading} className="primary-button">
-                        {loading ? 'Signing In...' : 'Login'}
-                    </button>
-                </form>
+                    <ButtonComponent children="Login" variant="primary" onClick={handleLogin} disabled={false}/>
+                    <div className="oauth">
+                        <ButtonComponent children={<img src={googleLogo} alt="google login image"/>}
+                                         variant="primary" onClick={handleLogin} disabled={false}/>
+                        <ButtonComponent children={<img src={googleLogo} alt="google login image"/>}
+                                         variant="primary" onClick={handleLogin} disabled={false}/>
+                        <ButtonComponent children={<img src={googleLogo} alt="google login image"/>}
+                                         variant="primary" onClick={handleLogin} disabled={false}/>
+                    </div>
 
-                <p className="secondary-link-text">
-                    New user?{' '}
-                    <Link to="/register" className="link-text">Create an account</Link>
-                </p>
+                    <p className="secondary-link-text">
+                        Don't have an account?{' '}
+                        <Link to="/register" className="link-text">Create an account</Link>
+                    </p>
+                </form>
             </div>
-        </div>
+        </>
+
     );
 }
 
