@@ -9,7 +9,6 @@ const {
     deleteUserSession,
     healthCheck,
     logout, // <-- Add this new function
-    authenticateMiddleware // The route protection
 } = require('../controllers/authController');
 
 const {
@@ -22,6 +21,7 @@ const {
 // but it's good practice to import them at the top.
 const { rateLimiter } = require('../middlewares/rateLimiter');
 const { checkCooldown } = require('../middlewares/checkCooldown');
+const authenticateMiddleware = require('../middlewares/authenticateMiddleware');
 
 const router = express.Router();
 

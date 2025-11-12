@@ -9,6 +9,7 @@ const passwordResetRoutes = require('./routes/passwordResetRouter');
 const userRoute = require('./routes/userRoute');
 const financeRoute = require('./routes/financialsRoute');
 const debugRoute = require('./routes/debugRouter');
+const adminRoute = require('./routes/adminRoute');
 const log = require('./middlewares/logRoute');
 const updateLastSeen = require('./middlewares/updateLastSeenMiddleware');
 
@@ -34,6 +35,7 @@ app.use('/api/password-reset', passwordResetRoutes);
 app.use('/api', userRoute);
 app.use('/api/finance', financeRoute);
 app.use('/api/debug', debugRoute);
+app.use('/api/admin', adminRoute);
 
 app.get('/', (req, res) => {
     res.send('Welcome to the server!');

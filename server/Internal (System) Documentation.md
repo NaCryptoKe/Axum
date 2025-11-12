@@ -135,6 +135,8 @@ Ensures unique username and email, enforces strong password rules, and standardi
 
 ```json
  {
+    "firstname": "Fist Name of user",
+    "lastname": "Last Name of user",
     "username": "string (alphanumeric, min 4 characters, underscores allowed)",
     "email": "string (valid email format, example@example.com)",
     "firstname": "string",

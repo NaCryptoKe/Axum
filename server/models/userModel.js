@@ -93,20 +93,17 @@ const getUserById = async (id) => {
 
     return result.rows[0];
 }
-
 const getUserByUsername = async (username) => {
-    // First, check if a user exists at all
-    const userCheck = await pool.query(
+    const userChecked = await pool.query(
         `SELECT id, username, email, display_name, role, avatar_url, bio, email_verified, is_deleted
          FROM core.users
-         WHERE username = $1`,
+         WHERE username = $1 AND is_deleted = false`,
         [username]
     );
 
-    const user = userCheck.rows[0];
-
-    return user;
+    return userChecked.rows[0];
 };
+
 
 const getAllUsers = async () => {
     const result = await pool.query('SELECT * FROM core.users');

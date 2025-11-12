@@ -4,7 +4,7 @@
   "description": "[🌐 Live Demo](https://axumarcade.wuaze.com/public/)",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon server/server.js"
+    "start": "nodemon server.js"
   },
   "repository": {
     "type": "git",

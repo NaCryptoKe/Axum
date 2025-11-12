@@ -371,15 +371,15 @@ const register = async (req, res) => {
             },
             error: null
         });
-    } catch (err) {
-        console.error("Register error:", err);
+    } catch (error) {
+        console.error("Register error:", error);
         return res.status(500).json({
             success: false,
             message: 'Server error',
             data: null,
             error: {
                 code: 500,
-                details: err.message
+                details: error.message
             }
         });
     }
@@ -455,45 +455,9 @@ const authenticate = (req, res, next) => {
                 id: decoded.id,
                 username: decoded.username,
                 sessionId: decoded.sessionId,
+                role: decoded.role
             },
             error: null });
-    } catch (err) {
-        console.error('Token validation error:', err);
-        return res.status(500).json({
-            success: false,
-            message: 'Server error',
-            data: null,
-            error: {
-                code: 500,
-                details: err.message
-            }
-        });
-    }
-};
-const authenticateMiddleware = (req, res, next) => {
-    try {
-        // Try reading token from cookie first, fallback to header
-        const token = req.cookies?.token || req.headers['authorization']?.split(' ')[1]; // Checks token existence and authorization header
-        if (!token) return res.status(401).json({
-            success: false,
-            message: "Token not found",
-            data: null,
-            error: {
-                code: 401,
-                details: 'Token not found'
-            }
-        });
-
-        // Verify JWT
-        const decoded = jwt.verify(token,  'super_secret_long_random_string');
-
-        req.user = {
-            id: decoded.id,
-            username_cookie: decoded.username,
-            sessionId: decoded.sessionId,
-        };
-
-        next();
     } catch (err) {
         console.error('Token validation error:', err);
         return res.status(500).json({
@@ -562,12 +526,25 @@ const authenticateMiddleware = (req, res, next) => {
  * - Includes optional `last_seen_at` if tracked in the session data.
  */
 const getAllUsersSessions = async (req, res) => {
-    const { id } = await req.user;
+    const { user } = req;
+
+    // Early exit if not logged in
+    if (!user?.valid) {
+        return res.status(401).json({
+            success: false,
+            message: "User not logged in",
+            data: null,
+            error: {
+                code: 401,
+                details: "You must be logged in to view sessions"
+            }
+        });
+    }
 
     try {
-        const sessions = await getAllUsersSession(id);
+        const sessions = await getAllUsersSession(user.id);
 
-        if (!sessions || sessions.length === 0)
+        if (!sessions || sessions.length === 0) {
             return res.status(404).json({
                 success: false,
                 message: "No sessions found",
@@ -577,24 +554,23 @@ const getAllUsersSessions = async (req, res) => {
                     details: "No sessions found"
                 }
             });
+        }
 
-        // Map each session to a cleaner JSON format
         const formattedSessions = sessions.map(session => ({
             session_id: session.id,
             ip_address: session.ip_address,
             device: session.device,
             created_at: session.created_at,
-            last_seen_at: session.last_seen_at || null, // optional if you track last activity
+            last_seen_at: session.last_seen_at || null,
         }));
 
         return res.status(200).json({
             success: true,
             message: "All sessions found",
-            data: {
-                "All Sessions":formattedSessions
-            },
+            data: { "All Sessions": formattedSessions },
             error: null
         });
+
     } catch (error) {
         console.error("Get All User Sessions Error:", error);
         return res.status(500).json({
@@ -608,6 +584,7 @@ const getAllUsersSessions = async (req, res) => {
         });
     }
 };
+
 /**
  * Deletes (revokes) a specific user session by its session ID.
  *
@@ -651,7 +628,7 @@ const getAllUsersSessions = async (req, res) => {
  */
 const deleteUserSession = async (req, res) => {
     const { session_id } = req.params;
-    const { sessionId } = req.user;
+    const { session_id_cookie } = req.user;
 
     try {
         if (!session_id) return res.status(404).json({
@@ -846,6 +823,5 @@ module.exports = {
     getAllUsersSessions,
     deleteUserSession,
     healthCheck,
-    authenticateMiddleware,
     logout,
 };

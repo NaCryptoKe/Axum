@@ -1,10 +1,18 @@
 const {lastSeen, isUserOnline} = require("../models/lastSeenModel");
-const { updateUserProfile, createUser, getUserByUsername, getAllUsers, getAllActiveUsers, softDeleteUser} = require('../models/userModel');
+const {
+    updateUserProfile,
+    getUserByUsername,
+    getAllUsers,
+    getAllActiveUsers,
+    softDeleteUser,
+    updateUserProfilePicture
+} = require('../models/userModel');
 const jwt = require("jsonwebtoken");
 
+// ==== FINISHED ====
 const getUserProfile = async (req, res) => {
     const { username } = req.params;
-    const { username_cookie } = req.user;
+    const { valid, username_cookie } = req.user;
 
     try {
         const user = await getUserByUsername(username);
@@ -28,13 +36,15 @@ const getUserProfile = async (req, res) => {
             }
         });
 
-        if (username !== username_cookie) {
+        if (valid && username_cookie === username) {
             return res.status(200).json({
                 success: true,
                 message: 'User data',
                 data: {
                     username: username,
+                    email: user.email,
                     displayName: user.displayName,
+                    email_verified: user.email_verified,
                     role: user.role,
                     avatar_url: user.avatar_url,
                     bio: user.bio
@@ -48,9 +58,7 @@ const getUserProfile = async (req, res) => {
             message: 'User data',
             data: {
                 username: username,
-                email: user.email,
                 displayName: user.displayName,
-                email_verified: user.email_verified,
                 role: user.role,
                 avatar_url: user.avatar_url,
                 bio: user.bio
@@ -69,37 +77,6 @@ const getUserProfile = async (req, res) => {
         })
     }
 };
-
-const softDelete = async (req, res) => {
-    const { username } = req.params;
-    const { username_cookie } = req.user;
-
-    try {
-        if (!username) return res.status(404).json({
-            success: false,
-            message: 'User not found',
-            data: null,
-            error: {
-                code: 404,
-                details: `User by the name of ${username} does not exist`,
-            }
-        });
-        const result = await softDeleteUser(username);
-
-        if (!result) return res.status(400).json({ message: 'User not found' });
-
-        return res.status(200).json({ message: 'Successfully soft-deleted',
-        deleted: true});
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server error',
-        user: {
-            username: result.username,
-            is_deleted: result.is_deleted,
-            deleted_at: result.deleted_at
-        }});
-    }
-}
 
 const onlineStatus = async (req, res) => {
     try {
@@ -124,7 +101,8 @@ const onlineStatus = async (req, res) => {
             message: 'User online status',
             data: {
                 username: username,
-                online: online ? 'Online' : `Offline, Last Seen At ${lastSeenAt}`,
+                online: online ? 'Online' : 'Offline',
+                last_seen_at: lastSeenAt,
             }
         })
     } catch (error) {
@@ -141,99 +119,303 @@ const onlineStatus = async (req, res) => {
 };
 
 const updateProfile = async (req, res) => {
+    const { user } = req;
+    const { username } = req.params;
+
+    if (!user?.valid || username !== user.username_cookie) {
+        return res.status(401).json({
+            success: false,
+            message: "Not authorized",
+            data: null,
+            error: {
+                code: 401,
+                details: "You must be logged in and can only edit your own account"
+            }
+        });
+    }
+    const unprocessableErrors = [];
+    const id = user.id;
+    const { bio, display_name } = req.body;
+    let { newUsername, email } = req.body;
+
+    console.log (`===DEBUG===\nusername: ${username}\nid: ${id}\nbio: ${bio}\ndisplay_name: ${display_name}\nnewUsername: ${newUsername}\nemail: ${email}\n===DEBUG===`);
+
     try {
-        const { username } = req.params; // from URL
-        const { new_username, email, bio, display_name } = req.body; // from frontend
-        const { token } = req.cookies;
+        if (!newUsername || !email || !bio || !display_name) {
+            return res.status(400).json({
+                success: false,
+                message: "Bad Request",
+                data: null,
+                error: {
+                    code: 400,
+                    details: 'Missing Credentials'
+                }
+            });
+        }
 
-        console.log('Fetching profile for:', username);
-        console.log(`email: ${email}\nbio: ${bio}\ndisplay_name: ${display_name}\ntoken: ${token}`);
-
-        if (!token) return res.status(401).json({ message: 'Missing token' });
-
-        const decoded = jwt.verify(token, 'super_secret_long_random_string');
-        const user_id = decoded.id;
-
-        // Check ownership
-        if (decoded.username !== username)
-            return res.status(401).json({ message: 'Unauthorized user' });
-
-        // Validate input
-        if (!new_username || !email || !bio || !display_name)
-            return res.status(400).json({ message: 'Full info required' });
-
-        const cleanedUsername = new_username.toLowerCase().trim();
+        const cleanedUsername = newUsername.toLowerCase().trim();
         const cleanedEmail = email.toLowerCase().trim();
 
-        // Update user
-        const result = await updateUserProfile({
-            id: user_id,
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) unprocessableErrors.push('Email addresses should follow, example@example.com')
+
+        if (!/^[A-Za-z0-9_]{4,}$/.test(newUsername)) unprocessableErrors.push('Usernames can only have alphanumeric characters and underscores.');
+
+        if (unprocessableErrors.length > 0)
+            return res.status(422).json({
+                success: false,
+                message: "Unprocessable inputs",
+                data: null,
+                error: {
+                    code: 422,
+                    details: unprocessableErrors
+                }
+            });
+
+        const updatedUser = await updateUserProfile({
+            id: id,
             username: cleanedUsername,
             email: cleanedEmail,
             bio,
             display_name,
         });
 
-        if (!result)
-            return res.status(400).json({ message: 'Profile not updated' });
+        if (!updatedUser)
+            return res.status(400).json({
+                success: false,
+                message: 'User not updated',
+                data: null,
+                error: {
+                    code: 400,
+                    details: 'User account not updated'
+                }
+            });
 
-        // Create a new token (expiresIn should be a duration, not the old exp timestamp)
         const newToken = jwt.sign(
             {
-                id: user_id,
+                id: id,
                 username: cleanedUsername,
-                role: decoded.role,
-                sessionId: decoded.sessionId,
+                role: user.role,
+                sessionId: user.session_id_cookie,
             },
             'super_secret_long_random_string',
-            { algorithm: 'HS256', expiresIn: '7d' } // <-- fixed this line
+            { algorithm: 'HS256', expiresIn: '7d' }
         );
 
-        // Send new token cookie
         res.cookie('token', newToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'Lax',
-            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in ms
+            maxAge: 7 * 24 * 60 * 60 * 1000,
         });
 
-        return res.status(200).json({ message: 'Profile updated successfully' });
+        return res.status(200).json({
+            success: true,
+            message: "Successfully updated user",
+            data: {
+                id: id,
+                username: cleanedUsername,
+            },
+            error: null
+        });
     } catch (error) {
-        console.error('Update Profile Error:', error);
-        return res.status(500).json({ message: 'Server error' });
+        console.error("Register error:", error);
+        return res.status(500).json({
+            success: false,
+            message: 'Server error',
+            data: null,
+            error: {
+                code: 500,
+                details: error.message
+            }
+        });
     }
-};
-
+}
 
 const updateProfilePicture = async (req, res) => {
-    const { token } = req.cookies;
+    console.log('Updating profile picture\n');
+    const { user } = req;
     const { avatar_url } = req.body;
+    const username = req.params.username;
+    if (!user?.valid || username !== user.username_cookie) {
+        return res.status(401).json({
+            success: false,
+            message: "Not authorized",
+            data: null,
+            error: {
+                code: 401,
+                details: "You must be logged in and can only edit your own account"
+            }
+        });
+    }
+
+    const id = user.id;
 
     try {
-        if (!token) return res.status(401).json({ message: 'Token not found' });
-        if (!avatar_url) return res.status(400).json({ message: 'Avatar URL needed' });
+        if (!avatar_url)
+            return res.status(400).json({
+                success: false,
+                message: "Missing Credential",
+                data: null,
+                error: {
+                    code: 400,
+                    details: 'Missing avatar url',
+                }
+            });
 
-        const decoded = jwt.verify(token,  'super_secret_long_random_string');
+        const result = await updateUserProfilePicture({id, avatar_url});
 
-        const result = await updateUserProfilePicture({id: decoded.id, avatar_url});
+        if (!result)
+            return res.status(400).json({
+                success: false,
+                message: 'User avtar not updated',
+                data: null,
+                error: {
+                    code: 400,
+                    details: 'User account avatar not updated'
+                }
+            });
 
-        if (!result) return res.status(400).json({ message: 'Profile picture updated successfully' });
-
-        return res.status(200).json({ message: 'Profile picture updated successfully' });
+        return res.status(200).json({
+            success: true,
+            message: 'Successfully updated user avatar',
+            data: {
+                avatar_url: result.avatar_url,
+            },
+            error: null
+        });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server error' });
+        console.error("Register error:", error);
+        return res.status(500).json({
+            success: false,
+            message: 'Server error',
+            data: null,
+            error: {
+                code: 500,
+                details: error.message
+            }
+        });
     }
 }
 
 const allUsers = async (req, res) => {
+    const { user } = req;
+
+    if (!user?.valid || ( user?.role !== 'admin' || user?.role !== 'moderator') ) {
+        return res.status(401).json({
+            success: false,
+            message: "Not authorized",
+            data: null,
+            error: {
+                code: 401,
+                details: "You must be an admin or a moderator",
+            }
+        });
+    }
     try {
-        const result = await getAllUsers();
-        if (!result || result.length === 0) {return res.status(404).json({ message: 'No users found' });}
-        return res.status(200).json(result);
+        const users = await getAllUsers();
+        if (!users || users.length === 0)
+            return res.status(404).json({
+                success: false,
+                message: 'No users found',
+                data: null,
+                error: {
+                    code: 404,
+                    details: `No users found`,
+                }
+            });
+
+        const formattedUsers = users.map(user => ({
+            user_id: user.id,
+            username: user.username,
+            email: user.email,
+            email_verified: user.email_verified,
+            displayName: user.display_name,
+            avatar_url: user.avatar_url,
+            role: user.role,
+            deleted_at: user.is_deleted ? user.deleted_at : null,
+            created: users.created_at,
+            updated: users.updated_at
+        }));
+        return res.status(200).json({
+            success: true,
+            message: "All users found",
+            data: { "All Users": formattedUsers },
+            error: null
+        });
+    } catch (error) {
+        console.error("Get All User Sessions Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: 'Server error',
+            data: null,
+            error: {
+                code: 500,
+                details: error.message
+            }
+        });
+    }
+}
+
+// ==== WORKING ON ====
+// Soft delete must also work for admin or moderators without token from cookie
+const softDelete = async (req, res) => {
+    const { user } = req;
+    const { username } = req.params;
+
+    if (!user?.valid || username !== user.username_cookie) {
+        return res.status(401).json({
+            success: false,
+            message: "Not authorized",
+            data: null,
+            error: {
+                code: 401,
+                details: "You must be logged in and can only delete your own account"
+            }
+        });
+    }
+
+    try {
+        if (!username) return res.status(400).json({
+            success: false,
+            message: 'Missing username',
+            data: null,
+            error: {
+                code: 404,
+                details: `Username wasn't provided`,
+            }
+        });
+        const result = await softDeleteUser(username);
+
+        if (!result) return res.status(400).json({
+            success: false,
+            message: 'User not found',
+            data: null,
+            error: {
+                code: 404,
+                details: `User by the name of ${username} does not exist`,
+            }
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: 'User Deleted',
+            data: {
+                username: username,
+                deleted: true
+            },
+            error: null
+        });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Server error' });
+        return res.status(500).json({
+            success: false,
+            message: 'Server Error',
+            data: null,
+            error: {
+                code: 500,
+                details: `Server Error`,
+            }
+        });
     }
 }
 
@@ -247,6 +429,11 @@ const allActiveUsers = async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 }
+
+
+// ==== NOT STARTED ====
+const changeUserRole = async (req, res) => {}
+const permanentDeleteUser = async (req, res) => {}
 
 module.exports = {
     getUserProfile,
