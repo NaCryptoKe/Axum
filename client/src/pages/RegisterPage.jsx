@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/api';
 
 function RegisterPage() {
-    const [form, setForm] = useState({
+    const [form, setForm] = useState({ firstname: '', lastname: '',
         email: '', username: '', display_name: '', password: '', confirmPassword: '',
     });
     const [loading, setLoading] = useState(false);
@@ -26,21 +26,14 @@ function RegisterPage() {
             return;
         }
 
-        const { username, email, display_name, password } = form;
+        const { firstname, lastname, username, email, display_name, password } = form;
 
-        try {
-            const res = await api.post('/auth/register', { username, email, display_name, password });
-            console.log('Register response:', res.data);
-            const user_id = res.data.user.id;
-            await api.post('/auth/generate_otp', 
-                {user_id}
-            )
-            navigate(`/verify-otp/${user_id}`); // optionally redirect after successful register
-        } catch (err) {
-            setError(err.response?.data?.message || 'Registration failed. Username or email may already be in use.');
-        } finally {
+        console.log(`Firsname: ${firstname}\nLastname: ${lastname}\nUsername: ${username}\nEmail: ${email}\nDisplay Name: ${display_name}\nPassword: ${password}`);
+
+        setTimeout(() => {
+            console.log("Simulating Registration");
             setLoading(false);
-        }
+        }, 5000);
     };
 
 
