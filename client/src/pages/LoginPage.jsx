@@ -17,6 +17,7 @@ function LoginPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const navigate = useNavigate();
+    const [name, setName] = useState("")
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -31,8 +32,10 @@ function LoginPage() {
             });
 
             console.log(response.data);
+            console.log(response.data.data.user.name);
 
-            navigate('/login');
+            setName(response.data.data.user.name);
+            //navigate(`/@${name}`);
 
         } catch (error) {
             console.error("Login failed:", error.response.data);
@@ -88,6 +91,9 @@ function LoginPage() {
                     <p className="secondary-link-text">
                         Don't have an account?{' '}
                         <Link to="/register" className="link-text">Create an account</Link>
+                    </p>
+                    <p>
+                        {name === "" ? "" : `You are: ${name}`}
                     </p>
                 </form>
             </div>
