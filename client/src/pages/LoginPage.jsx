@@ -11,7 +11,7 @@ import InputFieldComponent from '../Components/InputFieldComponent.jsx';
 import googleLogo from '../assets/google-logo.svg';
 
 
-function LoginPage() {
+const LoginPage = () => {
     const [identifier, setIdentifier] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);

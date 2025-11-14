@@ -18,7 +18,7 @@ import downloads from "../assets/cloud-arrow-down.svg";
 
 const NavbarComponent = () => {
     return (
-        <>
+        <nav>
             <div className="primary-navbar">
                 <img
                     className="logo"
@@ -68,7 +68,7 @@ const NavbarComponent = () => {
                 </div>
                 <img src={home} alt=""/>
             </div>
-        </>
+        </nav>
     );
 }
 

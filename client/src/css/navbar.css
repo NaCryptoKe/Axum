@@ -1,48 +1,39 @@
-/*
- * NOTE: The 'fill' property you were trying to use does not work on an <img> tag.
- * We use the 'color' property on the parent element, and the SVG inherits it
- * via the 'currentColor' keyword (provided the SVG content is prepared).
- */
-
-/* 1. Reset/Defaults */
 * {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
 }
 
-/* 2. Navbar Layout */
+nav {
+    width: 100%;
+    height: 165px;
+}
+
 span {
     display: flex;
     gap: 5px;
-    align-items: center; /* Vertically centers the icon and the text */
+    align-items: center;
 }
 
 .primary-navbar {
     background-color: hsl(240, 3%, 32%, 100);
     display: flex;
     justify-content: space-between;
-    align-items: center; /* Vertically centers all main sections */
-    padding: 10px 20px; /* Add some horizontal padding */
+    align-items: center;
+    padding: 10px 20px;
 }
 
-/* 3. Main Logo Coloring (Yellow) */
 .logo {
     color: #F6FF63;
     height: 50px;
     width: auto;
 }
 
-/* 4. Primary Logos Coloring (White) */
 .primary-logos {
-    /* This ensures all other icons use the default white color set in the * selector,
-       or you can explicitly set it here if needed: */
-    /* color: white; */
-    height: 24px; /* Standardize the icon size */
+    height: 24px;
     width: 24px;
 }
 
-/* 5. Group Layouts */
 .main-navbar-elements {
     display: flex;
     gap: 30px;
@@ -53,15 +44,12 @@ span {
     gap: 15px;
 }
 
-/* Ensure the text is visible */
 .primary-navbar p {
-    /* If the global text color is white, this is redundant but good for clarity */
     color: white;
     font-size: 14px;
 }
 
-
-.secondary-navbar{
+.secondary-navbar {
     display: flex;
     justify-content: space-between;
     padding: 10px 50px;
@@ -69,7 +57,7 @@ span {
     background-color: #3A3A3D;
 }
 
-.secondary-navbar input{
+.secondary-navbar input {
     width: 656px;
     height: 40px;
     border: black solid 2px;
@@ -77,7 +65,7 @@ span {
     padding-left: 10px;
 }
 
-.secondary-navbar .navbar-elements{
+.secondary-navbar .navbar-elements {
     display: flex;
     gap: 15px;
     align-items: center;
@@ -85,7 +73,7 @@ span {
     padding: 0 20px;
 }
 
-.secondary-navbar .navbar-elements button{
+.secondary-navbar .navbar-elements button {
     width: 32px;
     height: 32px;
     background-color: transparent;
