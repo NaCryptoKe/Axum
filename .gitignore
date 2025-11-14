@@ -1,5 +1,54 @@
-.env
-./server/config/db.js
+# ----------------------------------------
+# 1. DEPENDENCIES & ARTIFACTS
+# ----------------------------------------
+
+# Node Modules (Ignore all node_modules directories, no need to specify paths)
+# This covers any node_modules at the root, inside 'client', and inside 'server'
+node_modules
+client/node_modules
+server/node_modules
+
+# Project-specific ignored folders (from your list)
 Trial/
-./client/node_modules/
-./server/node_modules/
+
+# Build/Transpiled Files (Common for front-end frameworks like React/Vite/Webpack)
+dist/
+build/
+coverage/
+
+# ----------------------------------------
+# 2. SENSITIVE & PRIVATE FILES
+# ----------------------------------------
+
+# Environment Variables
+# The dot is important to make sure hidden files are ignored
+.env
+.env.local
+
+# Database Configuration (Only if it contains secrets, otherwise DO NOT ignore)
+# If you insist on ignoring it:
+# server/config/db.js
+
+# ----------------------------------------
+# 3. LOGS, DEBUG & CATCH-ALL
+# ----------------------------------------
+
+# Logs and Debug
+*.log
+npm-debug.log*
+
+# Yarn and NPM lock files that may cause conflicts
+# Note: Yarn 1 uses 'yarn.lock', Yarn 2+ uses '.yarn'
+npm-debug.log*
+yarn-error.log
+
+# ----------------------------------------
+# 4. OS/Editor/IDE Files
+# ----------------------------------------
+
+# macOS
+.DS_Store
+
+# Visual Studio Code / JetBrains IDEs
+.vscode/
+.idea/
