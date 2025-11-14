@@ -10,7 +10,6 @@ const {
 const {
     addMember,
     updateMemberRole,
-    removeMember,
     getMember,
     getAllMembers
 } = require("../models/organizationMemberModel");
@@ -532,44 +531,33 @@ const updateMemberRoleController = async (req, res) => {
     }
 };
 
-// ==== Remove member ====
-const removeMemberController = async (req, res) => {
-    const { org_id, user_id } = req.body;
-
-    try {
-        const member = await removeMember(org_id, user_id);
-        if (!member) {
-            return res.status(404).json({
-                success: false,
-                message: "Member not found",
-                data: null,
-                error: { code: "NOT_FOUND", details: "No member to remove" }
-            });
-        }
-
-        return res.status(200).json({
-            success: true,
-            message: "Member removed successfully",
-            data: { member },
-            error: null
-        });
-    } catch (err) {
-        console.error(err);
-        return res.status(500).json({
-            success: false,
-            message: "Internal server error",
-            data: null,
-            error: { code: "INTERNAL_ERROR", details: err.message }
-        });
-    }
-};
-
 // ==== Get single member ====
 const getMemberController = async (req, res) => {
-    const { org_id, user_id } = req.params;
+    const { slug, username } = req.params;
+
+    const org = await getOrganizationBySlug(slug);
+    const user = await getUserByUsername(username);
+
+    if (!org) {
+        return res.status(404).json({
+            success: false,
+            message: "Organization not found",
+            data: null,
+            error: { code: "NOT_FOUND", details: "No organization found" }
+        });
+    }
+
+    if (!user) {
+        return res.status(404).json({
+            success: false,
+            message: "User not found",
+            data: null,
+            error: { code: "NOT_FOUND", details: "No user found" }
+        });
+    }
 
     try {
-        const member = await getMember(org_id, user_id);
+        const member = await getMember(org.id, user.id);
         if (!member) {
             return res.status(404).json({
                 success: false,
@@ -649,5 +637,6 @@ module.exports = {
     getOrganizationBySlugController,
     addMemberController,
     getAllMembersController,
-    updateMemberRoleController
+    updateMemberRoleController,
+    getMemberController
 };

@@ -11,6 +11,7 @@ const {
     addMemberController,
     getAllMembersController,
     updateMemberRoleController,
+    getMemberController
 } = require('../controllers/organizationController');
 
 router.get('/', healthCheck);
@@ -23,5 +24,6 @@ router.get('/@:slug', getOrganizationBySlugController);
 router.post('/@:slug/add-member', addMemberController);
 router.get('/@:slug/members', getAllMembersController);
 router.post('/@:slug/update-role', updateMemberRoleController);
+router.get('/@:slug/@:username', getMemberController);
 
 module.exports = router;

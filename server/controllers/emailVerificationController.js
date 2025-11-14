@@ -1,7 +1,8 @@
 const { createEmailVerification, checkOtp } = require('../models/emailVerificationModel');
-const { getUserById, verifyUserEmail } = require('../models/userModel');
+const { getUserById, verifyUserEmail, getUserByUsername } = require('../models/userModel');
 const { sendOtpEmail } = require('../utils/mailOTP');
-
+const jwt = require("jsonwebtoken");
+const { createSession } = require("../models/sessionModel");
 /**
  * Generate and send a new OTP for email verification.
  *
@@ -61,8 +62,7 @@ const generateOtp = async (req, res) => {
             });
         }
 
-        // 3. Check if already verified (Conflict)
-        /*if (user.is_verified) { // Assuming your user model has this field
+        if (user.is_verified) { // Assuming your user model has this field
             return res.status(409).json({
                 success: false,
                 message: 'Account already verified',
@@ -72,7 +72,7 @@ const generateOtp = async (req, res) => {
                     details: 'This user account has already been verified.'
                 }
             });
-        }*/
+        }
 
         // 4. Generate OTP and send email
         const expires_at = new Date(Date.now() + 5 * 60 * 1000); // 5 min expiry
@@ -171,7 +171,34 @@ const verifyOtp = async (req, res) => {
 
         // 3. Update user and fetch new data
         await verifyUserEmail(user_id);
-        const user = await getUserById(user_id); // Re-fetch user to get updated info
+        const username = await getUserById(user_id);
+        const user = await getUserByUsername(username);
+
+        // JWT expiration
+        const tokenExpiry = '30d';
+        const cookieMaxAge = 30 * 24 * 60 * 60 * 1000 ; // A month long (30 days)
+
+        // Store session in DB
+        const userAgent = req.headers['user-agent'];
+        const ipAddress = req.ip;
+        const expiresAt = new Date(Date.now() + cookieMaxAge);
+
+        const session = await createSession(user.id, userAgent, ipAddress, expiresAt);
+
+        // Sign JWT (Token)
+        const tokenPayload = { id: user.id, username: user.username, role: user.role, sessionId: session.id }; // What the token holds
+        const token = jwt.sign(tokenPayload,  process.env.SECRET_STRING || 'super_secret_long_random_string', {
+            algorithm: 'HS256',
+            expiresIn: tokenExpiry,
+        }); // Encrypting the token
+
+        // Set cookie
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'Lax',
+            maxAge: cookieMaxAge
+        });
 
         // 4. Success Response
         return res.status(200).json({

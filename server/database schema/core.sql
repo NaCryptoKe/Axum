@@ -20,6 +20,8 @@ CREATE TYPE core.org_member_role AS ENUM (
 -- Main user table
 CREATE TABLE core.users (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    firstname       TEXT NOT NULL,
+    lastname        TEXT NOT NULL,
     username        TEXT NOT NULL UNIQUE CHECK (username ~ '^[a-zA-Z0-9_]{3,30}$'),
     email           TEXT NOT NULL UNIQUE CHECK (email ~* '^[^@]+@[^@]+\.[^@]+$'),
     email_verified  BOOLEAN NOT NULL DEFAULT false,

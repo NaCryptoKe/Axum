@@ -23,17 +23,6 @@ const updateMemberRole = async (org_id, user_id, role) => {
     return result.rows[0];
 };
 
-// ==== Remove member from organization ====
-const removeMember = async (org_id, user_id) => {
-    const result = await pool.query(
-        `DELETE FROM core.organization_members
-         WHERE org_id = $1 AND user_id = $2
-         RETURNING org_id, user_id`,
-        [org_id, user_id]
-    );
-    return result.rows[0];
-};
-
 // ==== Get member info ====
 const getMember = async (org_id, user_id) => {
     const result = await pool.query(
@@ -59,7 +48,6 @@ const getAllMembers = async (org_id) => {
 module.exports = {
     addMember,
     updateMemberRole,
-    removeMember,
     getMember,
     getAllMembers
 };

@@ -8,7 +8,7 @@ const {
     getAllUsersSessions,
     deleteUserSession,
     healthCheck,
-    logout, // <-- Add this new function
+    logout,
 } = require('../controllers/authController');
 
 const {

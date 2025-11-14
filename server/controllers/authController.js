@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 const argon2 = require('argon2');
 const passport = require('passport');
 const { Strategy: GoogleStrategy } = require('passport-google-oauth20');
-const { findByIdentifier, createUser, getUserByUsername } = require('../models/userModel');
+const { findByIdentifier, createUser, updateUserProfilePicture, verifyUserEmail, getUserById} = require('../models/userModel');
 const {createSession, getAllUsersSession, deleteSession} = require('../models/sessionModel');
 
 /**
@@ -58,16 +58,24 @@ passport.use(
         async (accessToken, refreshToken, profile, done) => {
             try {
                 const email = profile.emails?.[0]?.value?.toLowerCase();
-                const username = profile.displayName || email.split("@")[0];
+                let username = profile.displayName || email.split("@")[0];
+                username = username
+                    .toLowerCase()
+                    .replace(/\s+/g, "")        // remove ALL whitespace
+                    .replace(/[^a-z0-9_]/g, ""); // remove everything except [a-z0-9_]
+
                 const avatar_url = profile.photos?.[0]?.value;
+                const firstname = profile.name.givenName;
+                const lastname = profile.name.familyName;
 
                 // 👇 Replace with real DB check/create logic
                 const user = {
-                    id: 1,
                     username,
                     email,
-                    role: "user",
-                    avatar_url
+                    role: "player",
+                    avatar_url,
+                    firstname,
+                    lastname
                 };
 
                 return done(null, user);
@@ -223,15 +231,15 @@ const login = async (req, res) => {
             error: null
         });
 
-    } catch (err) {
-        console.error("Login error:", err);
+    } catch (error) {
+        console.error("Login error:", error);
         return res.status(400).json({
             success: false,
             message: "Invalid Login",
             data: null,
             error: {
                 code: 500,
-                details: err.message
+                details: error.message
             }
         });
     }
@@ -356,7 +364,7 @@ const register = async (req, res) => {
 
         const hashedPassword = await argon2.hash(password, ARGON2_OPTS);
 
-        const newUser = await createUser({ username, email, hashedPassword });
+        const newUser = await createUser({ firstname, lastname, username, email, hashedPassword });
 
         return res.status(201).json({
             success: true,
@@ -365,9 +373,8 @@ const register = async (req, res) => {
                 id: newUser.id,
                 username: newUser.username,
                 email: newUser.email,
-                hashedPassword: hashedPassword,
-                firstname: firstname,
-                lastname: lastname,
+                firstname: newUser.firstname,
+                lastname: newUser.lastname,
             },
             error: null
         });
@@ -681,39 +688,49 @@ const deleteUserSession = async (req, res) => {
 const google = passport.authenticate("google", { scope: ["profile", "email"] });
 
 const googleCallback = (req, res, next) => {
-    passport.authenticate("google", { session: false }, async (err, profile) => {
-        if (err || !profile) {
-            console.error("Google OAuth error:", err);
+    passport.authenticate("google", { session: false }, async (error, user) => {
+        if (error || !user) {
+            console.error("Google OAuth error:", error);
             return res.status(400).json({ message: "OAuth failed or no user found" });
         }
 
         try {
-            const email = profile.emails?.[0]?.value?.toLowerCase();
-            const displayName = profile.displayName || "New User";
+            const email = user.email.toLowerCase();
+            let username = user.username;
+            const firstname = user.firstname;
+            const lastname = user.lastname;
+            const avatar_url = user.avatar_url;
             if (!email) return res.status(400).json({ message: "Google account has no email" });
 
             // ✅ Check if user exists
-            let user = await findByIdentifier(email);
-            let message;
+            let userDB = await findByIdentifier(email);
 
-            if (!user) {
-                user = await createUser({
-                    username: displayName.toLowerCase().replace(/\s+/g, "_"),
+            if (!userDB) {
+                let checkUsername = await findByIdentifier(username);
+                let counter = 1;
+                let base = username;
+                while (checkUsername) {
+                    username = `${base}${counter}`
+                    counter++;
+                    checkUsername = await findByIdentifier(username);
+                }
+                userDB = await createUser({
+                    firstname,
+                    lastname,
+                    username,
                     email,
-                    display_name: displayName,
-                    hashed_password: null,
-                    avatar_url: profile.photos?.[0]?.value || null
+                    hashedPassword: null
                 });
-                message = "Hello new user 👋";
-            } else {
-                message = "Welcome back 👀";
+                console.log(userDB);
             }
+
+            let user_id = userDB.id;
 
             // ✅ Create session for online tracking
             const userAgent = req.headers["user-agent"];
             const ipAddress = req.ip;
             const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 1 day by default
-            const session = await createSession(user.id, userAgent, ipAddress, expiresAt);
+            const session = await createSession(user_id, userAgent, ipAddress, expiresAt);
 
             // ✅ Generate JWT including sessionId
             const token = jwt.sign(
@@ -730,19 +747,31 @@ const googleCallback = (req, res, next) => {
                 maxAge: 24 * 60 * 60 * 1000
             });
 
+            await updateUserProfilePicture({ id: user_id, avatar_url: avatar_url } );
+            await verifyUserEmail(user_id)
             return res.status(200).json({
-                message,
-                token,
-                user: {
-                    username: user.username,
-                    email: user.email,
-                    display_name: user.display_name,
-                    avatar_url: user.avatar_url
+                success: true,
+                message: "Successfully logged in",
+                data: {
+                    token: token,
+                    user: {
+                        id: userDB.id,
+                        name: userDB.username,
+                    }
+                },
+                error: null
+            });
+        } catch (error) {
+            console.error("DB error in Google OAuth:", error);
+            return res.status(400).json({
+                success: false,
+                message: "Invalid Login",
+                data: null,
+                error: {
+                    code: 500,
+                    details: error.message
                 }
             });
-        } catch (dbErr) {
-            console.error("DB error in Google OAuth:", dbErr);
-            return res.status(500).json({ message: "Server error during OAuth" });
         }
     })(req, res, next);
 };
@@ -785,8 +814,6 @@ const logout = async (req, res) => {
             await deleteSession(sessionId);
         }
 
-        // 2. Clear the cookie
-        // IMPORTANT: These options MUST match the options used when setting the cookie in login()
         res.clearCookie('token', {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
@@ -800,15 +827,15 @@ const logout = async (req, res) => {
             error: null
         });
 
-    } catch (err) {
-        console.error("Logout error:", err);
+    } catch (error) {
+        console.error("Logout error:", error);
         return res.status(500).json({
             success: false,
             message: 'Server error during logout',
             data: null,
             error: {
                 code: 500,
-                details: err.message
+                details: error.message
             }
         });
     }
