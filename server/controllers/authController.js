@@ -4,6 +4,8 @@ const passport = require('passport');
 const { Strategy: GoogleStrategy } = require('passport-google-oauth20');
 const { findByIdentifier, createUser, updateUserProfilePicture, verifyUserEmail, getUserById} = require('../models/userModel');
 const {createSession, getAllUsersSession, deleteSession} = require('../models/sessionModel');
+require('dotenv').config();
+const { createOAUTH } = require('../models/oauthAccountModel');
 
 /**
  * Configuration options for Argon2 password hashing.
@@ -51,8 +53,8 @@ const ARGON2_OPTS = {
 passport.use(
     new GoogleStrategy(
         {
-            clientID: "736040441877-i5bn5cptbctkd04dkc4a223j690q98uu.apps.googleusercontent.com",
-            clientSecret: "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",
+            clientID: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
             callbackURL: "http://localhost:3000/api/auth/google/callback",
         },
         async (accessToken, refreshToken, profile, done) => {
@@ -67,6 +69,8 @@ passport.use(
                 const avatar_url = profile.photos?.[0]?.value;
                 const firstname = profile.name.givenName;
                 const lastname = profile.name.familyName;
+                const providerId = profile.id;
+                const providerName = 'google';
 
                 // 👇 Replace with real DB check/create logic
                 const user = {
@@ -75,9 +79,10 @@ passport.use(
                     role: "player",
                     avatar_url,
                     firstname,
-                    lastname
+                    lastname,
+                    providerId,
+                    providerName
                 };
-
                 return done(null, user);
             } catch (err) {
                 console.error("OAuth Error:", err);
@@ -438,7 +443,7 @@ const register = async (req, res) => {
  * - JWT is verified using a secret key.
  * - Token is read first from cookies, then from the Authorization header.
  */
-const authenticate = (req, res, next) => {
+const authenticate = (req, res) => {
     try {
         // Try reading token from cookie first, fallback to header
         const token = req.cookies?.token || req.headers['authorization']?.split(' ')[1]; // Checks token existence and authorization header
@@ -700,6 +705,8 @@ const googleCallback = (req, res, next) => {
             const firstname = user.firstname;
             const lastname = user.lastname;
             const avatar_url = user.avatar_url;
+            const providerName = user.providerName;
+            const providerId = user.providerId;
             if (!email) return res.status(400).json({ message: "Google account has no email" });
 
             // ✅ Check if user exists
@@ -748,7 +755,9 @@ const googleCallback = (req, res, next) => {
             });
 
             await updateUserProfilePicture({ id: user_id, avatar_url: avatar_url } );
-            await verifyUserEmail(user_id)
+            await verifyUserEmail(user_id);
+
+            await createOAUTH({provider: providerName, provider_account_id: providerId, user_id: user_id});
             return res.status(200).json({
                 success: true,
                 message: "Successfully logged in",

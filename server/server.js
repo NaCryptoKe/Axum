@@ -40,8 +40,14 @@ app.use('/api/admin', adminRoute);
 app.use('/api/organization', organizationRoute);
 
 app.get('/', (req, res) => {
-    res.send('Welcome to the server!');
+    return res.status(200).json({
+        success: true,
+        message: 'Welcome to the server!',
+        data: null,
+        error: null
+    });
 });
+
 
 // ✅ Start server
 const PORT = 3000;

@@ -14,7 +14,12 @@ const {
 const authenticateMiddleware = require('../middlewares/authenticateMiddleware');
 
 router.get('/', (req, res) => {
-    res.send ('USER WORKING');
+    return res.status(200).json({
+        "success": true,
+        "message": "USER WORKING",
+        "data": null,
+        "error": null
+    });
 })
 
 router.use(authenticateMiddleware);

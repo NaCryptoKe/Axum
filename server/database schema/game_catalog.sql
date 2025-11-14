@@ -16,26 +16,26 @@ CREATE TYPE game_catalog.asset_type AS ENUM (
 
 -- Main game entity
 CREATE TABLE game_catalog.games (
-                                    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                                    org_id          UUID NOT NULL REFERENCES core.organizations(id) ON DELETE RESTRICT, -- Organization owns the game
-                                    title           TEXT NOT NULL,
-                                    slug            TEXT NOT NULL CHECK (slug ~ '^[a-z0-9-]+$'),
-  description     TEXT,
-  status          game_catalog.entity_status NOT NULL DEFAULT 'draft',
-  release_date    TIMESTAMPTZ,
-  cover_image_url TEXT,
-  metadata        JSONB,
-  tags_cache      TEXT[], -- Denormalized for fast filtering
-  review_count    INT NOT NULL DEFAULT 0,
-  rating_sum      BIGINT NOT NULL DEFAULT 0,
-  search_vector   TSVECTOR, -- For Full Text Search
-  is_deleted      BOOLEAN NOT NULL DEFAULT false, -- Soft delete
-  deleted_at      TIMESTAMPTZ,
-  created_by      UUID REFERENCES core.users(id) ON DELETE SET NULL,
-  updated_by      UUID REFERENCES core.users(id) ON DELETE SET NULL,
-  created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE (org_id, slug) -- Critical: Slug is unique per organization
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    org_id          UUID NOT NULL REFERENCES core.organizations(id) ON DELETE RESTRICT, -- Organization owns the game
+    title           TEXT NOT NULL,
+    slug            TEXT NOT NULL CHECK (slug ~ '^[a-z0-9-]+$'),
+    description     TEXT,
+    status          game_catalog.entity_status NOT NULL DEFAULT 'draft',
+    release_date    TIMESTAMPTZ,
+    cover_image_url TEXT,
+    metadata        JSONB,
+    tags_cache      TEXT[], -- Denormalized for fast filtering
+    review_count    INT NOT NULL DEFAULT 0,
+    rating_sum      BIGINT NOT NULL DEFAULT 0,
+    search_vector   TSVECTOR, -- For Full Text Search
+    is_deleted      BOOLEAN NOT NULL DEFAULT false, -- Soft delete
+    deleted_at      TIMESTAMPTZ,
+    created_by      UUID REFERENCES core.users(id) ON DELETE SET NULL,
+    updated_by      UUID REFERENCES core.users(id) ON DELETE SET NULL,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (org_id, slug) -- Critical: Slug is unique per organization
 );
 
 -- Game versions (for updates/releases)
