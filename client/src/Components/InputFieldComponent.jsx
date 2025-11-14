@@ -6,13 +6,15 @@ const InputComponent = ({
     placeholder,
     required = false,
     value,
-    onChange
+    onChange,
+    variant
 }) =>{
+    const classname = `input-${variant}`;
     return (
         <input
             type={type}
             placeholder={placeholder}
-            className="input-field"
+            className={classname}
             required={required}
             value={value}
             onChange={onChange}

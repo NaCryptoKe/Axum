@@ -1,7 +1,8 @@
-import React from "react";
+import React,{useState, useEffect} from "react";
 import ButtonComponent from "./ButtonComponent";
 import InputFieldComponent from "./InputFieldComponent";
 
+import "../css/color-scheme.css"
 import "../css/navbar.css"
 
 /*Image imports*/
@@ -17,56 +18,111 @@ import downloads from "../assets/cloud-arrow-down.svg";
 
 
 const NavbarComponent = () => {
+
+    const [mode, setMode] = useState(() => {
+        return localStorage.getItem('theme-mode') === 'light' ? 'light' : 'dark';
+    });
+
+    // 1. Logic to apply the CSS class to the document body
+    useEffect(() => {
+        const body = document.body;
+
+        // Ensure only the correct class is present
+        body.classList.remove('dark-mode', 'light-mode');
+
+        // The key action: applying the .light-mode class, which triggers the CSS variable overrides in colors.css
+        if (mode === 'light') {
+            body.classList.add('light-mode');
+        } else {
+            // Optional: You can explicitly add dark-mode, though it relies on the CSS :root defaults
+            body.classList.add('dark-mode');
+        }
+
+        // Persist the user's choice
+        localStorage.setItem('theme-mode', mode);
+
+    }, [mode]);
+
+
+    // 2. Logic to toggle the mode
+    const toggleMode = () => {
+        setMode(prevMode => prevMode === 'dark' ? 'light' : 'dark');
+    };
+
+
+
     return (
         <nav>
-            <div className="primary-navbar">
+            <div className="primary-navbar navbar">
                 <img
                     className="logo"
                     src={AxumLogo}
                     alt="axum logo"
                 />
 
-                <div className="main-navbar-elements">
-                    <span>
+                <div className="navbar-elements main">
+                    <button>
                         <img className="primary-logos" src={home} alt="home image"/>
                         <p>HOME</p>
-                    </span>
-                    <span>
+                    </button>
+                    <button>
                         <img className="primary-logos" src={wishlist} alt="wishlist image"/>
                         <p>WISHLIST</p>
-                    </span>
-                    <span>
+                    </button>
+                    <button>
                         <img className="primary-logos" src={library} alt="library image"/>
                         <p>LIBRARY</p>
-                    </span>
-                    <span>
+                    </button>
+                    <button>
                         <img className="primary-logos" src={downloads} alt="download image"/>
                         <p>DOWNLOADS</p>
-                    </span>
+                    </button>
                 </div>
 
-                <div className="navbar-elements">
-                    <img className="primary-logos" src={cart} alt="cart image"/>
-                    <img className="primary-logos" src={notification} alt="notification image"/>
-                    <img className="primary-logos" src={message} alt="message image"/>
-                    <img className="primary-logos" src={profile} alt="profile image"/>
+                <div className="navbar-elements side">
+                    <ButtonComponent
+                        children={<img src={cart} alt=""/>}
+                    />
+                    <ButtonComponent
+                        children={<img src={notification} alt=""/>}
+                    />
+                    <ButtonComponent
+                        children={<img src={message} alt=""/>}
+                    />
+                    <ButtonComponent
+                        children={<img src={profile} alt=""/>}
+                    />
                 </div>
             </div>
 
-            <div className="secondary-navbar">
+            <div className="secondary-navbar navbar">
                 <div className="navbar-elements">
-                    <p>HOME</p>
-                    <p>BROWSE</p>
-                    <p>DISCOVER</p>
-                    <p>COMMUNITY</p>
-                    <p>NEWS</p>
-
-                    <div className="search">
-                        <InputFieldComponent placeholder="Search Games, Users, and Organizations" />
-                        <ButtonComponent children={<img src={notification} alt=""/>} variant="search" />
-                    </div>
+                    <ButtonComponent
+                        children="HOME"
+                    />
+                    <ButtonComponent
+                        children="BROWSE"
+                    />
+                    <ButtonComponent
+                        children="DISCOVER"
+                    />
+                    <ButtonComponent
+                        children="COMMUNITY"
+                    />
+                    <ButtonComponent
+                        children="NEWS"
+                    />
                 </div>
-                <img src={home} alt=""/>
+
+                <div className="search">
+                    <InputFieldComponent placeholder="Search Games, Users, and Organizations" variant="search"/>
+                    <ButtonComponent children={<img src={notification} alt=""/>} variant="search" />
+                </div>
+                <ButtonComponent
+                    variant="color-switch"
+                    children={<img src={home} alt=""/>}
+                    onClick={toggleMode}
+                />
             </div>
         </nav>
     );

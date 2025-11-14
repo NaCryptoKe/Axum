@@ -17,7 +17,12 @@ const LoginPage = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const navigate = useNavigate();
-    const [name, setName] = useState("")
+    const [showPassword, setShowPassword] = useState(false);
+
+
+    const togglePasswordVisibility = () => {
+        setShowPassword(!showPassword);
+    };
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -31,14 +36,11 @@ const LoginPage = () => {
                 password: password,
             });
 
+            alert(response.data.message);
             console.log(response.data);
-            console.log(response.data.data.user.name);
-
-            setName(response.data.data.user.name);
-            //navigate(`/@${name}`);
 
         } catch (error) {
-            console.error("Login failed:", error.response.data);
+            console.error("Login failed:", error.response?.data?.error);
 
             const errorMessage = error.response?.data?.error.details || 'Login failed. Please try again.';
             setError(errorMessage);
@@ -52,49 +54,70 @@ const LoginPage = () => {
         <>
             <NavbarComponent/>
 
-            <div className="page-wrapper">
-                <form onSubmit={handleLogin} className="form-body">
+            <div className="wrapper">
+                <form onSubmit={handleLogin}>
                     <InputFieldComponent
                         type="text"
                         placeholder="Username or Email"
                         required={true}
                         value={identifier}
                         onChange={(e) => setIdentifier(e.target.value)}
-                    />
-                    <InputFieldComponent
-                        type="password"
-                        placeholder="Password"
-                        required={true}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        variant="text"
                     />
 
-                    <Link to="/forgot-password" className="link-text">Forgot password?</Link>
+                    <div className="password">
+                        <InputFieldComponent
+                            type={showPassword ? 'text' : 'password'}
+                            placeholder="Password"
+                            required={true}
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            variant="text"
+                        />
 
-                    {error && <p className="error-message">{error}</p>}
+                        <ButtonComponent
+                            children={showPassword ? '👁️' : '🔒'}
+                            onClick={togglePasswordVisibility}
+                            disabled={loading}
+                            variant="show"
+                        />
+                    </div>
 
                     <ButtonComponent
-                        children={loading ? "Logging in..." : "Login"}
+                        children="Forgot password?"
+                        type="button"
+                        variant="link"
+                        disabled={loading}
+                    />
+
+                    <ButtonComponent
+                        children={loading ? "LOGGING IN..." : "LOGIN"}
                         variant="primary"
                         type="submit"
                         disabled={loading}
                     />
                     <div className="oauth">
-                        <ButtonComponent children={<img src={googleLogo} alt="google login image"/>}
-                                         variant="primary" onClick={handleLogin} disabled={false}/>
-                        <ButtonComponent children={<img src={googleLogo} alt="google login image"/>}
-                                         variant="primary" onClick={handleLogin} disabled={false}/>
-                        <ButtonComponent children={<img src={googleLogo} alt="google login image"/>}
-                                         variant="primary" onClick={handleLogin} disabled={false}/>
+                        <ButtonComponent
+                            children={<img src={googleLogo} alt="google login image"/>}
+                            variant="easy-access"
+                            disabled={loading}/>
+                        <ButtonComponent
+                            children={<img src={googleLogo} alt="google login image"/>}
+                            variant="easy-access"
+                            disabled={loading}/>
+                        <ButtonComponent
+                            children={<img src={googleLogo} alt="google login image"/>}
+                            variant="easy-access"
+                            disabled={loading}/>
                     </div>
 
-                    <p className="secondary-link-text">
-                        Don't have an account?{' '}
-                        <Link to="/register" className="link-text">Create an account</Link>
-                    </p>
-                    <p>
-                        {name === "" ? "" : `You are: ${name}`}
-                    </p>
+                    <ButtonComponent
+                        children="Don't have an account? Create an account"
+                        type="button"
+                        variant="create"
+                        disabled={loading}
+                        onClick={() => navigate('/register')}
+                    />
                 </form>
             </div>
         </>

@@ -1,0 +1,63 @@
+/* * ---------------------------------------------------------
+ * DEFAULT (DARK MODE) COLORS
+ * ---------------------------------------------------------
+ */
+:root {
+    /* Text Colors */
+    --color-text-primary: #EDEDED;
+    --color-text-secondary: #A0A0A0;
+
+    /* Background & Structural Colors */
+
+    --color-bg-primary: #1A1A1D;       /* 30% bg */
+    --color-bg-secondary: #2A2A2D;
+    --color-complement-2: #3A3A3D;
+    --color-complement-3: #505055;
+    --color-complement-1: #0E0E10;         /* 60% BG */
+
+    /* Brand Colors */
+    --color-brand-1: #6C63FF;            /* Primary Brand Color */
+    --color-brand-2: #F6FF63;            /* Secondary Brand Color */
+
+    /* Accent Colors */
+    --color-accent-1: #3DDC84;           /* Success/Green */
+    --color-accent-2: #FFB84C;           /* Warning/Orange */
+    --color-accent-3: #FF4D4D;           /* Error/Red */
+}
+
+/* * ---------------------------------------------------------
+ * LIGHT MODE OVERRIDES
+ * ---------------------------------------------------------
+ */
+
+/* Option A: Based on Operating System Preference (Recommended) */
+@media (prefers-color-scheme: light) {
+    :root {
+        /* Text Colors */
+        --color-text-primary: #1A1A1A;
+        --color-text-secondary: #6C6C6C;
+
+        /* Background & Structural Colors */
+        --color-bg-primary: #F8F9FA;         /* 60% BG */
+        --color-bg-secondary: #FFFFFF;       /* 30% bg */
+        --color-complement-1: #EDEDED;
+        --color-complement-2: #E0E0E0;
+        --color-complement-3: #CFCFCF;
+
+        /* Brand/Accent colors remain the same as per your specification */
+    }
+}
+
+/* Option B: Manual Toggle Class (For user-controlled switching) */
+.light-mode {
+    /* Text Colors */
+    --color-text-primary: #1A1A1A;
+    --color-text-secondary: #6C6C6C;
+
+    /* Background & Structural Colors */
+    --color-bg-primary: #F8F9FA;
+    --color-bg-secondary: #FFFFFF;
+    --color-complement-1: #EDEDED;
+    --color-complement-2: #E0E0E0;
+    --color-complement-3: #CFCFCF;
+}

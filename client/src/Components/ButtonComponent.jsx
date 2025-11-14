@@ -9,7 +9,7 @@ const ButtonComponent = (
         type = 'button'
     }) => {
 
-    const buttonClassName = `button${variant}`;
+    const buttonClassName = `button-${variant}`;
 
     return (
         <button
