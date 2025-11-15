@@ -7,6 +7,7 @@ import "../css/navbar.css"
 
 /*Image imports*/
 import AxumLogo from "../assets/Axum Logo.svg";
+import Logo from "../assets/svg files/Logo.jsx";
 import notification from "../assets/bell.svg";
 import message from "../assets/chat-circle.svg";
 import cart from "../assets/shopping-cart.svg";
@@ -15,6 +16,16 @@ import home from "../assets/house.svg";
 import wishlist from "../assets/bookmark-simple.svg";
 import library from "../assets/game-controller.svg";
 import downloads from "../assets/cloud-arrow-down.svg";
+import Home from "../assets/svg files/Home.jsx";
+import Wishlist from "../assets/svg files/Wishlist.jsx";
+import Library from "../assets/svg files/Library.jsx";
+import Downloads from "../assets/svg files/Downloads.jsx";
+import Cart from "../assets/svg files/Cart.jsx";
+import Message from "../assets/svg files/Message.jsx";
+import Notification from "../assets/svg files/Notification.jsx";
+import Profile from "../assets/svg files/Profile.jsx";
+import SearchButton from "../assets/svg files/SearchButton.jsx";
+import Settings from "../assets/svg files/Settings.jsx";
 
 
 const NavbarComponent = () => {
@@ -49,48 +60,49 @@ const NavbarComponent = () => {
         setMode(prevMode => prevMode === 'dark' ? 'light' : 'dark');
     };
 
-
+    const home = `${Home}`
 
     return (
         <nav>
             <div className="primary-navbar navbar">
-                <img
-                    className="logo"
-                    src={AxumLogo}
-                    alt="axum logo"
-                />
+
+                <Logo />
 
                 <div className="navbar-elements main">
-                    <button>
-                        <img className="primary-logos" src={home} alt="home image"/>
-                        <p>HOME</p>
-                    </button>
-                    <button>
-                        <img className="primary-logos" src={wishlist} alt="wishlist image"/>
-                        <p>WISHLIST</p>
-                    </button>
-                    <button>
-                        <img className="primary-logos" src={library} alt="library image"/>
-                        <p>LIBRARY</p>
-                    </button>
-                    <button>
-                        <img className="primary-logos" src={downloads} alt="download image"/>
-                        <p>DOWNLOADS</p>
-                    </button>
+                    <div className="navbar-elements-logo">
+                        <Home />
+                        <ButtonComponent
+                            children="Home" />
+                    </div>
+                    <div className="navbar-elements-logo">
+                        <Wishlist />
+                        <ButtonComponent
+                            children="Wishlist" />
+                    </div>
+                    <div className="navbar-elements-logo">
+                        <Library />
+                        <ButtonComponent
+                            children="Library" />
+                    </div>
+                    <div className="navbar-elements-logo">
+                        <Downloads />
+                        <ButtonComponent
+                            children="Downloads" />
+                    </div>
                 </div>
 
                 <div className="navbar-elements side">
                     <ButtonComponent
-                        children={<img src={cart} alt=""/>}
+                        children={<Cart />}
                     />
                     <ButtonComponent
-                        children={<img src={notification} alt=""/>}
+                        children={<Notification />}
                     />
                     <ButtonComponent
-                        children={<img src={message} alt=""/>}
+                        children={<Message />}
                     />
                     <ButtonComponent
-                        children={<img src={profile} alt=""/>}
+                        children={<Profile />}
                     />
                 </div>
             </div>
@@ -116,11 +128,11 @@ const NavbarComponent = () => {
 
                 <div className="search">
                     <InputFieldComponent placeholder="Search Games, Users, and Organizations" variant="search"/>
-                    <ButtonComponent children={<img src={notification} alt=""/>} variant="search" />
+                    <ButtonComponent children={<SearchButton />} variant="search"/>
                 </div>
                 <ButtonComponent
                     variant="color-switch"
-                    children={<img src={home} alt=""/>}
+                    children={<Settings />}
                     onClick={toggleMode}
                 />
             </div>

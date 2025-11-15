@@ -6,7 +6,7 @@
 
 body{
     background-color: var(--color-bg-primary);
-    color: var(--color-text-primary);
+    fill: var(--color-text-primary);
 }
 
 nav{
@@ -22,6 +22,34 @@ img{
     height: 24px;
     color: var(--color-brand-1);
 }
+
+.primary-logos{
+    width: 24px;
+    height: 24px;
+}
+
+.primary-logos path {
+    fill: var(--color-text-primary);
+}
+
+.secondary-logos{
+    width: 18px;
+    height: 18px;
+}
+
+.secondary-logos path {
+    fill: var(--color-text-primary);
+}
+
+.teritiary-logos{
+    width: 18px;
+    height: 18px;
+}
+
+.teritiary-logos path {
+    fill: var(--color-text-secondary);
+}
+
 
 button{
     color: var(--color-text-primary);
@@ -45,6 +73,12 @@ button{
     margin-right: 20px;
 }
 
+.navbar-elements-logo{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
 
 /* * ---------------------------------------------------------
  * Primary Navbar components
@@ -54,13 +88,16 @@ button{
 .primary-navbar{
     height: 60px;
     background-color: var(--color-complement-3);
+    padding: 0 100px;
 }
 
 .logo{
     width: auto;
     height: 50px;
 }
-
+.main{
+    margin-left: -40%;
+}
 .primary-navbar button{
     display: flex;
     gap: 5px;
@@ -81,6 +118,10 @@ button{
 
 .secondary-navbar button{
     color: var(--color-text-secondary);
+}
+
+.secondary-navbar .navbar-elements{
+    padding: 0 60px;
 }
 
 .search{

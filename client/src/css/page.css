@@ -97,5 +97,9 @@ form{
     display: flex;
     align-items: center;
     gap: 10px;
+    color: var(--color-text-secondary);
 }
 
+.button-primary{
+    color: var(--color-text-primary);
+}
