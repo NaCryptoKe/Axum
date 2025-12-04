@@ -1,10 +1,10 @@
-# 🧩 API Documentation
+# API Documentation
 
 The following documentation outlines the structure, response format, and status codes for the core API.
 
 -----
 
-## 🔗 Base URL
+## Base URL
 
 All requests should be prefixed with the following base URL:
 
@@ -2031,3 +2031,4 @@ Updates the role of a user within an organization, subject to strict Role-Based 
     ```
 
 ---
+

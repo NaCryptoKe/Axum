@@ -186,6 +186,31 @@ const getAssetsByVersion = async (version_id) => {
     return result.rows;
 };
 
+const updateVersion = async ({
+                                 id,
+                                 version_name,
+                                 changelog,
+                                 status,
+                             }) => {
+    const result = await pool.query(
+        `UPDATE game_catalog.game_versions
+         SET version_name = $1,
+             changelog = $2,
+             status = $3,
+             created_at = created_at, -- keep original
+             updated_at = NOW()
+         WHERE id = $4
+         RETURNING *`,
+        [
+            version_name,
+            changelog,
+            status,
+            id
+        ]
+    );
+
+    return result.rows[0];
+};
 
 // ----------------------------------------------------
 // EXPORT EVERYTHING
@@ -199,4 +224,5 @@ module.exports = {
     getGameVersions,
     createAsset,
     getAssetsByVersion,
+    updateVersion
 };

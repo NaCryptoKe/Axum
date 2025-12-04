@@ -11,6 +11,22 @@ const addMember = async ({ org_id, user_id, role = 'member' }) => {
     return result.rows[0];
 };
 
+const getUserOrganizations = async (user_id) => {
+    const result = await pool.query(
+        `SELECT 
+            o.*,
+            m.role AS member_role,
+            m.joined_at
+        FROM core.organizations o
+        JOIN core.organization_members m ON o.id = m.org_id
+        WHERE m.user_id = $1
+          AND o.is_deleted = false`,
+        [user_id]
+    );
+
+    return result.rows;
+};
+
 // ==== Update member role ====
 const updateMemberRole = async (org_id, user_id, role) => {
     const result = await pool.query(
@@ -49,5 +65,6 @@ module.exports = {
     addMember,
     updateMemberRole,
     getMember,
-    getAllMembers
+    getAllMembers,
+    getUserOrganizations
 };

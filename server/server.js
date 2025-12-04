@@ -10,7 +10,8 @@ const userRoute = require('./routes/userRoute');
 const financeRoute = require('./routes/financialsRoute');
 const debugRoute = require('./routes/debugRouter');
 const adminRoute = require('./routes/adminRoute');
-const organizationRoute = require('./routes/organizationRoute')
+const organizationRoute = require('./routes/organizationRoute');
+const gameRoute = require('./routes/gameRoute');
 const log = require('./middlewares/logRoute');
 const updateLastSeen = require('./middlewares/updateLastSeenMiddleware');
 
@@ -38,6 +39,7 @@ app.use('/api/finance', financeRoute);
 app.use('/api/debug', debugRoute);
 app.use('/api/admin', adminRoute);
 app.use('/api/organization', organizationRoute);
+app.use('/api/games', gameRoute);
 
 app.get('/', (req, res) => {
     return res.status(200).json({
