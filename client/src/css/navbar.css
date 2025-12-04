@@ -1,169 +1,85 @@
-*{
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
-
-body{
-    background-color: var(--color-bg-primary);
-    fill: var(--color-text-primary);
-}
-
 nav{
     display: flex;
-    flex-direction: column;
-    height: 110px;
-    width: 100%;
-    max-width: 100%;
-}
+    justify-content: space-around;
+    align-items: center;
 
-img{
-    width: 24px;
-    height: 24px;
-    color: var(--color-brand-1);
+    /* Use primary background color for the navbar */
+    background-color: var(--color-sidebar);
+    width:  100%;
+    height: 10vh;
 }
-
-.primary-logos{
-    width: 24px;
-    height: 24px;
-}
-
-.primary-logos path {
-    fill: var(--color-text-primary);
-}
-
-.secondary-logos{
-    width: 18px;
-    height: 18px;
-}
-
-.secondary-logos path {
-    fill: var(--color-text-primary);
-}
-
-.teritiary-logos{
-    width: 18px;
-    height: 18px;
-}
-
-.teritiary-logos path {
-    fill: var(--color-text-secondary);
-}
-
 
 button{
-    color: var(--color-text-primary);
     border: none;
-    background-color: transparent;
+    outline: none;
+    background: none;
     cursor: pointer;
-    font-size: 13px;
-}
-
-.navbar{
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 15px;
-}
-
-.navbar-elements{
-    display: flex;
-    gap: 30px;
-    margin-right: 20px;
-}
-
-.navbar-elements-logo{
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-
-/* * ---------------------------------------------------------
- * Primary Navbar components
- * ---------------------------------------------------------
- */
-
-.primary-navbar{
-    height: 60px;
-    background-color: var(--color-complement-3);
-    padding: 0 100px;
-}
-
-.logo{
     width: auto;
-    height: 50px;
-}
-.main{
-    margin-left: -40%;
-}
-.primary-navbar button{
+    height: 35px;
+
     display: flex;
     gap: 5px;
     align-items: center;
-}
-
-
-/* * ---------------------------------------------------------
- * Secondary Navbar components
- * ---------------------------------------------------------
- */
-
-.secondary-navbar{
-    height: 45px;
-    padding: 10px 0 10px 50px;
-    background-color: var(--color-complement-2);
-}
-
-.secondary-navbar button{
+    /* Use primary text color for button text */
     color: var(--color-text-secondary);
+    font-size: 18px;
+    font-family: 'Montserrat', sans-serif;
 }
 
-.secondary-navbar .navbar-elements{
-    padding: 0 60px;
+.logo{
+    width: 80px;
+    height: 80px;
+}
+
+/* Use brand and accent colors for icons */
+.primary-logos{
+    fill: var(--color-text-secondary);
+    width: 24px;
+    height: 24px;
+}
+
+.secondary-logos{
+    fill: var(--color-text-secondary); /* Less prominent icons use secondary text */
+    width: 24px;
+    height: 24px;
+}
+
+.teritiary-logos{
+    fill: var(--color-text-secondary);
+    width: 24px;
+    height: 24px;
+}
+
+.main-nav{
+    display: flex;
+    gap: 30px;
 }
 
 .search{
     display: flex;
     align-items: center;
-    margin-left: -15%;
 }
 
 .input-search{
-    border: none;
-    padding-left: 20px;
-    height: 30px;
-    width: 550px;
-    border-radius: 8px;
-    background-color: var(--color-bg-secondary);
-    color: var(--color-text-primary);
-    transition: 0.3s ease;
+    width: 650px;
+    height: 40px;
+    border-radius: 10px;
+    padding-left: 10px;
+    font-size: 18px;
+    font-family: 'Montserrat', sans-serif;
+
+    /* Use structural colors for the search bar */
+    background-color: var(--color-cards);
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-borders);
 }
 
-.input-search::placeholder{
-    color: var(--color-complement-3);
-}
-
-.input-search:focus{
-    background-color: var(--color-complement-3);
-}
-.input-search:focus::placeholder{
-    color: var(--color-text-primary);
-}
-
-.search button{
-    background-color: transparent;
+.button-search{
     margin-left: -5%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-.search button img{
-    width: 18px;
-    height: 18px;
 }
 
-.button-color-switch{
-    margin-right: 20px;
+.secondary-nav{
+    display: flex;
+    gap: 15px;
+    align-items: center;
 }

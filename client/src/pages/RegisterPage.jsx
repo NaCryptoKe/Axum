@@ -1,31 +1,29 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import api from '../api/api';
-import '../css/page.css'
-
-import NavbarComponent from "../Components/NavbarComponent.jsx";
+// RegisterModal.jsx
+import React, { useState } from "react";
 import InputFieldComponent from "../Components/InputFieldComponent.jsx";
 import ButtonComponent from "../Components/ButtonComponent.jsx";
+import "../css/page.css";
 
 import googleImage from "../assets/google-logo.svg";
+import api from "../api/api";
 
-const RegisterPage = () =>{
-    const [firstName, setFirstName] = useState('Bash');
-    const [lastName, setLastName] = useState('Bash');
-    const [username, setUsername] = useState('Bash')
-    const [email, setEmail] = useState('Bash@Bash.Bash');
-    const [password, setPassword] = useState('Bash1234#');
-    const [confirmPassword, setConfirmPassword] = useState('Bash123#');
+const RegisterModal = ({ isOpen, onClose, openLogin }) => {
+    if (!isOpen) return null;
+
+    const [firstName, setFirstName] = useState("");
+    const [lastName, setLastName] = useState("");
+    const [username, setUsername] = useState("");
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
+
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const navigate = useNavigate();
-
 
     const togglePasswordVisibility = () => {
         setShowPassword(!showPassword);
     };
-
 
     const handleSignup = async (e) => {
         e.preventDefault();
@@ -34,173 +32,167 @@ const RegisterPage = () =>{
         setError(null);
 
         try {
-            if(password !== confirmPassword){
+            if (password !== confirmPassword) {
                 throw new Error("Passwords don't match");
             }
 
-            const response = await api.post('/auth/register', {
+            const res = await api.post("/auth/register", {
                 firstname: firstName,
                 lastname: lastName,
-                username: username,
-                email: email,
-                password: password,
+                username,
+                email,
+                password,
             });
 
-            alert(response.data.message);
-            console.log(response.data);
+            alert(res.data.message);
 
-        } catch (error) {
-            console.error("Login failed:", error.response?.data?.error);
+            onClose(); // close modal
+        } catch (err) {
+            const errorMessage =
+                err.response?.data?.error?.details ||
+                err.message ||
+                "Registration failed.";
 
-            const errorMessage = error.response?.data?.error.details || 'Login failed. Please try again.';
             setError(errorMessage);
-
         } finally {
             setLoading(false);
         }
     };
 
-    const signInWithGoogle = async () =>{
-        await api.get('/auth/google')
-    }
+    const signInWithGoogle = async () => {
+        await api.get("/auth/google");
+    };
 
+    return (
+        <div className="modal-overlay" onClick={onClose}>
+            <div
+                className="modal-content"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <h2>Create an Account</h2>
 
+                {error && <p className="error">{error}</p>}
 
-
-    return(
-        <>
-            <NavbarComponent />
-            <div className="wrapper">
                 <form onSubmit={handleSignup}>
                     <InputFieldComponent
                         type="text"
                         placeholder="First Name"
-                        required={true}
+                        required
                         value={firstName}
                         onChange={(e) => setFirstName(e.target.value)}
-                        variant="text"
+                        className="input-text"
                     />
 
                     <InputFieldComponent
                         type="text"
                         placeholder="Last Name"
-                        required={true}
+                        required
                         value={lastName}
                         onChange={(e) => setLastName(e.target.value)}
-                        variant="text"
+                        className="input-text"
                     />
 
                     <InputFieldComponent
                         type="text"
-                        placeholder="User Name"
-                        required={true}
+                        placeholder="Username"
+                        required
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
-                        variant="text"
+                        className="input-text"
                     />
 
                     <InputFieldComponent
                         type="text"
                         placeholder="Email"
-                        required={true}
+                        required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        variant="text"
+                        className="input-text"
                     />
 
+                    {/* Password */}
                     <div className="password">
                         <InputFieldComponent
-                            type={showPassword ? 'text' : 'password'}
+                            type={showPassword ? "text" : "password"}
                             placeholder="Password"
-                            required={true}
+                            required
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            variant="text"
+                            className="input-text"
                         />
 
                         <ButtonComponent
-                            children={showPassword ? '👁️' : '🔒'}
+                            children={showPassword ? "👁️" : "🔒"}
                             onClick={togglePasswordVisibility}
                             disabled={loading}
-                            variant="show"
+                            className="button-show"
                         />
                     </div>
 
+                    {/* Confirm Password */}
                     <div className="password">
                         <InputFieldComponent
-                            type={showPassword ? 'text' : 'password'}
+                            type={showPassword ? "text" : "password"}
                             placeholder="Confirm Password"
-                            required={true}
+                            required
                             value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
-                            variant="text"
+                            className="input-text"
                         />
 
                         <ButtonComponent
-                            children={showPassword ? '👁️' : '🔒'}
+                            children={showPassword ? "👁️" : "🔒"}
                             onClick={togglePasswordVisibility}
                             disabled={loading}
-                            variant="show"
+                            className="button-show"
                         />
                     </div>
 
+                    {/* Checkboxes */}
                     <div className="checkboxes">
                         <div className="check-box">
-                            <InputFieldComponent
-                                type="checkbox"
-                                required={true}
-                            />
-                            <label>I have read the terms and conditions and accept them</label>
+                            <InputFieldComponent type="checkbox" required />
+                            <label>I accept the Terms & Conditions</label>
                         </div>
+
                         <div className="check-box">
-                            <InputFieldComponent
-                                type="checkbox"
-                            />
-                            <label>Send me updates via email (Optional)</label>
+                            <InputFieldComponent type="checkbox" />
+                            <label>Send me updates (optional)</label>
                         </div>
                     </div>
 
+                    {/* Register Button */}
                     <ButtonComponent
-                        children="REGISTR"
-                        variant="primary"
+                        children="REGISTER"
                         disabled={loading}
+                        className="button-primary"
                         type="submit"
                     />
 
+                    {/* OAuth */}
                     <div className="oauth">
                         <ButtonComponent
-                            children={<img src={googleImage} alt="google Image"/>}
-                            variant="secondary"
-                            disabled={loading}
-                            type="button"
+                            children={<img src={googleImage} alt="google" />}
+                            className="button-primary"
                             onClick={signInWithGoogle}
-                        />
-                        <ButtonComponent
-                            children={<img src={googleImage} alt="google Image"/>}
-                            variant="secondary"
-                            disabled={loading}
-                            type="submit"
-                        />
-                        <ButtonComponent
-                            children={<img src={googleImage} alt="google Image"/>}
-                            variant="secondary"
-                            disabled={loading}
-                            type="submit"
+                            type="button"
                         />
                     </div>
 
+                    {/* Switch to Login */}
                     <ButtonComponent
-                        children="Already have an account login"
+                        children="Already have an account? Login"
                         type="button"
-                        variant="create"
-                        disabled={loading}
-                        onClick={() => navigate('/login')}
+                        className="button-link"
+                        onClick={() => {
+                            onClose();
+                            openLogin(); // open login modal after closing register
+                        }}
                     />
-
                 </form>
             </div>
-        </>
-    )
-}
+        </div>
+    );
+};
 
-export default RegisterPage;
+export default RegisterModal;
