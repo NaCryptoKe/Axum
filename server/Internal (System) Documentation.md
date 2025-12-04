@@ -2032,3 +2032,326 @@ Updates the role of a user within an organization, subject to strict Role-Based 
 
 ---
 
+## Game Routes API Documentation
+
+The base URL for these endpoints is `/games/`. **All routes require authentication** and appropriate role-based authorization checks (Admin or Owner of the organization).
+
+---
+
+### Health Check
+
+**Purpose**:  
+Verify that the game router is working and accessible.
+
+**Request**:
+
+* **Method**: `GET`
+* **URL**: `/games/`
+* **Headers**: None
+* **Body**: None
+
+**Response (200 OK)**:
+
+```json
+{
+  "success": true,
+  "message": "HELLO GAMES WORKING!!",
+  "data": null,
+  "error": null
+}
+```
+
+---
+
+### Create Game
+
+**Purpose**:
+Allows an authorized user (Admin/Owner of an organization) to create a new game under that organization.
+
+**Authentication Required**: Yes
+
+**Request**:
+
+* **Method**: `POST`
+* **URL**: `/games/create`
+* **Headers**: `Authorization: Bearer <token>`
+* **Body**:
+
+```json
+{
+  "org_id": "string",
+  "title": "string",
+  "slug": "string",
+  "description": "string (optional)",
+  "status": "string (optional, default: 'draft')",
+  "release_date": "ISO 8601 date string",
+  "cover_image_url": "string",
+  "metadata": { "any": "object" },
+  "tags_cache": ["string", "string"]
+}
+```
+
+**Response**:
+
+1. **Success (201 Created)**
+
+```json
+{
+  "success": true,
+  "message": "Game created successfully",
+  "data": {
+    "id": "string",
+    "org_id": "string",
+    "title": "string",
+    "slug": "string",
+    "description": "string",
+    "status": "string",
+    "release_date": "ISO 8601 date string",
+    "cover_image_url": "string",
+    "metadata": { "any": "object" },
+    "tags_cache": ["string"],
+    "created_by": "string",
+    "created_at": "ISO 8601 date string",
+    "updated_at": "ISO 8601 date string",
+    "is_deleted": false
+  },
+  "error": null
+}
+```
+
+2. **Client Errors**
+
+* **400 Bad Request**: Missing required fields (`org_id`, `title`, `slug`)
+
+```json
+{
+  "success": false,
+  "message": "Bad Request",
+  "data": null,
+  "error": { "code": 400, "details": ["Missing title"] }
+}
+```
+
+* **403 Forbidden**: User not part of org or not authorized
+
+```json
+{
+  "success": false,
+  "message": "Not authorized to create a game",
+  "data": null,
+  "error": { "code": 403, "details": ["User must be admin or owner to create a game"] }
+}
+```
+
+* **422 Unprocessable Entity**: Invalid slug format
+
+```json
+{
+  "success": false,
+  "message": "Unprocessable inputs",
+  "data": null,
+  "error": { "code": 422, "details": ["Slug can only contain lowercase letters, numbers, and hyphens."] }
+}
+```
+
+* **500 Internal Server Error**
+
+```json
+{
+  "success": false,
+  "message": "Server error",
+  "data": null,
+  "error": { "code": 500, "details": "Error message" }
+}
+```
+
+---
+
+### Update Game
+
+**Purpose**:
+Update basic fields of an existing game. Only authorized Admin/Owner can perform this.
+
+**Request**:
+
+* **Method**: `PUT`
+* **URL**: `/games/update`
+* **Headers**: `Authorization: Bearer <token>`
+* **Body**:
+
+```json
+{
+  "game_id": "string",
+  "title": "string (optional)",
+  "description": "string (optional)",
+  "status": "string (optional)",
+  "release_date": "ISO 8601 date string (optional)",
+  "cover_image_url": "string (optional)",
+  "metadata": { "any": "object" },
+  "tags_cache": ["string"]
+}
+```
+
+**Response**:
+
+* **Success (200 OK)**
+
+```json
+{
+  "success": true,
+  "message": "Game updated",
+  "data": { /* updated game object */ },
+  "error": null
+}
+```
+
+* **Error Responses**:
+  Similar to Create Game: 401 Not logged in, 400 Missing game ID, 403 Not authorized, 404 Game not found, 500 Server error
+
+---
+
+### Soft Delete Game
+
+**Purpose**:
+Soft deletes (marks as deleted) a game. Only authorized Admin/Owner can perform this.
+
+**Request**:
+
+* **Method**: `DELETE`
+* **URL**: `/games/delete`
+* **Headers**: `Authorization: Bearer <token>`
+* **Body**:
+
+```json
+{
+  "game_id": "string"
+}
+```
+
+**Response**:
+
+* **Success (200 OK)**
+
+```json
+{
+  "success": true,
+  "message": "Game soft deleted",
+  "data": { /* deleted game object */ },
+  "error": null
+}
+```
+
+* **Error Responses**:
+  401 Not logged in, 400 Missing game ID, 403 Not authorized, 404 Game not found, 500 Server error
+
+---
+
+### Create Game Version
+
+**Purpose**:
+Creates a new version for a game. Only authorized Admin/Owner can perform this.
+
+**Request**:
+
+* **Method**: `POST`
+* **URL**: `/games/version/create`
+* **Headers**: `Authorization: Bearer <token>`
+* **Body**:
+
+```json
+{
+  "game_id": "string",
+  "version_name": "string",
+  "changelog": "string",
+  "status": "string (optional, default: 'draft')"
+}
+```
+
+**Response**:
+
+* **Success (201 Created)**
+
+```json
+{
+  "success": true,
+  "message": "Version created",
+  "data": { /* version object */ },
+  "error": null
+}
+```
+
+* **Error Responses**:
+  401 Not logged in, 400 Missing fields, 403 Not authorized, 404 Game not found, 500 Server error
+
+---
+
+### Get Game Versions
+
+**Purpose**:
+Fetch all versions for a specific game.
+
+**Request**:
+
+* **Method**: `GET`
+* **URL**: `/games/version/:game_id`
+* **Headers**: None
+* **URL Parameters**:
+  `game_id` — ID of the game
+
+**Response**:
+
+* **Success (200 OK)**
+
+```json
+{
+  "success": true,
+  "message": "Versions fetched",
+  "data": [ /* array of versions */ ],
+  "error": null
+}
+```
+
+* **Error Responses**:
+  400 Missing game ID, 500 Server error
+
+---
+
+### Update Game Version
+
+**Purpose**:
+Updates a specific game version. Only authorized Admin/Owner can perform this.
+
+**Request**:
+
+* **Method**: `PUT`
+* **URL**: `/games/version/update`
+* **Headers**: `Authorization: Bearer <token>`
+* **Body**:
+
+```json
+{
+  "version_id": "string",
+  "version_name": "string (optional)",
+  "changelog": "string (optional)",
+  "status": "string (optional)"
+}
+```
+
+**Response**:
+
+* **Success (200 OK)**
+
+```json
+{
+  "success": true,
+  "message": "Version updated",
+  "data": { /* updated version object */ },
+  "error": null
+}
+```
+
+* **Error Responses**:
+  401 Not logged in, 400 Missing version ID, 403 Not authorized, 404 Version not found, 500 Server error
+
+
+---
