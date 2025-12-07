@@ -27,6 +27,12 @@ function HomePage() {
                     </div>
                 </div>
             </div>
+
+            <div className="explore">
+                <div className="continue-playing">
+                    <img src={Ghost} alt=""/>
+                </div>
+            </div>
         </>
     )
 }

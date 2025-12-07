@@ -13,6 +13,7 @@ function App() {
     return (
         <Routes>
             <Route path="/" element={<HomePage />} />
+            <Route path="/s" element={<RegisterPage />} />
             <Route path="/verify-otp/:userId" element={<OtpVerificationPage />} />
             <Route path="/:username" element={<ProfilePage />} />
         </Routes>

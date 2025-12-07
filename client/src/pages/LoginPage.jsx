@@ -7,7 +7,7 @@ import "../css/page.css";
 import googleLogo from "../assets/google-logo.svg";
 import api from "../api/api";
 
-const LoginModal = ({ isOpen, onClose }) => {
+const LoginModal = ({ isOpen, onClose, openRegister }) => {
     if (!isOpen) return null;
 
     const [identifier, setIdentifier] = useState("");
@@ -94,6 +94,16 @@ const LoginModal = ({ isOpen, onClose }) => {
                     <ButtonComponent variant="link" type="button" disabled={loading}>
                         Forgot password?
                     </ButtonComponent>
+
+                    <ButtonComponent
+                        children="Do you have an account? Sign Up"
+                        type="button"
+                        className="button-link"
+                        onClick={() => {
+                            onClose();
+                            openRegister();
+                        }}
+                    />
                 </form>
             </div>
         </div>

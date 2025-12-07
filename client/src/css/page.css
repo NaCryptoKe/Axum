@@ -95,7 +95,10 @@ form{
     color: var(--color-text-secondary);
 }
 
-
+.continue-playing img{
+    width: 220px;
+    height: 330px;
+}
 
 
 

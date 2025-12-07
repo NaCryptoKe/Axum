@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import ButtonComponent from "./ButtonComponent";
 import SearchBarComponent from "./SearchBarComponent";
-import LoginPage from "../pages/LoginPage.jsx"
 
 import Logo from "../assets/svg files/Logo.jsx";
 import Home from "../assets/svg files/Home.jsx";
@@ -14,8 +13,11 @@ import Notification from "../assets/svg files/Notification.jsx";
 import Profile from "../assets/svg files/Profile.jsx";
 
 import "../css/navbar.css";
+import RegisterPage from "../pages/RegisterPage.jsx";
+import LoginPage from "../pages/LoginPage.jsx";
 
 const NavbarComponent = () => {
+    const [isRegisterOpen, setIsRegisterOpen] = useState(false);
     const [isLoginOpen, setIsLoginOpen] = useState(false);
 
     return (
@@ -40,15 +42,22 @@ const NavbarComponent = () => {
                     {/* OPEN LOGIN MODAL HERE */}
                     <ButtonComponent
                         children={<Profile />}
-                        onClick={() => setIsLoginOpen(true)}
+                        onClick={() => setIsRegisterOpen(true)}
                     />
                 </div>
             </nav>
 
             {/* MODAL */}
+            <RegisterPage
+                isOpen={isRegisterOpen}
+                onClose={() => setIsRegisterOpen(false)}
+                openLogin={() => setIsLoginOpen(true)}
+            />
+
             <LoginPage
                 isOpen={isLoginOpen}
                 onClose={() => setIsLoginOpen(false)}
+                openRegister={() => setIsRegisterOpen(true)}
             />
         </>
     );

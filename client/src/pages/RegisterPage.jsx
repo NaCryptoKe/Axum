@@ -10,6 +10,8 @@ import api from "../api/api";
 const RegisterModal = ({ isOpen, onClose, openLogin }) => {
     if (!isOpen) return null;
 
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
     const [firstName, setFirstName] = useState("");
     const [lastName, setLastName] = useState("");
     const [username, setUsername] = useState("");
@@ -69,7 +71,7 @@ const RegisterModal = ({ isOpen, onClose, openLogin }) => {
                 className="modal-content"
                 onClick={(e) => e.stopPropagation()}
             >
-                <h2>Create an Account</h2>
+                <h2>CREATE AN ACCOUNT</h2>
 
                 {error && <p className="error">{error}</p>}
 
@@ -80,7 +82,7 @@ const RegisterModal = ({ isOpen, onClose, openLogin }) => {
                         required
                         value={firstName}
                         onChange={(e) => setFirstName(e.target.value)}
-                        className="input-text"
+                        variant="text"
                     />
 
                     <InputFieldComponent
@@ -89,7 +91,7 @@ const RegisterModal = ({ isOpen, onClose, openLogin }) => {
                         required
                         value={lastName}
                         onChange={(e) => setLastName(e.target.value)}
-                        className="input-text"
+                        variant="text"
                     />
 
                     <InputFieldComponent
@@ -98,7 +100,7 @@ const RegisterModal = ({ isOpen, onClose, openLogin }) => {
                         required
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
-                        className="input-text"
+                        variant="text"
                     />
 
                     <InputFieldComponent
@@ -107,7 +109,7 @@ const RegisterModal = ({ isOpen, onClose, openLogin }) => {
                         required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="input-text"
+                        variant="text"
                     />
 
                     {/* Password */}
@@ -118,14 +120,14 @@ const RegisterModal = ({ isOpen, onClose, openLogin }) => {
                             required
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            className="input-text"
+                            variant="text"
                         />
 
                         <ButtonComponent
                             children={showPassword ? "👁️" : "🔒"}
                             onClick={togglePasswordVisibility}
                             disabled={loading}
-                            className="button-show"
+                            variant="show"
                         />
                     </div>
 
@@ -137,14 +139,14 @@ const RegisterModal = ({ isOpen, onClose, openLogin }) => {
                             required
                             value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
-                            className="input-text"
+                            variant="text"
                         />
 
                         <ButtonComponent
                             children={showPassword ? "👁️" : "🔒"}
                             onClick={togglePasswordVisibility}
                             disabled={loading}
-                            className="button-show"
+                            variant="show"
                         />
                     </div>
 
@@ -165,7 +167,7 @@ const RegisterModal = ({ isOpen, onClose, openLogin }) => {
                     <ButtonComponent
                         children="REGISTER"
                         disabled={loading}
-                        className="button-primary"
+                        variant="primary"
                         type="submit"
                     />
 
@@ -186,7 +188,7 @@ const RegisterModal = ({ isOpen, onClose, openLogin }) => {
                         className="button-link"
                         onClick={() => {
                             onClose();
-                            openLogin(); // open login modal after closing register
+                            openLogin();
                         }}
                     />
                 </form>
