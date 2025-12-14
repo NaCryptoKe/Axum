@@ -1,97 +1,72 @@
-import React, { useState } from 'react';
-import { useNavigate, useParams, Link } from 'react-router-dom';
-import api from '../api/api';
+import React, { useState, useRef } from 'react';
+import InputFieldComponent from "../Components/InputFieldComponent.jsx";
+import ButtonComponent from "../Components/ButtonComponent.jsx";
+import "../css/page.css";
 
-function OtpVerificationPage() {
-    const [otp, setOtp] = useState(new Array(6).fill(''));
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
-    const navigate = useNavigate();
-    const { userId } = useParams();
+
+function OtpVerificationPage({ isOpen = true }) {
+    if (!isOpen) return null;
+
+    const [otp, setOtp] = useState(new Array(6).fill(""));
+
+    const inputRefs = useRef([]);
 
     const handleChange = (element, index) => {
-        if (isNaN(element.value)) return false;
+        if (isNaN(element.value)) return;
 
         const newOtp = [...otp];
-        newOtp[index] = element.value;
+        newOtp[index] = element.value.slice(-1);
         setOtp(newOtp);
-
-        if (element.nextSibling && element.value !== '') {
-            element.nextSibling.focus();
-        }
     };
 
     const handleVerify = async (e) => {
-        e.preventDefault();
-        setError('');
-        setLoading(true);
 
-        const fullOtp = otp.join('');
-        if (fullOtp.length !== 6) {
-            setError('Please enter the complete 6-digit code.');
-            setLoading(false);
-            return;
-        }
+    };
 
-        // --- MOCK API CALL ---
-        console.log(`API call to verify OTP for User ID: ${userId}`, fullOtp);
-
-        try {
-            const res = await api.post('/auth/verify_otp',
-                {user_id: userId,otp: fullOtp}
-            );
-            console.log('NAHOM');
-            const username = res.data.username;
-            console.log(username);
-            navigate(`/@${username}`);
-
-        } catch (err) {
-            setError('Invalid or expired code. Please try resending.');
-        } finally {
-            setLoading(false);
-        }
+    // Placeholder function for Resend
+    const handleResendOtp = () => {
+        console.log("Resend Clicked.");
+        alert("Resend logic disabled.");
     };
 
     return (
-        <div className="page-wrapper">
-            <div className="form-container">
-                <h1 className="form-title">Verify Your Email</h1>
-                <p className="form-instruction">
-                    We sent a 6-digit code to your email.
-                </p>
-                <form onSubmit={handleVerify} className="form-body">
+        // Dummy wrapper structure kept for styling components
+        <div className="modal-overlay">
+            <div className="modal-content">
+                <h2>Enter Verification Code</h2>
+                <p>The 6-digit code was sent to your email.</p>
 
-                    <div className="otp-input-container">
-                        {otp.map((data, index) => (
-                            <input
-                                key={index}
-                                className="otp-input"
-                                type="text"
-                                name={`otp-${index}`}
-                                maxLength="1"
-                                value={data}
-                                onChange={e => handleChange(e.target, index)}
-                                onFocus={e => e.target.select()}
-                                required
-                            />
-                        ))}
-                    </div>
+                {/* OTP Boxes (6 Inputs) */}
+                <div className="otp-inputs">
+                    {otp.map((data, index) => (
+                        <InputFieldComponent
+                            key={index}
+                            type="text"
+                            maxLength="1"
+                            value={data}
+                            onChange={(e) => handleChange(e.target, index)}
+                            // Attach ref to enable focus control
+                            ref={(el) => (inputRefs.current[index] = el)}
+                            required={true}
+                            variant="otp"
+                        />
+                    ))}
+                </div>
 
-                    {error && <p className="error-message">{error}</p>}
+                {/* VERIFY Button */}
+                <ButtonComponent
+                    children={"VERIFY"}
+                    variant="primary"
+                    onClick={handleVerify} // Using onClick for direct execution
+                />
 
-                    <button type="submit" disabled={loading} className="primary-button">
-                        {loading ? 'Verifying...' : 'Verify Code'}
-                    </button>
-                </form>
-
-                <p className="secondary-link-text">
-                    Didn't receive a code?{' '}
-                    <button onClick={() => console.log('MOCK: Resend OTP initiated')} className="link-text as-button" disabled={loading}>
-                        Resend Code
-                    </button>
-                </p>
+                {/* RESEND Button */}
+                <ButtonComponent
+                    children="RESEND CODE"
+                    onClick={handleResendOtp}
+                    variant="link"
+                />
             </div>
-            <h1>TImer</h1>
         </div>
     );
 }

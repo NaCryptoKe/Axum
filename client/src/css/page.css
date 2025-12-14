@@ -100,6 +100,29 @@ form{
     height: 330px;
 }
 
+.otp-inputs{
+    display: flex;
+    gap: 1rem;
+}
+
+.input-otp{
+    width: 80px;
+    height: 80px;
+    border-radius: 10px;
+    outline: none;
+    border: none;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: bold;
+    font-size: 20px;
+    text-align: center;
+    background-color: var(--color-cards);
+    color: var(--color-text-secondary);
+}
+
+.input-otp:focus{
+    color: var(--color-text-primary);
+}
+
 
 
 

@@ -114,56 +114,163 @@ const createGameController = async (req, res) => {
 // ------------------------------
 const updateGameController = async (req, res) => {
     const { user } = req;
+
     try {
-        if (!user?.valid)
-            return res.status(401).json({ success: false, message: "Not logged in", data: null, error: { code: 401 } });
+        if (!user?.valid) {
+            return res.status(401).json({
+                success: false,
+                message: "Not logged in",
+                data: null,
+                error: { code: 401 }
+            });
+        }
 
         const { game_id, ...fields } = req.body;
-        if (!game_id) return res.status(400).json({ success: false, message: "Missing game ID", data: null, error: { code: 400 } });
+        if (!game_id) {
+            return res.status(400).json({
+                success: false,
+                message: "Missing game ID",
+                data: null,
+                error: { code: 400 }
+            });
+        }
 
         const game = await getGameById(game_id);
-        if (!game) return res.status(404).json({ success: false, message: "Game not found", data: null, error: { code: 404 } });
+        if (!game) {
+            return res.status(404).json({
+                success: false,
+                message: "Game not found",
+                data: null,
+                error: { code: 404 }
+            });
+        }
 
         const valid_user = await getMember(game.org_id, user.id);
-        if (!valid_user || (valid_user.role !== 'admin' && valid_user.role !== 'owner'))
-            return res.status(403).json({ success: false, message: "Not authorized", data: null, error: { code: 403 } });
+        if (!valid_user || (valid_user.role !== 'admin' && valid_user.role !== 'owner')) {
+            return res.status(403).json({
+                success: false,
+                message: "Not authorized",
+                data: null,
+                error: { code: 403 }
+            });
+        }
 
-        const updatedGame = await updateGame({ id: game_id, updated_by: user.id, ...fields });
+        // Merge incoming fields with existing game values
+        const payload = {
+            id: game_id,
+            updated_by: user.id,
 
-        return res.json({ success: true, message: "Game updated", data: updatedGame, error: null });
+            title: fields.title ?? game.title,
+            description: fields.description ?? game.description,
+            status: fields.status ?? game.status,
+            release_date: fields.release_date ?? game.release_date,
+            cover_image_url: fields.cover_image_url ?? game.cover_image_url,
+            metadata: fields.metadata ?? game.metadata,
+            tags_cache: fields.tags_cache ?? game.tags_cache
+        };
+
+        const updatedGame = await updateGame(payload);
+
+        return res.json({
+            success: true,
+            message: "Game updated",
+            data: updatedGame,
+            error: null
+        });
 
     } catch (err) {
         console.error("Update Game Error:", err);
-        return res.status(500).json({ success: false, message: "Server error", data: null, error: { code: 500, details: err.message } });
+        return res.status(500).json({
+            success: false,
+            message: "Server error",
+            data: null,
+            error: { code: 500, details: err.message }
+        });
     }
 };
+
 
 // ------------------------------
 // SOFT DELETE GAME
 // ------------------------------
 const softDeleteGameController = async (req, res) => {
-    const { user } = req;
     try {
+        const { user } = req;
         const { game_id } = req.body;
-        if (!user?.valid) return res.status(401).json({ success: false, message: "Not logged in", data: null, error: { code: 401 } });
-        if (!game_id) return res.status(400).json({ success: false, message: "Missing game ID", data: null, error: { code: 400 } });
 
+        // --------------------
+        // Auth check
+        // --------------------
+        if (!user?.valid) {
+            return res.status(401).json({
+                success: false,
+                message: "Not logged in",
+                data: null,
+                error: { code: 401 }
+            });
+        }
+
+        // --------------------
+        // Input validation
+        // --------------------
+        if (!game_id) {
+            return res.status(400).json({
+                success: false,
+                message: "Missing game ID",
+                data: null,
+                error: { code: 400 }
+            });
+        }
+
+        // --------------------
+        // Game existence
+        // --------------------
         const game = await getGameById(game_id);
-        if (!game) return res.status(404).json({ success: false, message: "Game not found", data: null, error: { code: 404 } });
+        if (!game) {
+            return res.status(404).json({
+                success: false,
+                message: "Game not found",
+                data: null,
+                error: { code: 404 }
+            });
+        }
 
-        const valid_user = await getMember(game.org_id, user.id);
-        if (!valid_user || (valid_user.role !== 'admin' && valid_user.role !== 'owner'))
-            return res.status(403).json({ success: false, message: "Not authorized", data: null, error: { code: 403 } });
+        // --------------------
+        // Authorization
+        // --------------------
+        const member = await getMember(game.org_id, user.id);
+        if (!member || !['admin', 'owner'].includes(member.role)) {
+            return res.status(403).json({
+                success: false,
+                message: "Not authorized",
+                data: null,
+                error: { code: 403 }
+            });
+        }
 
+        // --------------------
+        // Soft delete
+        // --------------------
         const deletedGame = await softDeleteGame(game_id);
 
-        return res.json({ success: true, message: "Game soft deleted", data: deletedGame, error: null });
+        return res.json({
+            success: true,
+            message: "Game soft deleted",
+            data: deletedGame,
+            error: null
+        });
 
     } catch (err) {
         console.error("Soft Delete Game Error:", err);
-        return res.status(500).json({ success: false, message: "Server error", data: null, error: { code: 500, details: err.message } });
+        return res.status(500).json({
+            success: false,
+            message: "Server error",
+            data: null,
+            error: { code: 500, details: err.message }
+        });
     }
 };
+
 
 // ------------------------------
 // CREATE GAME VERSION

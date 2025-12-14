@@ -7,7 +7,7 @@ import "../css/page.css";
 import googleImage from "../assets/google-logo.svg";
 import api from "../api/api";
 
-const RegisterModal = ({ isOpen, onClose, openLogin }) => {
+const RegisterModal = ({ isOpen, onClose, openLogin, openOTP }) => {
     if (!isOpen) return null;
 
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -46,9 +46,10 @@ const RegisterModal = ({ isOpen, onClose, openLogin }) => {
                 password,
             });
 
-            alert(res.data.message);
+            alert(res.data.data.id);
 
             onClose(); // close modal
+            openOTP(true); // open otp page
         } catch (err) {
             const errorMessage =
                 err.response?.data?.error?.details ||

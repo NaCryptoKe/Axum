@@ -79,7 +79,7 @@ const generateOtp = async (req, res) => {
         const { otp } = await createEmailVerification(user_id, expires_at);
 
         //await sendOtpEmail(user.email, otp); // Pass user's email
-
+        console.log(otp);
         // 5. Success Response
         return res.status(201).json({
             success: true,

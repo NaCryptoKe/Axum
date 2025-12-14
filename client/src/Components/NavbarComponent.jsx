@@ -15,10 +15,12 @@ import Profile from "../assets/svg files/Profile.jsx";
 import "../css/navbar.css";
 import RegisterPage from "../pages/RegisterPage.jsx";
 import LoginPage from "../pages/LoginPage.jsx";
+import OtpVerificationPage from "../pages/OtpVerificationPage.jsx";
 
 const NavbarComponent = () => {
     const [isRegisterOpen, setIsRegisterOpen] = useState(false);
     const [isLoginOpen, setIsLoginOpen] = useState(false);
+    const [isOTP, setIsOtp] = useState(false);
 
     return (
         <>
@@ -52,6 +54,12 @@ const NavbarComponent = () => {
                 isOpen={isRegisterOpen}
                 onClose={() => setIsRegisterOpen(false)}
                 openLogin={() => setIsLoginOpen(true)}
+                openOTP={() => setIsOtp(true)}
+            />
+
+            <OtpVerificationPage
+                isOpen={isOTP}
+                onClose={() => setIsOTP(false)}
             />
 
             <LoginPage
