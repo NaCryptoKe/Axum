@@ -20,7 +20,7 @@ router.get('/', (req, res) => {
 // -------------------
 router.post('/create', createGameController);
 router.put('/update', updateGameController);
-router.delete('/delete', softDeleteGameController);
+router.post('/delete', softDeleteGameController);
 
 // -------------------
 // GAME VERSION ROUTES
