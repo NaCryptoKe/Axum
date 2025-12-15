@@ -171,8 +171,8 @@ const verifyOtp = async (req, res) => {
 
         // 3. Update user and fetch new data
         await verifyUserEmail(user_id);
-        const username = await getUserById(user_id);
-        const user = await getUserByUsername(username);
+        const user_data = await getUserById(user_id);
+        const user = await getUserByUsername(user_data.username);
 
         // JWT expiration
         const tokenExpiry = '30d';
