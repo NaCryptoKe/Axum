@@ -1,6 +1,6 @@
 const { createEmailVerification, checkOtp } = require('../models/emailVerificationModel');
 const { getUserById, verifyUserEmail, getUserByUsername } = require('../models/userModel');
-const { sendOtpEmail } = require('../utils/mailOTP');
+const { sendOtpEmail } = require('../utils/emailSender');
 const jwt = require("jsonwebtoken");
 const { createSession } = require("../models/sessionModel");
 require('dotenv').config();

@@ -1,8 +1,8 @@
 // Used for limiting a user from spamming the server
-
+require('dotenv').config();
 const { getEmailVerification, createEmailVerification } = require('../models/emailVerificationModel');
 
-const RESEND_COOLDOWN_MS = 60 * 1000; // 60 seconds
+const RESEND_COOLDOWN_MS = process.env.COOLDOWN_MS; // 60 seconds
 
 const checkCooldown = async (req, res, next) => {
     const { user_id } = req.body;

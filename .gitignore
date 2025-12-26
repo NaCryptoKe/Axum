@@ -15,6 +15,7 @@ Trial/
 dist/
 build/
 coverage/
+gemini.md
 
 # ----------------------------------------
 # 2. SENSITIVE & PRIVATE FILES
