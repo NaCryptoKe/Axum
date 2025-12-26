@@ -22,23 +22,26 @@ const authenticateMiddleware = require('../middlewares/authenticateMiddleware');
 
 const router = express.Router();
 
-router.get('/', healthCheck); // API health check endpoint
+router.get('/', healthCheck);
 
-router.post('/register', register); // User registration endpoint
-router.post('/login', login); // User login endpoint
+// Basic Authentication Routes
+router.post('/register', register);
+router.post('/login', login);
 
-router.get("/google", google); // Initiates Google OAuth login flow
-router.get("/google/callback", googleCallback); // Handles Google OAuth callback
+// Google OAuth Routes
+router.get("/google", google);
+router.get("/google/callback", googleCallback);
 
-router.post('/generate-otp', rateLimiter, checkCooldown, generateOtp); // Generates a One-Time Password (OTP) with rate limiting and cooldown
-router.post('/verify-otp', verifyOtp); // Verifies the provided OTP
+// OTP (One-Time Password) Routes
+router.post('/generate-otp', rateLimiter, checkCooldown, generateOtp);
+router.post('/verify-otp', verifyOtp);
 
 router.use(authenticateMiddleware); // Middleware to authenticate all routes below this line
 
-router.get('/authenticate', authenticate); // Authenticates the user based on the session
-router.get('/sessions', getAllUsersSessions); // Retrieves all active user sessions
-router.delete('/sessions/:session_id', deleteUserSession); // Deletes a specific user session by ID
-
-router.post('/logout', logout); // Logs out the current user
+// Authenticated User Routes
+router.get('/authenticate', authenticate);
+router.get('/sessions', getAllUsersSessions);
+router.delete('/sessions/:session_id', deleteUserSession);
+router.post('/logout', logout);
 
 module.exports = router;
