@@ -5,9 +5,7 @@ const jwt = require("jsonwebtoken");
 const { createSession } = require("../models/sessionModel");
 require('dotenv').config();
 
-// =================================================================================================
 // OTP GENERATION
-// =================================================================================================
 
 /**
  * Generates and sends a One-Time Password (OTP) for email verification.
@@ -47,9 +45,7 @@ const generateOtp = async (req, res) => {
     }
 };
 
-// =================================================================================================
 // OTP VERIFICATION
-// =================================================================================================
 
 /**
  * Verifies a submitted OTP and marks the user's email as verified if valid.
