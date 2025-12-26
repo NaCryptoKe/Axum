@@ -7,9 +7,7 @@ const { createSession, getAllUsersSession, deleteSession } = require('../models/
 const { createOAUTH } = require('../models/oauthAccountModel');
 require('dotenv').config();
 
-// =================================================================================================
 // CONFIGURATION
-// =================================================================================================
 
 /**
  * Configuration options for Argon2 password hashing.
@@ -22,9 +20,7 @@ const ARGON2_OPTS = {
     parallelism: 1
 };
 
-// =================================================================================================
 // HEALTH CHECK
-// =================================================================================================
 
 /**
  * Responds with a success message if the authentication route is running.
@@ -40,9 +36,7 @@ const healthCheck = (req, res) => {
     });
 };
 
-// =================================================================================================
 // STANDARD AUTHENTICATION
-// =================================================================================================
 
 /**
  * Handles user login with email/username and password.
@@ -79,7 +73,7 @@ const login = async (req, res) => {
         const session = await createSession(user.id, userAgent, ipAddress, expiresAt);
 
         const tokenPayload = { id: user.id, username: user.username, role: user.role, sessionId: session.id };
-        const token = jwt.sign(tokenPayload, process.env.SECRET_STRING || 'super_secret_long_random_string', {
+        const token = jwt.sign(tokenPayload, process.env.SECRET_STRING, {
             algorithm: 'HS256',
             expiresIn: tokenExpiry,
         });
@@ -151,9 +145,7 @@ const register = async (req, res) => {
     }
 };
 
-// =================================================================================================
 // GOOGLE OAUTH
-// =================================================================================================
 
 /**
  * Configures the Google OAuth 2.0 strategy for Passport.
@@ -226,7 +218,7 @@ const googleCallback = (req, res, next) => {
             const session = await createSession(userDB.id, userAgent, ipAddress, expiresAt);
 
             const token = jwt.sign({ id: userDB.id, username: userDB.username, role: userDB.role, sessionId: session.id },
-                process.env.SECRET_STRING || 'super_secret_long_random_string', { expiresIn: "1d" }
+                process.env.SECRET_STRING, { expiresIn: "1d" }
             );
 
             res.cookie("token", token, {
@@ -254,9 +246,7 @@ const googleCallback = (req, res, next) => {
     })(req, res, next);
 };
 
-// =================================================================================================
 // SESSION MANAGEMENT
-// =================================================================================================
 
 /**
  * Retrieves all active sessions for the authenticated user.
@@ -308,9 +298,7 @@ const deleteUserSession = async (req, res) => {
     }
 };
 
-// =================================================================================================
 // AUTHENTICATION UTILITIES
-// =================================================================================================
 
 /**
  * Authenticates a user by verifying their JWT token.
@@ -323,7 +311,7 @@ const authenticate = (req, res) => {
         if (!token) {
             return res.status(401).json({ success: false, message: "Token not found" });
         }
-        const decoded = jwt.verify(token, process.env.SECRET_STRING || 'super_secret_long_random_string');
+        const decoded = jwt.verify(token, process.env.SECRET_STRING);
         return res.json({ success: true, message: 'Authenticated with JWT token', data: decoded });
     } catch (err) {
         console.error('Token validation error:', err);

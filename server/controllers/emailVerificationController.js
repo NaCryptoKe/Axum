@@ -89,7 +89,7 @@ const verifyOtp = async (req, res) => {
         const session = await createSession(user.id, userAgent, ipAddress, expiresAt);
 
         const tokenPayload = { id: user.id, username: user.username, role: user.role, sessionId: session.id };
-        const token = jwt.sign(tokenPayload, process.env.SECRET_STRING || 'super_secret_long_random_string', {
+        const token = jwt.sign(tokenPayload, process.env.SECRET_STRING, {
             algorithm: 'HS256',
             expiresIn: tokenExpiry,
         });
