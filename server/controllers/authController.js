@@ -2,19 +2,18 @@ const jwt = require('jsonwebtoken');
 const argon2 = require('argon2');
 const passport = require('passport');
 const { Strategy: GoogleStrategy } = require('passport-google-oauth20');
-const { findByIdentifier, createUser, updateUserProfilePicture, verifyUserEmail, getUserById} = require('../models/userModel');
-const {createSession, getAllUsersSession, deleteSession} = require('../models/sessionModel');
-require('dotenv').config();
+const { findByIdentifier, createUser, updateUserProfilePicture, verifyUserEmail } = require('../models/userModel');
+const { createSession, getAllUsersSession, deleteSession } = require('../models/sessionModel');
 const { createOAUTH } = require('../models/oauthAccountModel');
+require('dotenv').config();
+
+// =================================================================================================
+// CONFIGURATION
+// =================================================================================================
 
 /**
  * Configuration options for Argon2 password hashing.
- *
- * @constant {Object} ARGON2_OPTS
- * @property {number} type - Argon2 variant to use (argon2id recommended for security).
- * @property {number} memoryCost - Memory usage in KiB (2^16 = 65536 KiB).
- * @property {number} timeCost - Number of iterations to apply (hashing rounds).
- * @property {number} parallelism - Number of parallel threads for hashing.
+ * These settings are recommended for a secure password hashing implementation.
  */
 const ARGON2_OPTS = {
     type: argon2.argon2id,
@@ -23,36 +22,144 @@ const ARGON2_OPTS = {
     parallelism: 1
 };
 
+// =================================================================================================
+// HEALTH CHECK
+// =================================================================================================
 
-//OAuth setup
 /**
- * Sets up Google OAuth 2.0 authentication strategy using Passport.js.
- *
- * Uses `passport-google-oauth20` to authenticate users via Google and handle
- * user profile retrieval. On successful authentication, maps the profile data
- * to a user object and passes it to Passport's `done` callback.
- *
- * @constant {GoogleStrategy} GoogleStrategy - Passport strategy instance.
- *
- * @param {string} clientID - Google OAuth client ID.
- * @param {string} clientSecret - Google OAuth client secret.
- * @param {string} callbackURL - URL Google redirects to after authentication.
- * @param {function} verify - Async function called after Google authenticates the user.
- *   @param {string} accessToken - OAuth access token.
- *   @param {string} refreshToken - OAuth refresh token.
- *   @param {Object} profile - Google profile object containing user info.
- *   @param {function} done - Passport callback to signal success or failure.
- *
- * @returns {Object} user - User object containing:
- *   - id {number} - Example user ID (replace with real DB logic)
- *   - username {string} - Derived from displayName or email prefix
- *   - email {string} - User's email from Google profile
- *   - role {string} - Default user role
- *   - avatar_url {string} - URL of user's Google profile picture
+ * Responds with a success message if the authentication route is running.
+ * @param {object} req - Express request object.
+ * @param {object} res - Express response object.
+ */
+const healthCheck = (req, res) => {
+    return res.status(200).json({
+        success: true,
+        message: 'The authentication route is running!',
+        data: null,
+        error: null
+    });
+};
+
+// =================================================================================================
+// STANDARD AUTHENTICATION
+// =================================================================================================
+
+/**
+ * Handles user login with email/username and password.
+ * @param {object} req - Express request object, expecting `identifier` and `password` in the body.
+ * @param {object} res - Express response object.
+ */
+const login = async (req, res) => {
+    try {
+        let { identifier } = req.body;
+        const { password } = req.body;
+
+        if (!identifier || !password) {
+            return res.status(400).json({ success: false, message: "Missing credentials" });
+        }
+
+        identifier = identifier.toLowerCase().trim();
+        const user = await findByIdentifier(identifier);
+
+        if (!user) {
+            return res.status(400).json({ success: false, message: "Invalid username or email" });
+        }
+
+        const passwordMatches = await argon2.verify(user.hashed_password, password);
+        if (!passwordMatches) {
+            return res.status(400).json({ success: false, message: "Incorrect password" });
+        }
+
+        const tokenExpiry = '30d';
+        const cookieMaxAge = 30 * 24 * 60 * 60 * 1000;
+
+        const userAgent = req.headers['user-agent'];
+        const ipAddress = req.ip;
+        const expiresAt = new Date(Date.now() + cookieMaxAge);
+        const session = await createSession(user.id, userAgent, ipAddress, expiresAt);
+
+        const tokenPayload = { id: user.id, username: user.username, role: user.role, sessionId: session.id };
+        const token = jwt.sign(tokenPayload, process.env.SECRET_STRING || 'super_secret_long_random_string', {
+            algorithm: 'HS256',
+            expiresIn: tokenExpiry,
+        });
+
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'Lax',
+            maxAge: cookieMaxAge
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: "Successfully logged in",
+            data: { token, user: { id: user.id, name: user.username } }
+        });
+    } catch (error) {
+        console.error("Login error:", error);
+        return res.status(500).json({ success: false, message: "Server error during login" });
+    }
+};
+
+/**
+ * Handles new user registration.
+ * @param {object} req - Express request object, expecting user details in the body.
+ * @param {object} res - Express response object.
+ */
+const register = async (req, res) => {
+    let { username, email, firstname, lastname, password } = req.body;
+    const errors = [];
+
+    if (!firstname || !lastname || !username || !email || !password) {
+        return res.status(400).json({ success: false, message: "Missing credentials" });
+    }
+
+    // Input validation
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.push('Invalid email format.');
+    if (!/^[A-Za-z0-9_]{4,}$/.test(username)) errors.push('Username must be at least 4 characters and contain only alphanumeric characters and underscores.');
+    if (password.length < 8 || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/\d/.test(password) || !/[^a-zA-Z0-9]/.test(password)) {
+        errors.push('Password must be at least 8 characters and include uppercase, lowercase, a number, and a special character.');
+    }
+
+    if (errors.length > 0) {
+        return res.status(422).json({ success: false, message: "Validation failed", errors });
+    }
+
+    try {
+        username = username.toLowerCase().trim();
+        email = email.toLowerCase().trim();
+        firstname = (firstname[0].toUpperCase() + firstname.slice(1).toLowerCase()).trim();
+        lastname = (lastname[0].toUpperCase() + lastname.slice(1).toLowerCase()).trim();
+
+        const existingUser = await findByIdentifier(username) || await findByIdentifier(email);
+        if (existingUser) {
+            return res.status(409).json({ success: false, message: "Username or email already taken" });
+        }
+
+        const hashedPassword = await argon2.hash(password, ARGON2_OPTS);
+        const newUser = await createUser({ firstname, lastname, username, email, hashedPassword });
+
+        return res.status(201).json({
+            success: true,
+            message: "User created successfully",
+            data: { id: newUser.id, username: newUser.username, email: newUser.email }
+        });
+    } catch (error) {
+        console.error("Register error:", error);
+        return res.status(500).json({ success: false, message: "Server error during registration" });
+    }
+};
+
+// =================================================================================================
+// GOOGLE OAUTH
+// =================================================================================================
+
+/**
+ * Configures the Google OAuth 2.0 strategy for Passport.
  */
 passport.use(
-    new GoogleStrategy(
-        {
+    new GoogleStrategy({
             clientID: process.env.GOOGLE_CLIENT_ID,
             clientSecret: process.env.GOOGLE_CLIENT_SECRET,
             callbackURL: "http://localhost:3000/api/auth/google/callback",
@@ -60,28 +167,16 @@ passport.use(
         async (accessToken, refreshToken, profile, done) => {
             try {
                 const email = profile.emails?.[0]?.value?.toLowerCase();
-                let username = profile.displayName || email.split("@")[0];
-                username = username
-                    .toLowerCase()
-                    .replace(/\s+/g, "")        // remove ALL whitespace
-                    .replace(/[^a-z0-9_]/g, ""); // remove everything except [a-z0-9_]
-
-                const avatar_url = profile.photos?.[0]?.value;
-                const firstname = profile.name.givenName;
-                const lastname = profile.name.familyName;
-                const providerId = profile.id;
-                const providerName = 'google';
-
-                // 👇 Replace with real DB check/create logic
+                let username = (profile.displayName || email.split("@")[0]).toLowerCase().replace(/\s+/g, "").replace(/[^a-z0-9_]/g, "");
                 const user = {
                     username,
                     email,
                     role: "player",
-                    avatar_url,
-                    firstname,
-                    lastname,
-                    providerId,
-                    providerName
+                    avatar_url: profile.photos?.[0]?.value,
+                    firstname: profile.name.givenName,
+                    lastname: profile.name.familyName,
+                    providerId: profile.id,
+                    providerName: 'google'
                 };
                 return done(null, user);
             } catch (err) {
@@ -93,660 +188,47 @@ passport.use(
 );
 
 /**
- * Health Check
+ * Initiates the Google OAuth authentication flow.
  */
-const healthCheck = (req, res) => {
-    return res.status(200).json({
-        success: true,
-        message: 'The authentication route is running!',
-        data: null,
-        error: null
-    });
-};
-
-/**
- * Normal Authentication
- */
-/**
- * Handles user login by validating credentials, verifying the password,
- * creating a session, generating a JWT, and setting it as a cookie.
- *
- * @async
- * @function login
- * @param {Object} req - Express request object.
- * @param {Object} req.body - Request payload containing login details.
- * @param {string} req.body.identifier - Username or email for login.
- * @param {string} req.body.password - User's password.
- * @param {Object} res - Express response object.
- *
- * @returns {Object} JSON response with possible outcomes:
- *
- * Success (200):
- * {
- *   success: true,
- *   message: "Successfully logged in",
- *   data: {
- *     token: string, // JWT token
- *     user: {
- *       id: string,
- *       name: string
- *     }
- *   },
- *   error: null
- * }
- *
- * Client errors (400) include:
- *  - Missing credentials
- *  - Nonexistent user
- *  - Incorrect password
- *
- * Server errors (500) include:
- * {
- *   success: false,
- *   message: "Invalid Login",
- *   data: null,
- *   error: { code: 500, details: string }
- * }
- *
- * Notes:
- * - Passwords are verified using Argon2 hashing.
- * - JWT contains user ID, username, role, and session ID.
- * - Login session is stored in the database.
- * - Token is sent to the client as an HTTP-only cookie with a 30-day expiry.
- */
-const login = async (req, res) => {
-    try {
-        let { identifier } = req.body;
-        const { password } = req.body;
-
-        if (!identifier || !password)
-            return res.status(400).json({
-                success: false,
-                message: "Missing Credentials",
-                data: null,
-                error: {
-                    code: 400,
-                    details: 'Missing Credentials'
-                }
-            });
-
-        identifier = identifier.toLowerCase().trim();
-
-        const user = await findByIdentifier(identifier);
-
-        if (!user)
-            return res.status(400).json({
-                success: false,
-                message: "Invalid username or email",
-                data: null,
-                error: {
-                    code: 400,
-                    details: 'User does not exist'
-                }
-            });
-
-        const passwordMatches = await argon2.verify(user.hashed_password, password);
-        if (!passwordMatches)
-            return res.status(400).json({
-                success: false,
-                message: "Incorrect Password",
-                data: null,
-                error: {
-                    code: 400,
-                    details: `The correct password wasn't entered.`
-                }
-            });
-
-        // JWT expiration
-        const tokenExpiry = '30d';
-        const cookieMaxAge = 30 * 24 * 60 * 60 * 1000 ; // A month long (30 days)
-
-        // Store session in DB
-        const userAgent = req.headers['user-agent'];
-        const ipAddress = req.ip;
-        const expiresAt = new Date(Date.now() + cookieMaxAge);
-
-        const session = await createSession(user.id, userAgent, ipAddress, expiresAt);
-
-        // Sign JWT (Token)
-        const tokenPayload = { id: user.id, username: user.username, role: user.role, sessionId: session.id }; // What the token holds
-        const token = jwt.sign(tokenPayload,  process.env.SECRET_STRING || 'super_secret_long_random_string', {
-            algorithm: 'HS256',
-            expiresIn: tokenExpiry,
-        }); // Encrypting the token
-
-        // Set cookie
-        res.cookie('token', token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'Lax',
-            maxAge: cookieMaxAge
-        });
-
-        return res.status(200).json({
-            success: true,
-            message: "Successfully logged in",
-            data: {
-                token: token,
-                user: {
-                    id: user.id,
-                    name: user.username,
-                }
-            },
-            error: null
-        });
-
-    } catch (error) {
-        console.error("Login error:", error);
-        return res.status(400).json({
-            success: false,
-            message: "Invalid Login",
-            data: null,
-            error: {
-                code: 500,
-                details: error.message
-            }
-        });
-    }
-};
-
-/**
- * Handles user registration by validating input, checking for duplicates,
- * hashing the password, and creating a new user in the system.
- *
- * @async
- * @function register
- * @param {Object} req - Express request object.
- * @param {Object} req.body - Request payload containing user details.
- * @param {string} req.body.username - Desired username (alphanumeric + underscores, min 4 chars).
- * @param {string} req.body.email - User's email address (must be valid format).
- * @param {string} req.body.firstname - User's first name.
- * @param {string} req.body.lastname - User's last name.
- * @param {string} req.body.password - User's password (min 8 chars, includes uppercase, lowercase, number, special character).
- * @param {Object} res - Express response object.
- *
- * @returns {Object} JSON response with the following possible outcomes:
- *
- * Success (201):
- *  {
- *    success: true,
- *    message: "Successfully created user",
- *    data: {
- *      id: string,
- *      username: string,
- *      email: string,
- *      hashedPassword: string,
- *      firstname: string,
- *      lastname: string
- *    },
- *    error: null
- *  }
- *
- * Client errors (400, 409) include a descriptive message and error details:
- *  - Missing fields
- *  - Invalid email format
- *  - Invalid username format
- *  - Invalid password (length, missing uppercase/lowercase/number/special char)
- *  - Duplicate username or email
- *
- * Server errors (500) return:
- *  {
- *    success: false,
- *    message: "Server error",
- *    data: null,
- *    error: { code: 500, details: string }
- *  }
- */
-const register = async (req, res) => {
-    let { username, email, firstname, lastname } = req.body;
-    const { password } = req.body;
-    const unprocessableErrors = [];
-    const conflictErrors = [];
-    const badRequestErrors = [];
-
-    try {
-        if (!firstname || !lastname || !username || !email || !password) badRequestErrors.push ('Missing Credentials')
-
-        if (badRequestErrors.length > 0)
-            return res.status(400).json({
-                success: false,
-                message: "Bad Request",
-                data: null,
-                error: {
-                    code: 400,
-                    details: badRequestErrors
-                }
-            });
-
-
-        username = username.toLowerCase().trim();
-        email = email.toLowerCase().trim();
-        firstname = (firstname[0].toUpperCase() + firstname.slice(1).toLowerCase()).trim();
-        lastname = (lastname[0].toUpperCase() + lastname.slice(1).toLowerCase()).trim();
-
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) unprocessableErrors.push('Email addresses should follow, example@example.com')
-
-        if (!/^[A-Za-z0-9_]{4,}$/.test(username)) unprocessableErrors.push('Usernames can only have alphanumeric characters and underscores.');
-
-        if (password.length < 8) unprocessableErrors.push ('Password length should be at least 8 characters.');
-
-        if (!/[A-Z]/.test(password)) unprocessableErrors.push ('Password should contain a capital letter.');
-
-        if (!/[a-z]/.test(password)) unprocessableErrors.push('Password should contain a small letter.');
-
-        if (!/[^a-zA-Z0-9]/.test(password)) unprocessableErrors.push ('Password should contain a special character.');
-
-        if (!/\d/.test(password)) unprocessableErrors.push ('Password should contain a number.');
-
-        if (unprocessableErrors.length > 0)
-            return res.status(422).json({
-                success: false,
-                message: "Unprocessable inputs",
-                data: null,
-                error: {
-                    code: 422,
-                    details: unprocessableErrors
-                }
-            });
-
-        const existingUsername = await findByIdentifier(username);
-        const existingUserEmail = await findByIdentifier(email);
-
-        if (existingUsername) conflictErrors.push ('The username has already been taken.');
-
-        if (existingUserEmail) conflictErrors.push ('The email has already been taken.');
-
-        if (conflictErrors.length > 0)
-            return res.status(409).json({
-                success: false,
-                message: "Email address or username is taken",
-                data: null,
-                error: {
-                    code: 409,
-                    details: conflictErrors
-                }
-            });
-
-        const hashedPassword = await argon2.hash(password, ARGON2_OPTS);
-
-        const newUser = await createUser({ firstname, lastname, username, email, hashedPassword });
-
-        return res.status(201).json({
-            success: true,
-            message: "Successfully created user",
-            data: {
-                id: newUser.id,
-                username: newUser.username,
-                email: newUser.email,
-                firstname: newUser.firstname,
-                lastname: newUser.lastname,
-            },
-            error: null
-        });
-    } catch (error) {
-        console.error("Register error:", error);
-        return res.status(500).json({
-            success: false,
-            message: 'Server error',
-            data: null,
-            error: {
-                code: 500,
-                details: error.message
-            }
-        });
-    }
-};
-
-/**
- * AUTH UTILITIES
- */
-/**
- * Verifies user authentication by validating a JWT token from cookies or headers.
- *
- * @function authenticate
- * @param {Object} req - Express request object.
- * @param {Object} req.cookies - Cookies sent by the client.
- * @param {Object} req.headers - Request headers, may contain 'Authorization'.
- * @param {Object} res - Express response object.
- *
- * @returns {Object} JSON response with possible outcomes:
- *
- * Success (200):
- * {
- *   success: true,
- *   message: 'Authenticated with JWT token',
- *   data: {
- *     id: string,          // User ID from token
- *     username: string,    // Username from token
- *     sessionId: string    // Session ID from token
- *   },
- *   error: null
- * }
- *
- * Client errors (401):
- * {
- *   success: false,
- *   message: 'Token not found',
- *   data: null,
- *   error: { code: 401, details: 'Token not found' }
- * }
- *
- * Server errors (500):
- * {
- *   success: false,
- *   message: 'Server error',
- *   data: null,
- *   error: { code: 500, details: string }
- * }
- *
- * Notes:
- * - JWT is verified using a secret key.
- * - Token is read first from cookies, then from the Authorization header.
- */
-const authenticate = (req, res) => {
-    try {
-        // Try reading token from cookie first, fallback to header
-        const token = req.cookies?.token || req.headers['authorization']?.split(' ')[1]; // Checks token existence and authorization header
-        if (!token) return res.status(401).json({
-            success: false,
-            message: "Token not found",
-            data: null,
-            error: {
-                code: 401,
-                details: 'Token not found'
-            }
-        });
-
-        // Verify JWT
-        const decoded = jwt.verify(token,  'super_secret_long_random_string');
-
-        return res.json({
-            success: true,
-            message: 'Authenticated with JWT token',
-            data: {
-                id: decoded.id,
-                username: decoded.username,
-                sessionId: decoded.sessionId,
-                role: decoded.role
-            },
-            error: null });
-    } catch (err) {
-        console.error('Token validation error:', err);
-        return res.status(500).json({
-            success: false,
-            message: 'Server error',
-            data: null,
-            error: {
-                code: 500,
-                details: err.message
-            }
-        });
-    }
-};
-
-/**
- * SESSIONS
- */
-/**
- * Retrieves all active sessions for the currently authenticated user.
- *
- * @async
- * @function getAllUsersSessions
- * @param {Object} req - Express request object.
- * @param {Object} req.user - Authenticated user object containing the user ID.
- * @param {Object} res - Express response object.
- *
- * @returns {Object} JSON response with possible outcomes:
- *
- * Success (200):
- * {
- *   success: true,
- *   message: "All sessions found",
- *   data: {
- *     "All Sessions": [
- *       {
- *         session_id: string,
- *         ip_address: string,
- *         device: string,
- *         created_at: string,
- *         last_seen_at: string | null
- *       }
- *     ]
- *   },
- *   error: null
- * }
- *
- * Client errors (404):
- * {
- *   success: false,
- *   message: "No sessions found",
- *   data: null,
- *   error: { code: 404, details: "No sessions found" }
- * }
- *
- * Server errors (500):
- * {
- *   success: false,
- *   message: "Server error",
- *   data: null,
- *   error: { code: 500, details: string }
- * }
- *
- * Notes:
- * - Fetches sessions from the database using the authenticated user's ID.
- * - Each session object is cleaned and formatted before being returned.
- * - Includes optional `last_seen_at` if tracked in the session data.
- */
-const getAllUsersSessions = async (req, res) => {
-    const { user } = req;
-
-    // Early exit if not logged in
-    if (!user?.valid) {
-        return res.status(401).json({
-            success: false,
-            message: "User not logged in",
-            data: null,
-            error: {
-                code: 401,
-                details: "You must be logged in to view sessions"
-            }
-        });
-    }
-
-    try {
-        const sessions = await getAllUsersSession(user.id);
-
-        if (!sessions || sessions.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: "No sessions found",
-                data: null,
-                error: {
-                    code: 404,
-                    details: "No sessions found"
-                }
-            });
-        }
-
-        const formattedSessions = sessions.map(session => ({
-            session_id: session.id,
-            ip_address: session.ip_address,
-            device: session.device,
-            created_at: session.created_at,
-            last_seen_at: session.last_seen_at || null,
-        }));
-
-        return res.status(200).json({
-            success: true,
-            message: "All sessions found",
-            data: { "All Sessions": formattedSessions },
-            error: null
-        });
-
-    } catch (error) {
-        console.error("Get All User Sessions Error:", error);
-        return res.status(500).json({
-            success: false,
-            message: 'Server error',
-            data: null,
-            error: {
-                code: 500,
-                details: error.message
-            }
-        });
-    }
-};
-
-/**
- * Deletes (revokes) a specific user session by its session ID.
- *
- * @async
- * @function deleteUserSession
- * @param {Object} req - Express request object.
- * @param {Object} req.params - URL parameters.
- * @param {string} req.params.session_id - The ID of the session to delete.
- * @param {Object} res - Express response object.
- *
- * @returns {Object} JSON response with possible outcomes:
- *
- * Success (204):
- * {
- *   success: true,
- *   message: "Session Revoked Successfully",
- *   data: null,
- *   error: null
- * }
- *
- * Client errors (404):
- * {
- *   success: false,
- *   message: "No sessions found",
- *   data: null,
- *   error: { code: 404, details: "No session found" }
- * }
- *
- * Server errors (500):
- * {
- *   success: false,
- *   message: "Server error",
- *   data: null,
- *   error: { code: 500, details: string }
- * }
- *
- * Notes:
- * - Requires a valid `session_id` parameter.
- * - Uses `deleteSession()` to remove the session record from the database.
- * - Returns 204 (No Content) on successful deletion.
- */
-const deleteUserSession = async (req, res) => {
-    const { session_id } = req.params;
-    const { session_id_cookie } = req.user;
-
-    try {
-        if (!session_id) return res.status(404).json({
-            success: false,
-            message: "No sessions found",
-            data: null,
-            error: {
-                code: 404,
-                details: 'No session found'
-            }
-        });
-
-        const result = await deleteSession(session_id);
-
-        if (!result || result.length === 0) return res.status(404).json({
-            success: false,
-            message: "No sessions found",
-            data: null,
-            error: {
-                code: 404,
-                details: 'No session found'
-            }
-        });
-
-        return res.status(204).json({
-            success: true,
-            message: "Session Revoked Successfully",
-            data: null,
-            error: null
-        })
-
-    } catch (error) {
-        console.error("Get All User Sessions Error:", error);
-        return res.status(500).json({
-            success: false,
-            message: "Server error",
-            data: null,
-            error: {
-                code: 500,
-                details: error.message
-            }
-        });
-    }
-};
-
-
-// ======================
-// GOOGLE OAUTH
-// ======================
 const google = passport.authenticate("google", { scope: ["profile", "email"] });
 
+/**
+ * Handles the callback from Google OAuth.
+ * @param {object} req - Express request object.
+ * @param {object} res - Express response object.
+ * @param {function} next - Express next middleware function.
+ */
 const googleCallback = (req, res, next) => {
     passport.authenticate("google", { session: false }, async (error, user) => {
         if (error || !user) {
-            console.error("Google OAuth error:", error);
             return res.status(400).json({ message: "OAuth failed or no user found" });
         }
-
         try {
-            const email = user.email.toLowerCase();
-            let username = user.username;
-            const firstname = user.firstname;
-            const lastname = user.lastname;
-            const avatar_url = user.avatar_url;
-            const providerName = user.providerName;
-            const providerId = user.providerId;
+            const { email, username: originalUsername, firstname, lastname, avatar_url, providerName, providerId } = user;
             if (!email) return res.status(400).json({ message: "Google account has no email" });
 
-            // ✅ Check if user exists
             let userDB = await findByIdentifier(email);
+            let username = originalUsername;
 
             if (!userDB) {
                 let checkUsername = await findByIdentifier(username);
                 let counter = 1;
-                let base = username;
                 while (checkUsername) {
-                    username = `${base}${counter}`
-                    counter++;
+                    username = `${originalUsername}${counter++}`;
                     checkUsername = await findByIdentifier(username);
                 }
-                userDB = await createUser({
-                    firstname,
-                    lastname,
-                    username,
-                    email,
-                    hashedPassword: null
-                });
-                console.log(userDB);
+                userDB = await createUser({ firstname, lastname, username, email, hashedPassword: null });
             }
 
-            let user_id = userDB.id;
-
-            // ✅ Create session for online tracking
             const userAgent = req.headers["user-agent"];
             const ipAddress = req.ip;
-            const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 1 day by default
-            const session = await createSession(user_id, userAgent, ipAddress, expiresAt);
+            const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+            const session = await createSession(userDB.id, userAgent, ipAddress, expiresAt);
 
-            // ✅ Generate JWT including sessionId
-            const token = jwt.sign(
-                { id: user.id, username: user.username, role: user.role, sessionId: session.id },
-                "super_secret_long_random_string",
-                { expiresIn: "1d" }
+            const token = jwt.sign({ id: userDB.id, username: userDB.username, role: userDB.role, sessionId: session.id },
+                process.env.SECRET_STRING || 'super_secret_long_random_string', { expiresIn: "1d" }
             );
 
-            // ✅ Set cookie
             res.cookie("token", token, {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === "production",
@@ -754,99 +236,121 @@ const googleCallback = (req, res, next) => {
                 maxAge: 24 * 60 * 60 * 1000
             });
 
-            await updateUserProfilePicture({ id: user_id, avatar_url: avatar_url } );
-            await verifyUserEmail(user_id);
+            await Promise.all([
+                updateUserProfilePicture({ id: userDB.id, avatar_url }),
+                verifyUserEmail(userDB.id),
+                createOAUTH({ provider: providerName, provider_account_id: providerId, user_id: userDB.id })
+            ]);
 
-            await createOAUTH({provider: providerName, provider_account_id: providerId, user_id: user_id});
             return res.status(200).json({
                 success: true,
                 message: "Successfully logged in",
-                data: {
-                    token: token,
-                    user: {
-                        id: userDB.id,
-                        name: userDB.username,
-                    }
-                },
-                error: null
+                data: { token, user: { id: userDB.id, name: userDB.username } }
             });
         } catch (error) {
             console.error("DB error in Google OAuth:", error);
-            return res.status(400).json({
-                success: false,
-                message: "Invalid Login",
-                data: null,
-                error: {
-                    code: 500,
-                    details: error.message
-                }
-            });
+            return res.status(500).json({ success: false, message: "Server error during Google OAuth" });
         }
     })(req, res, next);
 };
 
+// =================================================================================================
+// SESSION MANAGEMENT
+// =================================================================================================
+
 /**
- * Handles user logout by deleting the current session from the database
- * and clearing the authentication token cookie.
- *
- * @async
- * @function logout
- * @param {Object} req - Express request object.
- * @param {Object} req.user - Authenticated user object from middleware.
- * @param {string} req.user.sessionId - The ID of the session to be deleted.
- * @param {Object} res - Express response object.
- *
- * @returns {Object} JSON response with possible outcomes:
- *
- * Success (200):
- * {
- * success: true,
- * message: "Successfully logged out",
- * data: null,
- * error: null
- * }
- *
- * Server Error (500):
- * {
- * success: false,
- * message: "Server error during logout",
- * ...
- * }
+ * Retrieves all active sessions for the authenticated user.
+ * @param {object} req - Express request object.
+ * @param {object} res - Express response object.
+ */
+const getAllUsersSessions = async (req, res) => {
+    if (!req.user?.valid) {
+        return res.status(401).json({ success: false, message: "User not logged in" });
+    }
+    try {
+        const sessions = await getAllUsersSession(req.user.id);
+        if (!sessions || sessions.length === 0) {
+            return res.status(404).json({ success: false, message: "No sessions found" });
+        }
+        const formattedSessions = sessions.map(s => ({
+            session_id: s.id,
+            ip_address: s.ip_address,
+            device: s.device,
+            created_at: s.created_at,
+            last_seen_at: s.last_seen_at || null,
+        }));
+        return res.status(200).json({ success: true, message: "All sessions found", data: { "All Sessions": formattedSessions } });
+    } catch (error) {
+        console.error("Get All User Sessions Error:", error);
+        return res.status(500).json({ success: false, message: 'Server error' });
+    }
+};
+
+/**
+ * Deletes a specific user session.
+ * @param {object} req - Express request object, expecting `session_id` in params.
+ * @param {object} res - Express response object.
+ */
+const deleteUserSession = async (req, res) => {
+    const { session_id } = req.params;
+    if (!session_id) {
+        return res.status(404).json({ success: false, message: "No session ID provided" });
+    }
+    try {
+        const result = await deleteSession(session_id);
+        if (!result || result.length === 0) {
+            return res.status(404).json({ success: false, message: "Session not found" });
+        }
+        return res.status(204).send();
+    } catch (error) {
+        console.error("Delete User Session Error:", error);
+        return res.status(500).json({ success: false, message: "Server error" });
+    }
+};
+
+// =================================================================================================
+// AUTHENTICATION UTILITIES
+// =================================================================================================
+
+/**
+ * Authenticates a user by verifying their JWT token.
+ * @param {object} req - Express request object.
+ * @param {object} res - Express response object.
+ */
+const authenticate = (req, res) => {
+    try {
+        const token = req.cookies?.token || req.headers['authorization']?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ success: false, message: "Token not found" });
+        }
+        const decoded = jwt.verify(token, process.env.SECRET_STRING || 'super_secret_long_random_string');
+        return res.json({ success: true, message: 'Authenticated with JWT token', data: decoded });
+    } catch (err) {
+        console.error('Token validation error:', err);
+        return res.status(401).json({ success: false, message: 'Invalid or expired token' });
+    }
+};
+
+/**
+ * Logs out the user by deleting their session and clearing the auth cookie.
+ * @param {object} req - Express request object.
+ * @param {object} res - Express response object.
  */
 const logout = async (req, res) => {
     try {
-        // The sessionId is attached to req.user by the authenticateMiddleware
         const { sessionId } = req.user;
-
         if (sessionId) {
-            // 1. Delete the session from the database
             await deleteSession(sessionId);
         }
-
         res.clearCookie('token', {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'Lax'
         });
-
-        return res.status(200).json({
-            success: true,
-            message: "Successfully logged out",
-            data: null,
-            error: null
-        });
-
+        return res.status(200).json({ success: true, message: "Successfully logged out" });
     } catch (error) {
         console.error("Logout error:", error);
-        return res.status(500).json({
-            success: false,
-            message: 'Server error during logout',
-            data: null,
-            error: {
-                code: 500,
-                details: error.message
-            }
-        });
+        return res.status(500).json({ success: false, message: 'Server error during logout' });
     }
 };
 
