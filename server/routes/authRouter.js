@@ -2,7 +2,7 @@ const express = require('express');
 const {
     login,
     register,
-    authenticate, // The "who am I" endpoint
+    authenticate,
     google,
     googleCallback,
     getAllUsersSessions,
@@ -13,63 +13,32 @@ const {
 
 const {
     generateOtp,
-    verifyOtp // Renamed from submitOtp to match your file
+    verifyOtp
 } = require('../controllers/emailVerificationController');
 
-// --- Middlewares ---
-// You may not need these here if they are only used on one route,
-// but it's good practice to import them at the top.
 const { rateLimiter } = require('../middlewares/rateLimiter');
 const { checkCooldown } = require('../middlewares/checkCooldown');
 const authenticateMiddleware = require('../middlewares/authenticateMiddleware');
 
 const router = express.Router();
 
-// =================================================================
-// 🌎 PUBLIC ROUTES
-// =================================================================
-// Health check for the auth system
-router.get('/', healthCheck);
+router.get('/', healthCheck); // API health check endpoint
 
-// =================================================================
-// 🔐 AUTHENTICATION
-// =================================================================
-// --- Standard Auth ---
-router.post('/register', register);
-router.post('/login', login);
+router.post('/register', register); // User registration endpoint
+router.post('/login', login); // User login endpoint
 
-// --- OAuth (Google) ---
-router.get("/google", google);
-router.get("/google/callback", googleCallback);
+router.get("/google", google); // Initiates Google OAuth login flow
+router.get("/google/callback", googleCallback); // Handles Google OAuth callback
 
-// =================================================================
-// ✉️ EMAIL VERIFICATION
-// =================================================================
-// NOTE: Re-add your rateLimiter and checkCooldown when ready
-// router.post('/generate-otp', rateLimiter, checkCooldown, generateOtp);
-router.post('/generate-otp', generateOtp);
-router.post('/verify-otp', verifyOtp);
+router.post('/generate-otp', rateLimiter, checkCooldown, generateOtp); // Generates a One-Time Password (OTP) with rate limiting and cooldown
+router.post('/verify-otp', verifyOtp); // Verifies the provided OTP
 
-// =================================================================
-// 🛡️ PROTECTED ROUTES
-// (All routes below require a valid JWT)
-// =================================================================
-router.use(authenticateMiddleware);
+router.use(authenticateMiddleware); // Middleware to authenticate all routes below this line
 
-// --- User & Session Management ---
+router.get('/authenticate', authenticate); // Authenticates the user based on the session
+router.get('/sessions', getAllUsersSessions); // Retrieves all active user sessions
+router.delete('/sessions/:session_id', deleteUserSession); // Deletes a specific user session by ID
 
-// Verify token and get user info ("who am I")
-// NOTE: This route is protected. It will fail with a 401
-// if the middleware fails, which is correct.
-router.get('/authenticate', authenticate);
-
-// Get all active sessions for the logged-in user
-router.get('/sessions', getAllUsersSessions);
-
-// Delete a specific session (e.g., "log out this device")
-router.delete('/sessions/:session_id', deleteUserSession);
-
-// Log out the *current* session
-router.post('/logout', logout);
+router.post('/logout', logout); // Logs out the current user
 
 module.exports = router;
