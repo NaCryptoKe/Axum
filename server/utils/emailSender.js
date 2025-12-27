@@ -78,4 +78,61 @@ const sendOtpEmail = async (user_id, otp) => {
     }
 };
 
-module.exports = { sendOtpEmail };
+/**
+ * Sends a password reset link email to a specified user.
+ * Fetches user details by user ID and constructs an email with the password reset link.
+ * @param {string} user_id - The ID of the user to whom the password reset link should be sent.
+ * @param {string} passwordResetLink - The password reset link to be sent.
+ */
+const sendPasswordResetLink = async (user_id, passwordResetLink) => {
+    try {
+        const user = await getUserById(user_id);
+        if (!user) {
+            console.error(`User with ID ${user_id} not found. Cannot send password reset email.`);
+            return;
+        }
+
+        const { email, username: display_name } = user;
+
+        const mailOptions = {
+            from: '"Axum" <no-reply@axum.com>',
+            to: email,
+            subject: 'Axum Password Reset Request',
+            text: `Hello ${display_name},\n\nYou recently requested to reset your password for your Axum account. Please use the following link to reset your password: ${passwordResetLink}\n\nThis link is valid for 5 minutes. If you did not request a password reset, please ignore this email.\n\nThanks,\nThe Axum Team`,
+            html: `
+            <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4; padding: 20px; color: #333;">
+                <div style="max-width: 600px; margin: auto; background-color: #ffffff; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+                    <div style="background-color: #0d1117; padding: 20px; text-align: center;">
+                        <img src="https://i.imgur.com/sEw47O5.png" alt="Axum Logo" style="width: 120px;"/>
+                    </div>
+                    <div style="padding: 30px 40px; text-align: center;">
+                        <h1 style="color: #0d1117; margin-top: 0;">Password Reset Request</h1>
+                        <p style="font-size: 16px;">Hello, <strong>${display_name}</strong>!</p>
+                        <p style="font-size: 16px;">You recently requested to reset your password for your Axum account. Click the button below to reset it:</p>
+                        <div style="margin: 30px auto; text-align: center;">
+                            <a href="${passwordResetLink}" style="background-color: #0d1117; color: #ffffff; padding: 12px 25px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">Reset Your Password</a>
+                        </div>
+                        <p style="font-size: 14px; color: #777;">This link is valid for 5 minutes. If you did not request a password reset, please ignore this email. Your account is secure.</p>
+                    </div>
+                    <div style="background-color: #f4f4f4; padding: 20px 40px; font-size: 12px; color: #777; text-align: center;">
+                        <p style="margin: 0;">&copy; ${new Date().getFullYear()} Axum Corporation. All rights reserved.</p>
+                        <p style="margin: 5px 0 0 0;">Axum Headquarters, 123 Innovation Drive, Tech City, 98765</p>
+                        <p style="margin: 10px 0 0 0;">
+                            <a href="#" style="color: #0d1117; text-decoration: none;">Privacy Policy</a> &bull;
+                            <a href="#" style="color: #0d1117; text-decoration: none;">Terms of Service</a> &bull;
+                            <a href="#" style="color: #0d1117; text-decoration: none;">Contact Support</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            `,
+        };
+
+        const info = await transporter.sendMail(mailOptions);
+        console.log('Password reset email sent:', info.messageId);
+    } catch (err) {
+        console.error('Error sending password reset email:', err);
+    }
+};
+
+module.exports = { sendOtpEmail, sendPasswordResetLink };

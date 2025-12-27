@@ -1,8 +1,8 @@
 const { generateNewToken, verifyToken, markUsed, invalidateToken } = require('../models/passwordResetModel');
 const { v4: uuidv4 } = require('uuid');
 const { randomDelay } = require('../utils/security');
-const { sendResetNotification } = require('../utils/notification');
-const { getUserById, updatePassword } = require('../models/userModel');
+const { sendPasswordResetLink } = require('../utils/emailSender');
+const { getUserById, updatePassword, findByIdentifier } = require('../models/userModel');
 const argon2 = require('argon2');
 const ARGON2_OPTS = {
     type: argon2.argon2id,
@@ -18,19 +18,24 @@ const ARGON2_OPTS = {
  */
 const generatePasswordResetToken = async (req, res) => {
     try {
-        const { user_id } = req.body;
+        const { identifier } = req.body;
 
-        if (!user_id) {
+        if (!identifier) {
             return res.status(400).json({
                 success: false,
-                message: 'Missing user id',
+                message: 'Missing identifier',
                 data: null,
                 error: {
                     code: 400,
-                    message: 'Missing user id'
+                    message: 'Missing user identifier (username)'
                 }
             });
         }
+
+        const user = await findByIdentifier(identifier);
+        console.log(`user: ${user}`);
+
+        const user_id = user.id;
 
         const token = uuidv4();
         const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
@@ -38,6 +43,7 @@ const generatePasswordResetToken = async (req, res) => {
         const result = await generateNewToken(user_id, token, expiresAt);
 
         if (!result) {
+            await randomDelay();
             return res.status(502).json({
                 success: false,
                 message: 'Bad Gateway',
@@ -50,7 +56,7 @@ const generatePasswordResetToken = async (req, res) => {
         }
 
         const { email } = await getUserById(user_id);
-        //await sendResetNotification(email, token)
+        await sendPasswordResetLink(email, token)
 
         return res.status(201).json({
             success: true,
@@ -64,6 +70,7 @@ const generatePasswordResetToken = async (req, res) => {
         });
     } catch (error) {
         console.error(error);
+        await randomDelay();
         return res.status(500).json({
             success: false,
             message: 'Server error',
@@ -105,6 +112,7 @@ const resetPassword = async (req, res) => {
         const tokenResult = await verifyToken(token);
 
         if (!tokenResult.valid) {
+            await randomDelay();
             return res.status(400).json({
                 success: false,
                 message: 'Bad Request',
