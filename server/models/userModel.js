@@ -117,6 +117,22 @@ const getAllActiveUsers = async () => {
     return result.rows;
 }
 
+const updateUserRole = async ({ id, role }) => {
+    const result = await pool.query(
+        `UPDATE core.users SET role = $1, updated_at = NOW() WHERE id = $2 RETURNING id, username, role`,
+        [role, id]
+    );
+    return result.rows[0];
+};
+
+const permanentDeleteUser = async (id) => {
+    const result = await pool.query(
+        `DELETE FROM core.users WHERE id = $1`,
+        [id]
+    );
+    return result.rowCount; // 1 if deleted, 0 if not found
+};
+
 module.exports = {
     findByIdentifier,
     createUser,
@@ -129,4 +145,6 @@ module.exports = {
     getAllActiveUsers,
     updateUserProfilePicture,
     softDeleteUser,
+    updateUserRole,
+    permanentDeleteUser,
 };

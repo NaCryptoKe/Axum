@@ -5,9 +5,12 @@ const {
     getAllUsers,
     getAllActiveUsers,
     softDeleteUser,
-    updateUserProfilePicture
+    updateUserProfilePicture,
+    updateUserRole,
+    permanentDeleteUser,
 } = require('../models/userModel');
 const jwt = require("jsonwebtoken");
+require('dotenv').config();
 
 // ==== FINISHED ====
 const getUserProfile = async (req, res) => {
@@ -138,8 +141,6 @@ const updateProfile = async (req, res) => {
     const { bio, display_name } = req.body;
     let { newUsername, email } = req.body;
 
-    console.log (`===DEBUG===\nusername: ${username}\nid: ${id}\nbio: ${bio}\ndisplay_name: ${display_name}\nnewUsername: ${newUsername}\nemail: ${email}\n===DEBUG===`);
-
     try {
         if (!newUsername || !email || !bio || !display_name) {
             return res.status(400).json({
@@ -197,7 +198,7 @@ const updateProfile = async (req, res) => {
                 role: user.role,
                 sessionId: user.session_id_cookie,
             },
-            'super_secret_long_random_string',
+            process.env.SECRET_STRING,
             { algorithm: 'HS256', expiresIn: '7d' }
         );
 
@@ -232,7 +233,6 @@ const updateProfile = async (req, res) => {
 }
 
 const updateProfilePicture = async (req, res) => {
-    console.log('Updating profile picture\n');
     const { user } = req;
     const { avatar_url } = req.body;
     const username = req.params.username;
@@ -300,7 +300,7 @@ const updateProfilePicture = async (req, res) => {
 const allUsers = async (req, res) => {
     const { user } = req;
 
-    if (!user?.valid || ( user?.role !== 'admin' || user?.role !== 'moderator') ) {
+    if (!user?.valid || (user.role !== 'admin' && user.role !== 'moderator')) {
         return res.status(401).json({
             success: false,
             message: "Not authorized",
@@ -333,8 +333,8 @@ const allUsers = async (req, res) => {
             avatar_url: user.avatar_url,
             role: user.role,
             deleted_at: user.is_deleted ? user.deleted_at : null,
-            created: users.created_at,
-            updated: users.updated_at
+            created: user.created_at,
+            updated: user.updated_at
         }));
         return res.status(200).json({
             success: true,
@@ -356,20 +356,21 @@ const allUsers = async (req, res) => {
     }
 }
 
-// ==== WORKING ON ====
-// Soft delete must also work for admin or moderators without token from cookie
 const softDelete = async (req, res) => {
     const { user } = req;
     const { username } = req.params;
 
-    if (!user?.valid || username !== user.username_cookie) {
+    const isOwner = username === user.username_cookie;
+    const isAdminOrModerator = user.role === 'admin' || user.role === 'moderator';
+
+    if (!user?.valid || (!isOwner && !isAdminOrModerator)) {
         return res.status(401).json({
             success: false,
             message: "Not authorized",
             data: null,
             error: {
                 code: 401,
-                details: "You must be logged in and can only delete your own account"
+                details: "You must be logged in and can only delete your own account or be an Admin/Moderator."
             }
         });
     }
@@ -421,19 +422,191 @@ const softDelete = async (req, res) => {
 
 const allActiveUsers = async (req, res) => {
     try {
-        const result = await getAllActiveUsers();
-        if (!result || result.length === 0) {return res.status(404).json({ message: 'No active users' });}
-        return res.status(200).json(result);
+        const users = await getAllActiveUsers();
+        if (!users || users.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'No active users found',
+                data: null,
+                error: {
+                    code: 404,
+                    details: 'There are currently no active users.'
+                }
+            });
+        }
+        
+        const formattedUsers = users.map(u => ({
+            username: u.username,
+            display_name: u.display_name,
+            avatar_url: u.avatar_url
+        }));
+
+        return res.status(200).json({
+            success: true,
+            message: 'Active users retrieved successfully.',
+            data: { users: formattedUsers },
+            error: null,
+        });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server error' });
+        console.error("Error getting active users:", error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            data: null,
+            error: {
+                code: 500,
+                details: error.message,
+            }
+        });
     }
 }
 
 
-// ==== NOT STARTED ====
-const changeUserRole = async (req, res) => {}
-const permanentDeleteUser = async (req, res) => {}
+const changeUserRole = async (req, res) => {
+    const { user: actor } = req;
+    const { username, role: newRole } = req.body;
+
+    // 1. Admin check
+    if (actor?.role !== 'admin') {
+        return res.status(403).json({
+            success: false,
+            message: "Forbidden",
+            error: { code: 403, details: "Only administrators can change user roles." }
+        });
+    }
+
+    // 2. Input validation
+    if (!username || !newRole) {
+        return res.status(400).json({
+            success: false,
+            message: "Bad Request",
+            error: { code: 400, details: "Username and new role are required." }
+        });
+    }
+    
+    const VALID_ROLES = ['player', 'creator', 'moderator', 'admin'];
+    if (!VALID_ROLES.includes(newRole)) {
+        return res.status(422).json({
+            success: false,
+            message: "Invalid Role",
+            error: { code: 422, details: `Role must be one of: ${VALID_ROLES.join(', ')}` }
+        });
+    }
+
+    try {
+        const targetUser = await getUserByUsername(username);
+        if (!targetUser) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found",
+                error: { code: 404, details: `User '${username}' not found.` }
+            });
+        }
+
+        // 3. Authorization rules
+        if (targetUser.id === actor.id) {
+            return res.status(403).json({
+                success: false,
+                message: "Forbidden",
+                error: { code: 403, details: "Administrators cannot change their own role." }
+            });
+        }
+        if (targetUser.role === 'admin') {
+             return res.status(403).json({
+                success: false,
+                message: "Forbidden",
+                error: { code: 403, details: "Administrators cannot change the role of other administrators." }
+            });
+        }
+
+        // 4. Update role
+        const updatedUser = await updateUserRole({ id: targetUser.id, role: newRole });
+
+        return res.status(200).json({
+            success: true,
+            message: `User ${updatedUser.username}'s role updated to ${updatedUser.role}.`,
+            data: updatedUser,
+            error: null
+        });
+
+    } catch (error) {
+        console.error("Change user role error:", error);
+        return res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: { code: 500, details: error.message }
+        });
+    }
+};
+
+const permanentDeleteUserController = async (req, res) => {
+    const { user: actor } = req;
+    const { username } = req.params;
+
+    if (actor?.role !== 'admin') {
+        return res.status(403).json({
+            success: false,
+            message: "Forbidden",
+            error: { code: 403, details: "Only administrators can permanently delete users." }
+        });
+    }
+
+    try {
+        const targetUser = await getUserByUsername(username);
+        if (!targetUser) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found",
+                error: { code: 404, details: `User '${username}' not found.` }
+            });
+        }
+        
+        if (targetUser.id === actor.id) {
+             return res.status(403).json({
+                success: false,
+                message: "Forbidden",
+                error: { code: 403, details: "Administrators cannot delete their own account this way." }
+            });
+        }
+
+        const deletedCount = await permanentDeleteUser(targetUser.id);
+
+        if (deletedCount === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found or already deleted.",
+                error: { code: 404 }
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: `User '${username}' has been permanently deleted.`,
+            data: null,
+            error: null
+        });
+
+    } catch (error) {
+        console.error("Permanent delete user error:", error);
+        // Check for foreign key violation
+        if (error.code === '23503') {
+            return res.status(409).json({
+                success: false,
+                message: "Conflict: User cannot be deleted.",
+                error: {
+                    code: 409,
+                    details: "This user cannot be deleted because they are referenced by other records (e.g., they own an organization or have made financial transactions)."
+                }
+            });
+        }
+
+        return res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: { code: 500, details: error.message }
+        });
+    }
+};
 
 module.exports = {
     getUserProfile,
@@ -443,4 +616,6 @@ module.exports = {
     allActiveUsers,
     updateProfilePicture,
     softDelete,
+    changeUserRole,
+    permanentDeleteUserController,
 }

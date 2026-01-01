@@ -7,10 +7,17 @@ const { generatePasswordResetToken, resetPassword} = require ('../controllers/pa
 const router = express.Router();
 
 router.get ('/', (req, res) => {
-    res.send ('Password Reset');
+    res.json ({
+        success: true,
+        message: 'Password Reset Router is working',
+        data: null,
+        error: null
+    });
 })
 router.post (
-    '/generate-password-reset',
+    '/generate-password-reset', 
+    rateLimiter,
+    checkCooldown,
     generatePasswordResetToken
 );
 router.post('/update-password/:token', resetPassword);

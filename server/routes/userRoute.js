@@ -8,7 +8,9 @@ const {
     allActiveUsers,
     softDelete,
     updateProfile,
-    updateProfilePicture
+    updateProfilePicture,
+    changeUserRole,
+    permanentDeleteUserController
 } = require('../controllers/userController');
 
 const authenticateMiddleware = require('../middlewares/authenticateMiddleware');
@@ -25,9 +27,16 @@ router.get('/', (req, res) => {
 router.use(authenticateMiddleware);
 
 router.get('/@:username', getUserProfile);
-router.get('/@:username/delete', softDelete);
+router.delete('/@:username', softDelete);
 router.get('/@:username/status', onlineStatus);
 router.patch('/@:username/update', updateProfile);
 router.patch('/@:username/update-profile-picture', updateProfilePicture);
+
+router.get('/active', allActiveUsers); // Accessible by any authenticated user
+
+// Admin-specific routes
+router.get('/admin/all', allUsers);
+router.patch('/admin/users/@:username/role', changeUserRole);
+router.delete('/admin/users/@:username/permanent', permanentDeleteUserController);
 
 module.exports = router;

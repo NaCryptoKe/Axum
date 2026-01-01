@@ -2,7 +2,7 @@ const { generateNewToken, verifyToken, markUsed, invalidateToken } = require('..
 const { v4: uuidv4 } = require('uuid');
 const { randomDelay } = require('../utils/security');
 const { sendPasswordResetLink } = require('../utils/emailSender');
-const { getUserById, updatePassword, findByIdentifier } = require('../models/userModel');
+const { updatePassword, findByIdentifier } = require('../models/userModel');
 const argon2 = require('argon2');
 const ARGON2_OPTS = {
     type: argon2.argon2id,
@@ -33,10 +33,24 @@ const generatePasswordResetToken = async (req, res) => {
         }
 
         const user = await findByIdentifier(identifier);
-        console.log(`user: ${user}`);
+        
+        if (!user) {
+            await randomDelay();
+            // Note: Returning a 404 might leak information that the user does not exist.
+            // A more secure approach is to always return a 200 OK response,
+            // but for this implementation, we use randomDelay to mitigate timing attacks.
+            return res.status(404).json({
+                success: false,
+                message: 'User not found',
+                data: null,
+                error: {
+                    code: 404,
+                    message: 'User not found'
+                }
+            });
+        }
 
-        const user_id = user.id;
-
+        const { id: user_id, email } = user;
         const token = uuidv4();
         const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
@@ -55,12 +69,13 @@ const generatePasswordResetToken = async (req, res) => {
             });
         }
 
-        const { email } = await getUserById(user_id);
-        await sendPasswordResetLink(email, token)
+        // IMPORTANT: The domain should be configured and not hardcoded.
+        const passwordResetLink = `http://localhost:3000/reset-password?token=${token}`;
+        await sendPasswordResetLink(user_id, passwordResetLink);
 
         return res.status(201).json({
             success: true,
-            message: 'Password reset token generated',
+            message: 'Password reset link has been sent to the associated email address.',
             data: {
                 token: token,
                 email: email,
