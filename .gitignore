@@ -9,13 +9,13 @@ client/node_modules
 server/node_modules
 
 # Project-specific ignored folders (from your list)
-Trial/
+trial/
 
 # Build/Transpiled Files (Common for front-end frameworks like React/Vite/Webpack)
 dist/
 build/
 coverage/
-gemini.md
+./GEMINI.md
 
 # ----------------------------------------
 # 2. SENSITIVE & PRIVATE FILES
