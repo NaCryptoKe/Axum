@@ -1,0 +1,61 @@
+import React, { createContext, useState, useContext, useCallback, useEffect } from 'react';
+import Toast from '../components/toasts/Toast';
+
+const ToastContext = createContext(null);
+const MAX_TOASTS = 5;
+
+export const useToasts = () => {
+    const context = useContext(ToastContext);
+    if (!context) {
+        throw new Error('useToasts must be used within a ToastProvider');
+    }
+    return context;
+};
+
+export const ToastProvider = ({ children }) => {
+    const [toasts, setToasts] = useState([]);
+    const [queuedToasts, setQueuedToasts] = useState([]);
+
+    const addToast = useCallback((type, messages) => {
+        const newToast = { id: Date.now() + Math.random(), type, messages };
+        if (toasts.length < MAX_TOASTS) {
+            setToasts(prevToasts => [...prevToasts, newToast]);
+        } else {
+            setQueuedToasts(prevQueued => [...prevQueued, newToast]);
+        }
+    }, [toasts.length]);
+
+    const removeToast = useCallback((id) => {
+        setToasts(prevToasts => prevToasts.filter(toast => toast.id !== id));
+    }, []);
+
+    useEffect(() => {
+        if (toasts.length < MAX_TOASTS && queuedToasts.length > 0) {
+            const [nextToast, ...remainingQueue] = queuedToasts;
+            setQueuedToasts(remainingQueue);
+            setToasts(prevToasts => [...prevToasts, nextToast]);
+        }
+    }, [toasts, queuedToasts]);
+    
+    const toast = {
+        success: (messages) => addToast('success', messages),
+        error: (messages) => addToast('error', messages),
+        warning: (messages) => addToast('warning', messages),
+    };
+
+    return (
+        <ToastContext.Provider value={toast}>
+            {children}
+            <div className="toast-container">
+                {toasts.map(({ id, type, messages }) => (
+                    <Toast
+                        key={id}
+                        type={type}
+                        messages={messages}
+                        onClose={() => removeToast(id)}
+                    />
+                ))}
+            </div>
+        </ToastContext.Provider>
+    );
+};
