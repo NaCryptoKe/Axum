@@ -1,12 +1,30 @@
-import React from 'react'
+import React, { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Navbar from './components/Navbar';
+import Home from './pages/Home';
+import Store from './pages/Store';
+import Register from './pages/Register';
+import Login from './pages/Login';
+import './trial/hello.css';;;
+import './trial/navbar.css';
 
 function App() {
+  const [isUserActive, setIsUserActive] = useState(true);
+  const [isVideoActive, setIsVideoActive] = useState(false);
 
   return (
-    <>
-      <h1>Hello World</h1>
-    </>
-  )
+    <Router>
+      {/* Navbar stays here so it shows on every page */}
+      <Navbar isUserActive={isUserActive} isVideoActive={isVideoActive}/> 
+      
+      <Routes>
+        <Route path="/" element={<Home isUserActive={isUserActive} isVideoActive={isVideoActive} setIsUserActive={setIsUserActive} setIsVideoActive={setIsVideoActive}/>} />
+        <Route path="/store" element={<Store />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/login" element={<Login />} />
+      </Routes>
+    </Router>
+  );
 }
 
-export default App
+export default App;

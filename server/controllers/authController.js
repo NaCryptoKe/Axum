@@ -49,19 +49,19 @@ const login = async (req, res) => {
         const { password } = req.body;
 
         if (!identifier || !password) {
-            return res.status(400).json({ success: false, message: "Missing credentials" });
+            return res.status(400).json({ success: false, message: "Missing credentials", data: null, error: { code: 400, details: "Missing credentials." } });
         }
 
         identifier = identifier.toLowerCase().trim();
         const user = await findByIdentifier(identifier);
 
         if (!user) {
-            return res.status(400).json({ success: false, message: "Invalid username or email" });
+            return res.status(400).json({ success: false, message: "Invalid credentials", data: null, error: { code: 400, details: "Invalid credentials." } });
         }
 
         const passwordMatches = await argon2.verify(user.hashed_password, password);
         if (!passwordMatches) {
-            return res.status(400).json({ success: false, message: "Incorrect password" });
+            return res.status(400).json({ success: false, message: "Invalid credentials", data: null, error: { code: 400, details: "Invalid credentials." } });
         }
 
         const tokenExpiry = '30d';
@@ -88,11 +88,12 @@ const login = async (req, res) => {
         return res.status(200).json({
             success: true,
             message: "Successfully logged in",
-            data: { token, user: { id: user.id, name: user.username } }
+            data: { token, user: { id: user.id, username: user.username, email: user.email } },
+            error: null
         });
     } catch (error) {
         console.error("Login error:", error);
-        return res.status(500).json({ success: false, message: "Server error during login" });
+        return res.status(500).json({ success: false, message: "Server error", data: null, error: { code: 500, details: "An internal error occurred." } });
     }
 };
 
@@ -103,21 +104,32 @@ const login = async (req, res) => {
  */
 const register = async (req, res) => {
     let { username, email, firstname, lastname, password } = req.body;
-    const errors = [];
 
     if (!firstname || !lastname || !username || !email || !password) {
-        return res.status(400).json({ success: false, message: "Missing credentials" });
+        return res.status(400).json({ success: false, message: "Missing credentials", data: null, error: { code: 400, details: "Please fill out all fields." } });
     }
 
-    // Input validation
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.push('Invalid email format.');
-    if (!/^[A-Za-z0-9_]{4,}$/.test(username)) errors.push('Username must be at least 4 characters and contain only alphanumeric characters and underscores.');
-    if (password.length < 8 || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/\d/.test(password) || !/[^a-zA-Z0-9]/.test(password)) {
-        errors.push('Password must be at least 8 characters and include uppercase, lowercase, a number, and a special character.');
+    // Input validation - return on first error
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return res.status(422).json({ success: false, message: "Validation failed", data: null, error: { code: 422, details: "Invalid email format." } });
     }
-
-    if (errors.length > 0) {
-        return res.status(422).json({ success: false, message: "Validation failed", errors });
+    if (!/^[A-Za-z0-9_]{4,}$/.test(username)) {
+        return res.status(422).json({ success: false, message: "Validation failed", data: null, error: { code: 422, details: "Username must be at least 4 characters." } });
+    }
+    if (password.length < 8) {
+        return res.status(422).json({ success: false, message: "Validation failed", data: null, error: { code: 422, details: "Password must be at least 8 characters." } });
+    }
+    if (!/[A-Z]/.test(password)) {
+        return res.status(422).json({ success: false, message: "Validation failed", data: null, error: { code: 422, details: "Password needs an uppercase letter." } });
+    }
+    if (!/[a-z]/.test(password)) {
+        return res.status(422).json({ success: false, message: "Validation failed", data: null, error: { code: 422, details: "Password needs a lowercase letter." } });
+    }
+    if (!/\d/.test(password)) {
+        return res.status(422).json({ success: false, message: "Validation failed", data: null, error: { code: 422, details: "Password needs a number." } });
+    }
+    if (!/[^a-zA-Z0-9]/.test(password)) {
+        return res.status(422).json({ success: false, message: "Validation failed", data: null, error: { code: 422, details: "Password needs a special character." } });
     }
 
     try {
@@ -128,7 +140,7 @@ const register = async (req, res) => {
 
         const existingUser = await findByIdentifier(username) || await findByIdentifier(email);
         if (existingUser) {
-            return res.status(409).json({ success: false, message: "Username or email already taken" });
+            return res.status(409).json({ success: false, message: "Conflict", data: null, error: { code: 409, details: "Username or email is already taken." } });
         }
 
         const hashedPassword = await argon2.hash(password, ARGON2_OPTS);
@@ -137,11 +149,12 @@ const register = async (req, res) => {
         return res.status(201).json({
             success: true,
             message: "User created successfully",
-            data: { id: newUser.id, username: newUser.username, email: newUser.email }
+            data: { id: newUser.id, username: newUser.username, email: newUser.email, firstname: newUser.firstname, lastname: newUser.lastname },
+            error: null
         });
     } catch (error) {
         console.error("Register error:", error);
-        return res.status(500).json({ success: false, message: "Server error during registration" });
+        return res.status(500).json({ success: false, message: "Server error", data: null, error: { code: 500, details: "An internal error occurred." } });
     }
 };
 
@@ -193,11 +206,11 @@ const google = passport.authenticate("google", { scope: ["profile", "email"] });
 const googleCallback = (req, res, next) => {
     passport.authenticate("google", { session: false }, async (error, user) => {
         if (error || !user) {
-            return res.status(400).json({ message: "OAuth failed or no user found" });
+            return res.status(400).json({ success: false, message: "OAuth failed", data: null, error: { code: 400, details: "Google authentication failed." } });
         }
         try {
             const { email, username: originalUsername, firstname, lastname, avatar_url, providerName, providerId } = user;
-            if (!email) return res.status(400).json({ message: "Google account has no email" });
+            if (!email) return res.status(400).json({ success: false, message: "No email found", data: null, error: { code: 400, details: "Google account has no email." } });
 
             let userDB = await findByIdentifier(email);
             let username = originalUsername;
@@ -234,14 +247,10 @@ const googleCallback = (req, res, next) => {
                 createOAUTH({ provider: providerName, provider_account_id: providerId, user_id: userDB.id })
             ]);
 
-            return res.status(200).json({
-                success: true,
-                message: "Successfully logged in",
-                data: { token, user: { id: userDB.id, name: userDB.username } }
-            });
+            return res.redirect('http://localhost:5173/');
         } catch (error) {
             console.error("DB error in Google OAuth:", error);
-            return res.status(500).json({ success: false, message: "Server error during Google OAuth" });
+            return res.status(500).json({ success: false, message: "Server error", data: null, error: { code: 500, details: "An internal error occurred." } });
         }
     })(req, res, next);
 };
@@ -255,12 +264,12 @@ const googleCallback = (req, res, next) => {
  */
 const getAllUsersSessions = async (req, res) => {
     if (!req.user?.valid) {
-        return res.status(401).json({ success: false, message: "User not logged in" });
+        return res.status(401).json({ success: false, message: "Unauthorized", data: null, error: { code: 401, details: "Unauthorized." } });
     }
     try {
         const sessions = await getAllUsersSession(req.user.id);
         if (!sessions || sessions.length === 0) {
-            return res.status(404).json({ success: false, message: "No sessions found" });
+            return res.status(404).json({ success: false, message: "Not found", data: null, error: { code: 404, details: "No sessions found." } });
         }
         const formattedSessions = sessions.map(s => ({
             session_id: s.id,
@@ -269,10 +278,10 @@ const getAllUsersSessions = async (req, res) => {
             created_at: s.created_at,
             last_seen_at: s.last_seen_at || null,
         }));
-        return res.status(200).json({ success: true, message: "All sessions found", data: { "All Sessions": formattedSessions } });
+        return res.status(200).json({ success: true, message: "All sessions found", data: { "All Sessions": formattedSessions }, error: null });
     } catch (error) {
         console.error("Get All User Sessions Error:", error);
-        return res.status(500).json({ success: false, message: 'Server error' });
+        return res.status(500).json({ success: false, message: 'Server error', data: null, error: { code: 500, details: "An internal error occurred." } });
     }
 };
 
@@ -284,17 +293,17 @@ const getAllUsersSessions = async (req, res) => {
 const deleteUserSession = async (req, res) => {
     const { session_id } = req.params;
     if (!session_id) {
-        return res.status(404).json({ success: false, message: "No session ID provided" });
+        return res.status(404).json({ success: false, message: "Not found", data: null, error: { code: 404, details: "Missing session ID." } });
     }
     try {
         const result = await deleteSession(session_id);
         if (!result || result.length === 0) {
-            return res.status(404).json({ success: false, message: "Session not found" });
+            return res.status(404).json({ success: false, message: "Not found", data: null, error: { code: 404, details: "Session not found." } });
         }
-        return res.status(204).send();
+        return res.status(200).json({ success: true, message: "Session Revoked Successfully", data: null, error: null });
     } catch (error) {
         console.error("Delete User Session Error:", error);
-        return res.status(500).json({ success: false, message: "Server error" });
+        return res.status(500).json({ success: false, message: "Server error", data: null, error: { code: 500, details: "An internal error occurred." } });
     }
 };
 
@@ -309,13 +318,13 @@ const authenticate = (req, res) => {
     try {
         const token = req.cookies?.token || req.headers['authorization']?.split(' ')[1];
         if (!token) {
-            return res.status(401).json({ success: false, message: "Token not found" });
+            return res.status(401).json({ success: false, message: "Token not found", data: null, error: { code: 401, details: "Token not found." } });
         }
         const decoded = jwt.verify(token, process.env.SECRET_STRING);
-        return res.json({ success: true, message: 'Authenticated with JWT token', data: decoded });
+        return res.json({ success: true, message: 'Authenticated with JWT token', data: decoded, error: null });
     } catch (err) {
         console.error('Token validation error:', err);
-        return res.status(401).json({ success: false, message: 'Invalid or expired token' });
+        return res.status(401).json({ success: false, message: 'Invalid token', data: null, error: { code: 401, details: "Invalid or expired token." } });
     }
 };
 
@@ -335,10 +344,10 @@ const logout = async (req, res) => {
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'Lax'
         });
-        return res.status(200).json({ success: true, message: "Successfully logged out" });
+        return res.status(200).json({ success: true, message: "Successfully logged out", data: null, error: null });
     } catch (error) {
         console.error("Logout error:", error);
-        return res.status(500).json({ success: false, message: 'Server error during logout' });
+        return res.status(500).json({ success: false, message: 'Server error', data: null, error: { code: 500, details: "An internal error occurred." } });
     }
 };
 

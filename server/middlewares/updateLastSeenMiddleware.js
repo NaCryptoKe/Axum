@@ -1,5 +1,6 @@
 const { updateLastSeen } = require('../models/sessionModel');
 const jwt = require('jsonwebtoken');
+require('dotenv').config();
 
 const updateLastSeenMiddleware = async (req, res, next) => {
     try {
@@ -10,7 +11,7 @@ const updateLastSeenMiddleware = async (req, res, next) => {
         // 2️⃣ Verify and decode JWT
         let decoded;
         try {
-            decoded = jwt.verify(token, 'super_secret_long_random_string'); // must match login secret
+            decoded = jwt.verify(token, process.env.SECRET_STRING); // must match login secret
         } catch (err) {
             console.warn('Invalid or expired token for last seen update');
             return next();

@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+require('dotenv').config();
 
 const authenticateMiddleware = (req, res, next) => {
     try {
@@ -15,7 +16,7 @@ const authenticateMiddleware = (req, res, next) => {
         }
 
         // Verify JWT
-        const decoded = jwt.verify(token,  'super_secret_long_random_string');
+        const decoded = jwt.verify(token,  process.env.SECRET_STRING);
 
         req.user = {
             valid: true,
