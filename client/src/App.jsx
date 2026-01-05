@@ -5,6 +5,7 @@ import Home from './pages/Home';
 import Store from './pages/Store';
 import Register from './pages/Register';
 import Login from './pages/Login';
+import OtpVerification from './pages/OtpVerification';
 import './trial/hello.css';;;
 import './trial/navbar.css';
 
@@ -22,6 +23,7 @@ function App() {
         <Route path="/store" element={<Store />} />
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/otp-verification" element={<OtpVerification />} />
       </Routes>
     </Router>
   );

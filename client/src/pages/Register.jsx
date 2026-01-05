@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../api/api';
 import { useToasts } from '../context/ToastContext';
 import PasswordStrength from '../components/PasswordStrength';
@@ -14,6 +15,7 @@ const Register = () => {
   });
   const [loading, setLoading] = useState(false);
   const toast = useToasts();
+  const navigate = useNavigate();
 
   const { firstname, lastname, username, email, password } = formData;
 
@@ -30,7 +32,10 @@ const Register = () => {
       });
 
       if (response.data.success) {
-        toast.success('Registration successful! Please check your email to verify your account.');
+        const userId = response.data.data.id;
+                await api.post('/auth/generate-otp', { user_id: userId });
+        toast.success('Registration successful! Please check your email for the OTP.');
+        navigate('/otp-verification', { state: { userId } });
       } else {
         const { error } = response.data;
         if (error && error.details) {
