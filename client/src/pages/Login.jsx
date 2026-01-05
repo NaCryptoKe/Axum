@@ -17,7 +17,7 @@ const Login = () => {
 
   const onChange = e => setFormData({ ...formData, [e.target.name]: e.target.value });
 
-  const onSubmit = async e => {
+    const onSubmit = async e => {
     e.preventDefault();
     setLoading(true);
 
@@ -37,7 +37,10 @@ const Login = () => {
         }
       }
     } catch (err) {
-        if (err.response && err.response.data && err.response.data.error && err.response.data.error.details) {
+        if (err.response && err.response.status === 403 && err.response.data.data && err.response.data.data.email_verified === false) {
+            toast.error('Please verify your email. An OTP has been sent.');
+            navigate('/otp-verification', { state: { userId: err.response.data.data.userId } });
+        } else if (err.response && err.response.data && err.response.data.error && err.response.data.error.details) {
             toast.error(err.response.data.error.details);
         } else {
             toast.error('An unexpected error occurred. Please try again.');

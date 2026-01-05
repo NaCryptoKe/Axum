@@ -3,6 +3,8 @@ const argon2 = require('argon2');
 const passport = require('passport');
 const { Strategy: GoogleStrategy } = require('passport-google-oauth20');
 const { findByIdentifier, createUser, updateUserProfilePicture, verifyUserEmail } = require('../models/userModel');
+const { createEmailVerification } = require('../models/emailVerificationModel');
+const { sendOtpEmail } = require('../utils/emailSender');
 const { createSession, getAllUsersSession, deleteSession } = require('../models/sessionModel');
 const { createOAUTH } = require('../models/oauthAccountModel');
 require('dotenv').config();
@@ -62,6 +64,20 @@ const login = async (req, res) => {
         const passwordMatches = await argon2.verify(user.hashed_password, password);
         if (!passwordMatches) {
             return res.status(400).json({ success: false, message: "Invalid credentials", data: null, error: { code: 400, details: "Invalid credentials." } });
+        }
+
+        if (!user.email_verified) {
+            const expires_at = new Date(Date.now() + 5 * 60 * 1000); // 5 min expiry
+            const { otp } = await createEmailVerification(user.id, expires_at);
+            await sendOtpEmail(user.id, otp);
+            console.log(otp)
+
+            return res.status(403).json({ 
+                success: false, 
+                message: "Email not verified", 
+                data: { userId: user.id, email_verified: false }, 
+                error: { code: 403, details: "Please verify your email address. An OTP has been sent." }
+            });
         }
 
         const tokenExpiry = '30d';
