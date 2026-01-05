@@ -7,6 +7,8 @@ const {
     getGameVersionsController,
     updateVersionController
 } = require('../controllers/gameController');
+const authenticateMiddleware = require('../middlewares/authenticateMiddleware');
+const isVerifiedMiddleware = require('../middlewares/isVerifiedMiddleware');
 
 const router = express.Router();
 
@@ -14,6 +16,9 @@ const router = express.Router();
 router.get('/', (req, res) => {
     res.json({ message: "HELLO GAMES WORKING!!" });
 });
+
+router.use(authenticateMiddleware);
+router.use(isVerifiedMiddleware);
 
 // -------------------
 // GAME CRUD ROUTES

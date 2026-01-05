@@ -28,9 +28,9 @@ const OtpVerification = () => {
     try {
             const response = await api.post('/auth/verify-otp', { user_id: userId, otp });
 
-      if (response.data.success) {
-        toast.success('Email verified successfully! You can now log in.');
-        navigate('/login');
+            if (response.data.success) {
+        toast.success('Email verified successfully!');
+        navigate(`/@${response.data.data.user.username}`);
       } else {
         const { error } = response.data;
         if (error && error.details) {
