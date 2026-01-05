@@ -11,7 +11,7 @@ import cart from '../assets/shopping-cart.svg';
 import wishlist from '../assets/bookmark-simple.svg';
 import trailer from '../assets/Trailer.mp4';
 
-const Home = ({ isUserActive, isVideoActive, setIsUserActive, setIsVideoActive }) => {
+const Home = ({ isUserActive, isVideoActive, setIsUserActive, setIsVideoActive, isSearchFocused }) => {
     const videoRef = useRef(null);
     const timeoutRef = useRef(null);
 
@@ -32,13 +32,13 @@ const Home = ({ isUserActive, isVideoActive, setIsUserActive, setIsVideoActive }
 
     // Hide UI after 3 seconds of inactivity if video is active
     timeoutRef.current = setTimeout(() => {
-        if (isVideoActive) setIsUserActive(false);
+        if (isVideoActive && !isSearchFocused) setIsUserActive(false);
     }, 3000);
     };
 
     return (
     <main 
-        className={`container ${isVideoActive ? 'video-mode' : ''} ${!isUserActive ? 'hide-ui' : ''}`}
+        className={`container ${isVideoActive ? 'video-mode' : ''} ${!isUserActive && !isSearchFocused ? 'hide-ui' : ''}`}
         onMouseMove={handleMouseMove}
     >
         <Background 

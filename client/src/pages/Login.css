@@ -130,3 +130,23 @@
         transform: translateY(0);
     }
 }
+
+.password-group {
+    position: relative;
+}
+
+.password-toggle-icon {
+    position: absolute;
+    top: 50%;
+    right: 15px;
+    transform: translateY(-50%);
+    cursor: pointer;
+    user-select: none;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 1.2rem;
+}
+
+.password-toggle-icon:hover {
+    color: white;
+}
+
