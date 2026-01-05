@@ -1,24 +1,25 @@
 const jwt = require('jsonwebtoken');
+const { getUserById } = require('../models/userModel');
 require('dotenv').config();
 
-const authenticateMiddleware = (req, res, next) => {
+const authenticateMiddleware = async (req, res, next) => {
     try {
-        // Try reading token from cookie first, fallback to header
-        const token = req.cookies?.token || req.headers['authorization']?.split(' ')[1]; // Checks token existence and authorization header
-        if (!token)  {
-            req.user = {
-                valid: false,
-                id: null,
-                username_cookie: null,
-                session_id_cookie: null,
-            };
+        const token = req.cookies?.token || req.headers['authorization']?.split(' ')[1];
+        if (!token) {
+            req.user = { valid: false };
             return next();
         }
 
-        // Verify JWT
-        const decoded = jwt.verify(token,  process.env.SECRET_STRING);
+        const decoded = jwt.verify(token, process.env.SECRET_STRING);
+        const user = await getUserById(decoded.id);
+
+        if (!user) {
+            req.user = { valid: false };
+            return next();
+        }
 
         req.user = {
+            ...user,
             valid: true,
             id: decoded.id,
             role: decoded.role,
@@ -29,15 +30,10 @@ const authenticateMiddleware = (req, res, next) => {
         next();
     } catch (err) {
         console.error('Token validation error:', err);
-
-        req.user = {
-            valid: false,
-            id: null,
-            username_cookie: null,
-            session_id_cookie: null,
-        };
+        req.user = { valid: false };
         next();
     }
 };
 
 module.exports = authenticateMiddleware;
+

@@ -4,12 +4,13 @@ import api from '../api/api';
 import { useToasts } from '../context/ToastContext';
 import './Login.css';
 
-const Login = () => {
+const Login = ({ isModal = false }) => {
   const [formData, setFormData] = useState({
     identifier: '',
     password: '',
   });
   const [loading, setLoading] = useState(false);
+  const [passwordVisible, setPasswordVisible] = useState(false);
   const toast = useToasts();
   const navigate = useNavigate();
 
@@ -28,7 +29,6 @@ const Login = () => {
         toast.success('Login successful!');
         navigate('/'); // Redirect to home page on successful login
       } else {
-        // This case might not be hit if backend always returns non-2xx on error
         const { error } = response.data;
         if (error && error.details) {
             toast.error(error.details);
@@ -37,7 +37,10 @@ const Login = () => {
         }
       }
     } catch (err) {
-        if (err.response && err.response.data && err.response.data.error && err.response.data.error.details) {
+        if (err.response && err.response.status === 403 && err.response.data.data && err.response.data.data.email_verified === false) {
+            toast.error('Please verify your email. An OTP has been sent.');
+            navigate('/otp-verification', { state: { userId: err.response.data.data.userId } });
+        } else if (err.response && err.response.data && err.response.data.error && err.response.data.error.details) {
             toast.error(err.response.data.error.details);
         } else {
             toast.error('An unexpected error occurred. Please try again.');
@@ -51,16 +54,19 @@ const Login = () => {
       window.location.href = 'http://localhost:3000/api/auth/google';
   };
 
-  return (
-    <div className="login-container">
+  const formContent = (
+    <>
       <h1>Sign In</h1>
       <p>Access your account</p>
       <form onSubmit={onSubmit}>
         <div className="form-group">
           <input type="text" placeholder="Username or Email" name="identifier" value={identifier} onChange={onChange} required />
         </div>
-        <div className="form-group">
-          <input type="password" placeholder="Password" name="password" value={password} onChange={onChange} required />
+        <div className="form-group password-group">
+          <input type={passwordVisible ? "text" : "password"} placeholder="Password" name="password" value={password} onChange={onChange} required />
+          <span className="password-toggle-icon" onClick={() => setPasswordVisible(!passwordVisible)}>
+            {passwordVisible ? '🙈' : '👁️'}
+          </span>
         </div>
 
         <button type="submit" className="btn btn-primary" disabled={loading}>
@@ -68,15 +74,29 @@ const Login = () => {
         </button>
       </form>
 
-      <div className="divider">OR</div>
+      {!isModal && (
+        <>
+          <div className="divider">OR</div>
+          <button className="btn btn-google" onClick={handleGoogleSignIn}>
+            Sign in with Google
+          </button>
+          <p className="toggle-auth">
+            Don't have an account? <Link to="/register">Sign Up</Link>
+          </p>
+        </>
+      )}
+    </>
+  );
 
-      <button className="btn btn-google" onClick={handleGoogleSignIn}>
-        Sign in with Google
-      </button>
+  if (isModal) {
+    return formContent;
+  }
 
-      <p className="toggle-auth">
-        Don't have an account? <Link to="/register">Sign Up</Link>
-      </p>
+  return (
+    <div className="login-container">
+      <div className="form-wrapper">
+        {formContent}
+      </div>
     </div>
   );
 };

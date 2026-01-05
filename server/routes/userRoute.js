@@ -14,6 +14,7 @@ const {
 } = require('../controllers/userController');
 
 const authenticateMiddleware = require('../middlewares/authenticateMiddleware');
+const isVerifiedMiddleware = require('../middlewares/isVerifiedMiddleware');
 
 router.get('/', (req, res) => {
     return res.status(200).json({
@@ -25,6 +26,7 @@ router.get('/', (req, res) => {
 })
 
 router.use(authenticateMiddleware);
+router.use(isVerifiedMiddleware);
 
 router.get('/@:username', getUserProfile);
 router.delete('/@:username', softDelete);

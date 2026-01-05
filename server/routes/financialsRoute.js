@@ -1,6 +1,8 @@
 const express = require('express');
 const axios = require("axios").default;
 const router = express.Router();
+const authenticateMiddleware = require('../middlewares/authenticateMiddleware');
+const isVerifiedMiddleware = require('../middlewares/isVerifiedMiddleware');
 
 const CHAPA_URL = "https://api.chapa.co/v1/transaction/initialize";
 const CHAPA_AUTH = "CHASECK_TEST-v6FTwSdoIXIbHhQPxUFtmG0oow61lVoZ";
@@ -15,7 +17,7 @@ router.get('/', (req, res) => {
     res.send('PAYMENT WORKING');
 });
 
-router.post('/pay', async (req, res) => {
+router.post('/pay', authenticateMiddleware, isVerifiedMiddleware, async (req, res) => {
     try {
         const CALLBACK_URL = "http://localhost:3000/api/finance/verify-payment";
         const RETURN_URL = "http://localhost:3000/api/finance/payment-success";

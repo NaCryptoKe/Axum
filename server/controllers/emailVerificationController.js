@@ -35,7 +35,7 @@ const generateOtp = async (req, res) => {
         const { otp } = await createEmailVerification(user_id, expires_at);
 
         await sendOtpEmail(user_id, otp); // Pass user's ID
-        // console.log(otp); // For testing purposes, should be removed in production
+        console.log(otp); // For testing purposes, should be removed in production
 
         return res.status(201).json({ success: true, message: 'OTP generated and sent successfully.', data: { expires_at: expires_at.toISOString() } });
 
@@ -82,7 +82,7 @@ const verifyOtp = async (req, res) => {
         const ipAddress = req.ip;
         const expiresAt = new Date(Date.now() + cookieMaxAge);
 
-        const session = await createSession(user.id, userAgent, ipAddress, expiresAt);
+                const session = await createSession(user_id, userAgent, ipAddress, expiresAt);
 
         const tokenPayload = { id: user.id, username: user.username, role: user.role, sessionId: session.id };
         const token = jwt.sign(tokenPayload, process.env.SECRET_STRING, {

@@ -89,7 +89,7 @@ const verifyUserEmail = async (user_id) => {
 };
 
 const getUserById = async (id) => {
-    const result = await pool.query('SELECT username, email FROM core.users WHERE id = $1', [id]);
+    const result = await pool.query('SELECT id, username, email FROM core.users WHERE id = $1', [id]);
 
     return result.rows[0];
 }

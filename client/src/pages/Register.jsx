@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../api/api';
 import { useToasts } from '../context/ToastContext';
 import PasswordStrength from '../components/PasswordStrength';
@@ -14,6 +15,7 @@ const Register = () => {
   });
   const [loading, setLoading] = useState(false);
   const toast = useToasts();
+  const navigate = useNavigate();
 
   const { firstname, lastname, username, email, password } = formData;
 
@@ -30,7 +32,10 @@ const Register = () => {
       });
 
       if (response.data.success) {
-        toast.success('Registration successful! Please check your email to verify your account.');
+        const userId = response.data.data.id;
+                await api.post('/auth/generate-otp', { user_id: userId });
+        toast.success('Registration successful! Please check your email for the OTP.');
+        navigate('/otp-verification', { state: { userId } });
       } else {
         const { error } = response.data;
         if (error && error.details) {
@@ -54,38 +59,40 @@ const Register = () => {
       window.location.href = 'http://localhost:3000/api/auth/google';
   };
 
-  return (
+    return (
     <div className="register-container">
-      <h1>Sign Up</h1>
-      <p>Create your account</p>
-      <form onSubmit={onSubmit}>
-        <div className="form-group">
-          <input type="text" placeholder="First Name" name="firstname" value={firstname} onChange={onChange} required />
-        </div>
-        <div className="form-group">
-          <input type="text" placeholder="Last Name" name="lastname" value={lastname} onChange={onChange} required />
-        </div>
-        <div className="form-group">
-          <input type="text" placeholder="Username" name="username" value={username} onChange={onChange} required />
-        </div>
-        <div className="form-group">
-          <input type="email" placeholder="Email Address" name="email" value={email} onChange={onChange} required />
-        </div>
-        <div className="form-group">
-          <input type="password" placeholder="Password" name="password" value={password} onChange={onChange} required />
-        </div>
-        <PasswordStrength password={password} />
+      <div className="form-wrapper">
+        <h1>Sign Up</h1>
+        <p>Create your account</p>
+        <form onSubmit={onSubmit}>
+          <div className="form-group">
+            <input type="text" placeholder="First Name" name="firstname" value={firstname} onChange={onChange} required />
+          </div>
+          <div className="form-group">
+            <input type="text" placeholder="Last Name" name="lastname" value={lastname} onChange={onChange} required />
+          </div>
+          <div className="form-group">
+            <input type="text" placeholder="Username" name="username" value={username} onChange={onChange} required />
+          </div>
+          <div className="form-group">
+            <input type="email" placeholder="Email Address" name="email" value={email} onChange={onChange} required />
+          </div>
+          <div className="form-group">
+            <input type="password" placeholder="Password" name="password" value={password} onChange={onChange} required />
+          </div>
+          <PasswordStrength password={password} />
 
-        <button type="submit" className="btn btn-primary" disabled={loading}>
-          {loading ? 'Registering...' : 'Register'}
+          <button type="submit" className="btn btn-primary" disabled={loading}>
+            {loading ? 'Registering...' : 'Register'}
+          </button>
+        </form>
+
+        <div className="divider">OR</div>
+
+        <button className="btn btn-google" onClick={handleGoogleSignIn}>
+          Sign up with Google
         </button>
-      </form>
-
-      <div className="divider">OR</div>
-
-      <button className="btn btn-google" onClick={handleGoogleSignIn}>
-        Sign up with Google
-      </button>
+      </div>
     </div>
   );
 };
