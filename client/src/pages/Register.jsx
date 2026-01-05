@@ -59,38 +59,40 @@ const Register = () => {
       window.location.href = 'http://localhost:3000/api/auth/google';
   };
 
-  return (
+    return (
     <div className="register-container">
-      <h1>Sign Up</h1>
-      <p>Create your account</p>
-      <form onSubmit={onSubmit}>
-        <div className="form-group">
-          <input type="text" placeholder="First Name" name="firstname" value={firstname} onChange={onChange} required />
-        </div>
-        <div className="form-group">
-          <input type="text" placeholder="Last Name" name="lastname" value={lastname} onChange={onChange} required />
-        </div>
-        <div className="form-group">
-          <input type="text" placeholder="Username" name="username" value={username} onChange={onChange} required />
-        </div>
-        <div className="form-group">
-          <input type="email" placeholder="Email Address" name="email" value={email} onChange={onChange} required />
-        </div>
-        <div className="form-group">
-          <input type="password" placeholder="Password" name="password" value={password} onChange={onChange} required />
-        </div>
-        <PasswordStrength password={password} />
+      <div className="form-wrapper">
+        <h1>Sign Up</h1>
+        <p>Create your account</p>
+        <form onSubmit={onSubmit}>
+          <div className="form-group">
+            <input type="text" placeholder="First Name" name="firstname" value={firstname} onChange={onChange} required />
+          </div>
+          <div className="form-group">
+            <input type="text" placeholder="Last Name" name="lastname" value={lastname} onChange={onChange} required />
+          </div>
+          <div className="form-group">
+            <input type="text" placeholder="Username" name="username" value={username} onChange={onChange} required />
+          </div>
+          <div className="form-group">
+            <input type="email" placeholder="Email Address" name="email" value={email} onChange={onChange} required />
+          </div>
+          <div className="form-group">
+            <input type="password" placeholder="Password" name="password" value={password} onChange={onChange} required />
+          </div>
+          <PasswordStrength password={password} />
 
-        <button type="submit" className="btn btn-primary" disabled={loading}>
-          {loading ? 'Registering...' : 'Register'}
+          <button type="submit" className="btn btn-primary" disabled={loading}>
+            {loading ? 'Registering...' : 'Register'}
+          </button>
+        </form>
+
+        <div className="divider">OR</div>
+
+        <button className="btn btn-google" onClick={handleGoogleSignIn}>
+          Sign up with Google
         </button>
-      </form>
-
-      <div className="divider">OR</div>
-
-      <button className="btn btn-google" onClick={handleGoogleSignIn}>
-        Sign up with Google
-      </button>
+      </div>
     </div>
   );
 };

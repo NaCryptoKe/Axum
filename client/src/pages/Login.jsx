@@ -54,32 +54,34 @@ const Login = () => {
       window.location.href = 'http://localhost:3000/api/auth/google';
   };
 
-  return (
+    return (
     <div className="login-container">
-      <h1>Sign In</h1>
-      <p>Access your account</p>
-      <form onSubmit={onSubmit}>
-        <div className="form-group">
-          <input type="text" placeholder="Username or Email" name="identifier" value={identifier} onChange={onChange} required />
-        </div>
-        <div className="form-group">
-          <input type="password" placeholder="Password" name="password" value={password} onChange={onChange} required />
-        </div>
+      <div className="form-wrapper">
+        <h1>Sign In</h1>
+        <p>Access your account</p>
+        <form onSubmit={onSubmit}>
+          <div className="form-group">
+            <input type="text" placeholder="Username or Email" name="identifier" value={identifier} onChange={onChange} required />
+          </div>
+          <div className="form-group">
+            <input type="password" placeholder="Password" name="password" value={password} onChange={onChange} required />
+          </div>
 
-        <button type="submit" className="btn btn-primary" disabled={loading}>
-          {loading ? 'Signing In...' : 'Sign In'}
+          <button type="submit" className="btn btn-primary" disabled={loading}>
+            {loading ? 'Signing In...' : 'Sign In'}
+          </button>
+        </form>
+
+        <div className="divider">OR</div>
+
+        <button className="btn btn-google" onClick={handleGoogleSignIn}>
+          Sign in with Google
         </button>
-      </form>
 
-      <div className="divider">OR</div>
-
-      <button className="btn btn-google" onClick={handleGoogleSignIn}>
-        Sign in with Google
-      </button>
-
-      <p className="toggle-auth">
-        Don't have an account? <Link to="/register">Sign Up</Link>
-      </p>
+        <p className="toggle-auth">
+          Don't have an account? <Link to="/register">Sign Up</Link>
+        </p>
+      </div>
     </div>
   );
 };

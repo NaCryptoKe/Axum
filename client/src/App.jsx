@@ -6,8 +6,8 @@ import Store from './pages/Store';
 import Register from './pages/Register';
 import Login from './pages/Login';
 import OtpVerification from './pages/OtpVerification';
-import './trial/hello.css';;;
-import './trial/navbar.css';
+import './hello.css';;;
+import './navbar.css';
 
 function App() {
   const [isUserActive, setIsUserActive] = useState(true);
