@@ -6,6 +6,8 @@ import Store from './pages/Store';
 import Register from './pages/Register';
 import Login from './pages/Login';
 import OtpVerification from './pages/OtpVerification';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import './hello.css';;;
 import './navbar.css';
 
@@ -26,7 +28,7 @@ function App() {
       
       <Routes>
         <Route path="/" element={<Home 
-          isUserActive={isUserActive} 
+          isUserActive={isUserActive} _
           isVideoActive={isVideoActive} 
           setIsUserActive={setIsUserActive} 
           setIsVideoActive={setIsVideoActive}
@@ -36,6 +38,8 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
         <Route path="/otp-verification" element={<OtpVerification />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password/:token" element={<ResetPassword />} />
       </Routes>
     </Router>
   );

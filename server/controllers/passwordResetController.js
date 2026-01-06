@@ -70,7 +70,7 @@ const generatePasswordResetToken = async (req, res) => {
         }
 
         // IMPORTANT: The domain should be configured and not hardcoded.
-        const passwordResetLink = `http://localhost:3000/reset-password?token=${token}`;
+        const passwordResetLink = `http://localhost:5173/reset-password/${token}`;
         await sendPasswordResetLink(user_id, passwordResetLink);
 
         return res.status(201).json({

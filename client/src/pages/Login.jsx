@@ -69,6 +69,10 @@ const Login = ({ isModal = false }) => {
           </span>
         </div>
 
+        <div className="form-group">
+          <Link to="/forgot-password" >Forgot Password?</Link>
+        </div>
+
         <button type="submit" className="btn btn-primary" disabled={loading}>
           {loading ? 'Signing In...' : 'Sign In'}
         </button>

@@ -2,69 +2,63 @@ const nodemailer = require('nodemailer');
 const { getUserById } = require('../models/userModel');
 require('dotenv').config();
 
-// EMAIL TRANSPORTER CONFIGURATION
-
-/**
- * Configures the Nodemailer transporter for sending emails.
- * Uses Gmail service with authentication details from environment variables.
- * It's crucial to set MAIL_USER and MAIL_PASS in your .env file.
- */
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-        user: process.env.MAIL_USER, // Your Gmail address from .env
-        pass: process.env.MAIL_PASS  // Your Gmail app password or actual password from .env
+        user: process.env.MAIL_USER,
+        pass: process.env.MAIL_PASS
     }
 });
 
-// OTP EMAIL SENDER
+// Helper for the "Glass" Card Style derived from your CSS
+const emailWrapperStyle = `
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+    background-color: #000; 
+    padding: 60px 20px; 
+    margin: 0; 
+    min-height: 100%;
+`;
 
-/**
- * Sends a One-Time Password (OTP) email to a specified user.
- * Fetches user details by user ID and constructs an email with the OTP.
- * @param {string} user_id - The ID of the user to whom the OTP should be sent.
- * @param {string} otp - The One-Time Password to be sent.
- */
+const cardStyle = `
+    max-width: 500px; 
+    margin: auto; 
+    background: linear-gradient(45deg, rgba(30, 30, 30, 0.9), rgba(60, 60, 60, 0.9));
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 24px; 
+    overflow: hidden; 
+    color: white;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+`;
+
 const sendOtpEmail = async (user_id, otp) => {
     try {
-        // Fetch user info. The previous implementation had a redundant fetch.
         const user = await getUserById(user_id);
-        if (!user) {
-            console.error(`User with ID ${user_id} not found. Cannot send OTP email.`);
-            return;
-        }
+        if (!user) return;
 
-        const { email, username: display_name } = user; // Use username as display_name, or adjust as needed
+        const { email, username: display_name } = user;
 
-        // Prepare the email
         const mailOptions = {
             from: '"Axum" <no-reply@axum.com>',
             to: email,
             subject: 'Your Axum Verification Code',
-            text: `Hello ${display_name},\n\nYour verification code is: ${otp}\n\nThis code is valid for 5 minutes. If you did not request this, please ignore this email.\n\nThanks,\nThe Axum Team`,
             html: `
-            <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4; padding: 20px; color: #333;">
-                <div style="max-width: 600px; margin: auto; background-color: #ffffff; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
-                    <div style="background-color: #0d1117; padding: 20px; text-align: center;">
-                        <img src="https://i.imgur.com/sEw47O5.png" alt="Axum Logo" style="width: 120px;"/>
+            <div style="${emailWrapperStyle}">
+                <div style="${cardStyle}">
+                    <div style="background-color: rgba(13, 17, 23, 0.5); padding: 30px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                        <img src="https://i.imgur.com/sEw47O5.png" alt="Axum Logo" style="width: 100px;"/>
                     </div>
-                    <div style="padding: 30px 40px; text-align: center;">
-                        <h1 style="color: #0d1117; margin-top: 0;">Verification Code</h1>
-                        <p style="font-size: 16px;">Hello, <strong>${display_name}</strong>!</p>
-                        <p style="font-size: 16px;">Please use the following verification code to complete your action. This code is valid for 5 minutes.</p>
-                        <div style="background-color: #f0f0f0; border-radius: 8px; padding: 15px 20px; margin: 30px auto; display: inline-block;">
-                            <p style="color: #0d1117; font-size: 28px; font-weight: bold; letter-spacing: 4px; margin: 0;">${otp}</p>
+                    <div style="padding: 40px; text-align: left;">
+                        <h1 style="font-size: 28px; margin: 0 0 20px 0; color: #ffffff; letter-spacing: -0.5px;">Verification</h1>
+                        <p style="font-size: 16px; line-height: 1.6; color: rgba(255, 255, 255, 0.8);">Hello <strong>${display_name}</strong>,</p>
+                        <p style="font-size: 16px; line-height: 1.6; color: rgba(255, 255, 255, 0.8);">Use the code below to secure your account. It expires in 5 minutes.</p>
+                        
+                        <div style="margin: 30px 0; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 12px; padding: 20px; text-align: center;">
+                            <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #ffffff;">${otp}</span>
                         </div>
-                        <p style="font-size: 14px; color: #777;">If you did not request this code, you can safely ignore this email. Your account is secure.</p>
-                    </div>
-                    <div style="background-color: #f4f4f4; padding: 20px 40px; font-size: 12px; color: #777; text-align: center;">
-                        <p style="margin: 0;">&copy; ${new Date().getFullYear()} Axum Corporation. All rights reserved.</p>
-                        <p style="margin: 5px 0 0 0;">Axum Headquarters, 123 Innovation Drive, Tech City, 98765</p>
-                        <p style="margin: 10px 0 0 0;">
-                            <a href="#" style="color: #0d1117; text-decoration: none;">Privacy Policy</a> &bull;
-                            <a href="#" style="color: #0d1117; text-decoration: none;">Terms of Service</a> &bull;
-                            <a href="#" style="color: #0d1117; text-decoration: none;">Contact Support</a>
-                        </p>
+
+                        <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center;">
+                            <p style="font-size: 12px; color: rgba(255,255,255,0.5); margin: 0;">&copy; ${new Date().getFullYear()} Axum Corporation. All rights reserved.</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -78,19 +72,10 @@ const sendOtpEmail = async (user_id, otp) => {
     }
 };
 
-/**
- * Sends a password reset link email to a specified user.
- * Fetches user details by user ID and constructs an email with the password reset link.
- * @param {string} user_id - The ID of the user to whom the password reset link should be sent.
- * @param {string} passwordResetLink - The password reset link to be sent.
- */
 const sendPasswordResetLink = async (user_id, passwordResetLink) => {
     try {
         const user = await getUserById(user_id);
-        if (!user) {
-            console.error(`User with ID ${user_id} not found. Cannot send password reset email.`);
-            return;
-        }
+        if (!user) return;
 
         const { email, username: display_name } = user;
 
@@ -98,30 +83,26 @@ const sendPasswordResetLink = async (user_id, passwordResetLink) => {
             from: '"Axum" <no-reply@axum.com>',
             to: email,
             subject: 'Axum Password Reset Request',
-            text: `Hello ${display_name},\n\nYou recently requested to reset your password for your Axum account. Please use the following link to reset your password: ${passwordResetLink}\n\nThis link is valid for 5 minutes. If you did not request a password reset, please ignore this email.\n\nThanks,\nThe Axum Team`,
             html: `
-            <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4; padding: 20px; color: #333;">
-                <div style="max-width: 600px; margin: auto; background-color: #ffffff; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
-                    <div style="background-color: #0d1117; padding: 20px; text-align: center;">
-                        <img src="https://i.imgur.com/sEw47O5.png" alt="Axum Logo" style="width: 120px;"/>
+            <div style="${emailWrapperStyle}">
+                <div style="${cardStyle}">
+                    <div style="background-color: rgba(13, 17, 23, 0.5); padding: 30px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                        <img src="https://i.imgur.com/sEw47O5.png" alt="Axum Logo" style="width: 100px;"/>
                     </div>
-                    <div style="padding: 30px 40px; text-align: center;">
-                        <h1 style="color: #0d1117; margin-top: 0;">Password Reset Request</h1>
-                        <p style="font-size: 16px;">Hello, <strong>${display_name}</strong>!</p>
-                        <p style="font-size: 16px;">You recently requested to reset your password for your Axum account. Click the button below to reset it:</p>
-                        <div style="margin: 30px auto; text-align: center;">
-                            <a href="${passwordResetLink}" style="background-color: #0d1117; color: #ffffff; padding: 12px 25px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">Reset Your Password</a>
+                    <div style="padding: 40px; text-align: left;">
+                        <h1 style="font-size: 28px; margin: 0 0 20px 0; color: #ffffff;">Reset Password</h1>
+                        <p style="font-size: 16px; line-height: 1.6; color: rgba(255, 255, 255, 0.8);">Hello <strong>${display_name}</strong>,</p>
+                        <p style="font-size: 16px; line-height: 1.6; color: rgba(255, 255, 255, 0.8);">We received a request to reset your password. Click the button below to proceed.</p>
+                        
+                        <div style="margin: 40px 0; text-align: center;">
+                            <a href="${passwordResetLink}" style="display: inline-block; background: #ffffff; color: #000000; padding: 14px 30px; border-radius: 12px; text-decoration: none; font-weight: bold; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 15px rgba(255,255,255,0.2);">Reset Your Password</a>
                         </div>
-                        <p style="font-size: 14px; color: #777;">This link is valid for 5 minutes. If you did not request a password reset, please ignore this email. Your account is secure.</p>
-                    </div>
-                    <div style="background-color: #f4f4f4; padding: 20px 40px; font-size: 12px; color: #777; text-align: center;">
-                        <p style="margin: 0;">&copy; ${new Date().getFullYear()} Axum Corporation. All rights reserved.</p>
-                        <p style="margin: 5px 0 0 0;">Axum Headquarters, 123 Innovation Drive, Tech City, 98765</p>
-                        <p style="margin: 10px 0 0 0;">
-                            <a href="#" style="color: #0d1117; text-decoration: none;">Privacy Policy</a> &bull;
-                            <a href="#" style="color: #0d1117; text-decoration: none;">Terms of Service</a> &bull;
-                            <a href="#" style="color: #0d1117; text-decoration: none;">Contact Support</a>
-                        </p>
+
+                        <p style="font-size: 13px; color: rgba(255,255,255,0.5);">If you didn't request this, you can safely ignore this email.</p>
+                        
+                        <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
+                            <p style="font-size: 11px; color: rgba(255,255,255,0.4); text-align: center;">Axum Headquarters, 123 Innovation Drive, Tech City</p>
+                        </div>
                     </div>
                 </div>
             </div>
