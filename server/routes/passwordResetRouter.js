@@ -15,9 +15,7 @@ router.get ('/', (req, res) => {
     });
 })
 router.post (
-    '/generate-password-reset', 
-    rateLimiter,
-    checkCooldown,
+    '/generate-password-reset',
     generatePasswordResetToken
 );
 router.post('/update-password/:token', resetPassword);

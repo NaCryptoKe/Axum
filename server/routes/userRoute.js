@@ -45,6 +45,4 @@ adminRouter.patch('/users/@:username/role', changeUserRole);
 adminRouter.delete('/users/@:username/permanent', permanentDeleteUserController);
 router.use('/admin', adminRouter);
 
-// All routes are complete and functional
-
 module.exports = router;
