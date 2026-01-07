@@ -39,7 +39,7 @@ const getUserProfile = async (req, res) => {
             }
         });
 
-        if (valid && username_cookie === username) {
+        if ((valid && username_cookie === username) || req.user.role === 'admin') {
             return res.status(200).json({
                 success: true,
                 message: 'User data',
@@ -125,23 +125,44 @@ const updateProfile = async (req, res) => {
     const { user } = req;
     const { username } = req.params;
 
-    if (!user?.valid || username !== user.username_cookie) {
+    const isOwner = username === user.username_cookie;
+    const isAdmin = user.role === 'admin';
+
+    if (!user?.valid || (!isOwner && !isAdmin)) {
         return res.status(401).json({
             success: false,
             message: "Not authorized",
             data: null,
             error: {
                 code: 401,
-                details: "You must be logged in and can only edit your own account"
+                details: "You must be logged in and can only edit your own account or be an Admin."
             }
         });
     }
+
     const unprocessableErrors = [];
-    const id = user.id;
     const { bio, display_name } = req.body;
     let { newUsername, email } = req.body;
 
     try {
+        let targetUser;
+        if (isOwner) {
+            targetUser = { id: user.id };
+        } else if (isAdmin) {
+            targetUser = await getUserByUsername(username);
+            if (!targetUser) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'User not found',
+                    data: null,
+                    error: {
+                        code: 404,
+                        details: `User by the name of ${username} does not exist`,
+                    }
+                });
+            }
+        }
+
         if (!newUsername || !email || !bio || !display_name) {
             return res.status(400).json({
                 success: false,
@@ -173,7 +194,7 @@ const updateProfile = async (req, res) => {
             });
 
         const updatedUser = await updateUserProfile({
-            id: id,
+            id: targetUser.id,
             username: cleanedUsername,
             email: cleanedEmail,
             bio,
@@ -190,30 +211,32 @@ const updateProfile = async (req, res) => {
                     details: 'User account not updated'
                 }
             });
-
-        const newToken = jwt.sign(
-            {
-                id: id,
-                username: cleanedUsername,
-                role: user.role,
-                sessionId: user.session_id_cookie,
-            },
-            process.env.SECRET_STRING,
-            { algorithm: 'HS256', expiresIn: '7d' }
-        );
-
-        res.cookie('token', newToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'Lax',
-            maxAge: 7 * 24 * 60 * 60 * 1000,
-        });
+        
+        if (isOwner) {
+            const newToken = jwt.sign(
+                {
+                    id: targetUser.id,
+                    username: cleanedUsername,
+                    role: user.role,
+                    sessionId: user.session_id_cookie,
+                },
+                process.env.SECRET_STRING,
+                { algorithm: 'HS256', expiresIn: '7d' }
+            );
+    
+            res.cookie('token', newToken, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'Lax',
+                maxAge: 7 * 24 * 60 * 60 * 1000,
+            });
+        }
 
         return res.status(200).json({
             success: true,
             message: "Successfully updated user",
             data: {
-                id: id,
+                id: targetUser.id,
                 username: cleanedUsername,
             },
             error: null
@@ -236,21 +259,41 @@ const updateProfilePicture = async (req, res) => {
     const { user } = req;
     const { avatar_url } = req.body;
     const username = req.params.username;
-    if (!user?.valid || username !== user.username_cookie) {
+
+    const isOwner = username === user.username_cookie;
+    const isAdmin = user.role === 'admin';
+
+    if (!user?.valid || (!isOwner && !isAdmin)) {
         return res.status(401).json({
             success: false,
             message: "Not authorized",
             data: null,
             error: {
                 code: 401,
-                details: "You must be logged in and can only edit your own account"
+                details: "You must be logged in and can only edit your own account or be an Admin."
             }
         });
     }
 
-    const id = user.id;
-
     try {
+        let targetUser;
+        if (isOwner) {
+            targetUser = { id: user.id };
+        } else if (isAdmin) {
+            targetUser = await getUserByUsername(username);
+            if (!targetUser) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'User not found',
+                    data: null,
+                    error: {
+                        code: 404,
+                        details: `User by the name of ${username} does not exist`,
+                    }
+                });
+            }
+        }
+
         if (!avatar_url)
             return res.status(400).json({
                 success: false,
@@ -262,7 +305,7 @@ const updateProfilePicture = async (req, res) => {
                 }
             });
 
-        const result = await updateUserProfilePicture({id, avatar_url});
+        const result = await updateUserProfilePicture({id: targetUser.id, avatar_url});
 
         if (!result)
             return res.status(400).json({

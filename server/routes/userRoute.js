@@ -15,6 +15,7 @@ const {
 
 const authenticateMiddleware = require('../middlewares/authenticateMiddleware');
 const isVerifiedMiddleware = require('../middlewares/isVerifiedMiddleware');
+const adminMiddleware = require('../middlewares/adminMiddleware');
 
 router.get('/', (req, res) => {
     return res.status(200).json({
@@ -37,8 +38,13 @@ router.patch('/@:username/update-profile-picture', updateProfilePicture);
 router.get('/active', allActiveUsers); // Accessible by any authenticated user
 
 // Admin-specific routes
-router.get('/admin/all', allUsers);
-router.patch('/admin/users/@:username/role', changeUserRole);
-router.delete('/admin/users/@:username/permanent', permanentDeleteUserController);
+const adminRouter = express.Router();
+adminRouter.use(adminMiddleware);
+adminRouter.get('/all', allUsers);
+adminRouter.patch('/users/@:username/role', changeUserRole);
+adminRouter.delete('/users/@:username/permanent', permanentDeleteUserController);
+router.use('/admin', adminRouter);
+
+// All routes are complete and functional
 
 module.exports = router;

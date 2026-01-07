@@ -5,6 +5,7 @@ import cartIcon from '../assets/shopping-cart.svg';
 const Navbar = ({ isUserActive, isSearchFocused, setIsSearchFocused }) => {
     const location = useLocation();
     const isHomePage = location.pathname === '/';
+    const isAuthenticated = true; // Placeholder for authentication status
 
     return (
         <nav className={`navbar ${isHomePage && !isUserActive && !isSearchFocused ? 'hide-ui' : ''}`}>
@@ -33,7 +34,11 @@ const Navbar = ({ isUserActive, isSearchFocused, setIsSearchFocused }) => {
                     <img src={cartIcon} alt="cart" />
                     <span className="cart-count">0</span>
                 </div>
-                <Link to="/login" className="login-btn">Sign In</Link>
+                {isAuthenticated ? (
+                    <Link to="/@test__" className="login-btn">Profile</Link>
+                ) : (
+                    <Link to="/login" className="login-btn">Sign In</Link>
+                )}
             </div>
         </nav>
     );

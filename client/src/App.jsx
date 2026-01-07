@@ -8,6 +8,7 @@ import Login from './pages/Login';
 import OtpVerification from './pages/OtpVerification';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import Profile from './pages/Profile';
 import './hello.css';;;
 import './navbar.css';
 
@@ -40,6 +41,7 @@ function App() {
         <Route path="/otp-verification" element={<OtpVerification />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password/:token" element={<ResetPassword />} />
+        <Route path="/@:username" element={<Profile />} />
       </Routes>
     </Router>
   );
