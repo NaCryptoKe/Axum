@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Cookies from 'js-cookie';
 import { jwtDecode } from 'jwt-decode';
 
 const useUser = () => {
     const [user, setUser] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         const token = Cookies.get('token');
@@ -18,9 +19,15 @@ const useUser = () => {
         } else {
             setUser(null);
         }
+        setIsLoading(false);
     }, []);
 
-    return user;
+    const logout = useCallback(() => {
+        Cookies.remove('token');
+        setUser(null);
+    }, []);
+
+    return { user, setUser, logout, isLoading };
 };
 
 export default useUser;

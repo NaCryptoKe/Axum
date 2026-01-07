@@ -1,12 +1,22 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import cartIcon from '../assets/shopping-cart.svg';
 import useUser from '../hooks/useUser';
 
 const Navbar = ({ isUserActive, isSearchFocused, setIsSearchFocused }) => {
     const location = useLocation();
+    const navigate = useNavigate();
     const isHomePage = location.pathname === '/';
-    const user = useUser();
+    const { user, logout, isLoading } = useUser();
+
+    const handleLogout = () => {
+        logout();
+        navigate('/');
+    };
+
+    if (isLoading) {
+        return null; // Don't render navbar until we know user status
+    }
 
     return (
         <nav className={`navbar ${isHomePage && !isUserActive && !isSearchFocused ? 'hide-ui' : ''}`}>
@@ -36,7 +46,10 @@ const Navbar = ({ isUserActive, isSearchFocused, setIsSearchFocused }) => {
                     <span className="cart-count">0</span>
                 </div>
                 {user ? (
-                    <Link to={`/@${user.username}`} className="login-btn">Profile</Link>
+                    <>
+                        <Link to={`/@${user.username}`} className="login-btn">Profile</Link>
+                        <button onClick={handleLogout} className="login-btn" style={{marginLeft: '10px'}}>Logout</button>
+                    </>
                 ) : (
                     <Link to="/login" className="login-btn">Sign In</Link>
                 )}

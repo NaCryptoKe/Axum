@@ -38,7 +38,7 @@ const Profile = () => {
 
             } catch (error) {
                 toast.error('Failed to fetch user data.');
-                // navigate('/');
+                navigate('/');
             } finally {
                 setLoading(false);
             }
@@ -99,7 +99,7 @@ const Profile = () => {
             try {
                 await api.delete(`/user/@${username}`);
                 toast.success('Account deactivated successfully.');
-                navigate('/login');
+                navigate('/');
             } catch (error) {
                 toast.error('Failed to deactivate account.');
             }
