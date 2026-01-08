@@ -1,0 +1,107 @@
+body {
+    font-family: sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #f0f2f5;
+    margin: 0;
+}
+
+.profile-container {
+    display: flex;
+    background-color: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    max-width: 800px;
+    width: 100%;
+}
+
+.profile-info {
+    display: flex;
+    align-items: flex-start;
+    padding-right: 20px;
+    flex-shrink: 0;
+}
+
+.profile-picture-container {
+    position: relative;
+    margin-right: 20px;
+}
+
+.profile-picture {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    background-color: #ccc;
+    background-image: url('https://via.placeholder.com/150'); /* Placeholder image */
+    background-size: cover;
+    background-position: center;
+}
+
+.online-status {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    width: 25px;
+    height: 25px;
+    background-color: #4caf50; /* Green for online */
+    border-radius: 50%;
+    border: 3px solid white;
+}
+
+.user-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.display-name {
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.username {
+    color: #657786;
+    margin-bottom: 10px;
+}
+
+.bio {
+    margin-bottom: 10px;
+}
+
+.joined-date {
+    color: #657786;
+}
+
+.badges-container {
+    border: 1px solid #e1e8ed;
+    border-radius: 10px;
+    padding: 10px;
+    flex-grow: 1;
+    height: 250px; /* Fixed height */
+    overflow-y: auto;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-content: flex-start;
+}
+
+
+.badge {
+    background-color: #f0f2f5;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 14px;
+}
+
+/* Hide scrollbar for webkit browsers */
+.badges-container::-webkit-scrollbar {
+    display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.badges-container {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}

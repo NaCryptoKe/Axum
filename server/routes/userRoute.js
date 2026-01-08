@@ -29,7 +29,7 @@ router.get('/', (req, res) => {
 })
 
 router.use(authenticateMiddleware); // Apply authentication middleware to all subsequent routes
-//router.use(isVerifiedMiddleware); // Apply email verification middleware to all subsequent routes
+router.use(isVerifiedMiddleware); // Apply email verification middleware to all subsequent routes
 
 // GET /@:username
 // Description: Get a user's profile by their username.
