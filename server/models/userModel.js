@@ -133,6 +133,14 @@ const permanentDeleteUser = async (id) => {
     return result.rowCount; // 1 if deleted, 0 if not found
 };
 
+const isEmailVerified = async (identifier) => {
+    const result = await pool.query(
+        `SELECT email_verified FROM core.users WHERE (username = $1 OR email = $1) AND is_deleted = false`,
+        [identifier]
+    );
+    return result.rows[0] ? result.rows[0].email_verified : false;
+};
+
 module.exports = {
     findByIdentifier,
     createUser,
@@ -147,4 +155,5 @@ module.exports = {
     softDeleteUser,
     updateUserRole,
     permanentDeleteUser,
+    isEmailVerified,
 };
