@@ -95,7 +95,7 @@ const getUserById = async (id) => {
 }
 const getUserByUsername = async (username) => {
     const userChecked = await pool.query(
-        `SELECT id, username, email, display_name, role, avatar_url, bio, email_verified, is_deleted
+        `SELECT id, username, email, display_name, role, avatar_url, bio, email_verified, is_deleted, created_at
          FROM core.users
          WHERE username = $1 AND is_deleted = false`,
         [username]

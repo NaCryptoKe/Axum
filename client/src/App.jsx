@@ -9,7 +9,7 @@ import OtpVerification from './pages/OtpVerification';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import Profile from './pages/Profile';
-import './hello.css';;;
+import './hello.css';
 import './navbar.css';
 
 function App() {
@@ -29,7 +29,7 @@ function App() {
       
       <Routes>
         <Route path="/" element={<Home 
-          isUserActive={isUserActive} _
+          isUserActive={isUserActive} 
           isVideoActive={isVideoActive} 
           setIsUserActive={setIsUserActive} 
           setIsVideoActive={setIsVideoActive}
@@ -41,7 +41,7 @@ function App() {
         <Route path="/otp-verification" element={<OtpVerification />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password/:token" element={<ResetPassword />} />
-        <Route path="/@:username" element={<Profile />} />
+        <Route path="/:username" element={<Profile />} />
       </Routes>
     </Router>
   );

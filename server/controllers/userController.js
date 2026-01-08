@@ -39,18 +39,25 @@ const getUserProfile = async (req, res) => {
             }
         });
 
+        const online = await isUserOnline(user.id);
+
         if ((valid && username_cookie === username) || req.user.role === 'admin') {
             return res.status(200).json({
                 success: true,
                 message: 'User data',
                 data: {
-                    username: username,
+                    id: user.id,
+                    username: user.username,
                     email: user.email,
-                    displayName: user.displayName,
+                    firstname: user.firstname,
+                    lastname: user.lastname,
+                    displayName: user.display_name,
                     email_verified: user.email_verified,
                     role: user.role,
-                    avatar_url: user.avatar_url,
-                    bio: user.bio
+                    profilePicture: user.avatar_url,
+                    bio: user.bio,
+                    createdAt: user.created_at,
+                    isOnline: online
                 },
                 error: null
             });
@@ -60,11 +67,16 @@ const getUserProfile = async (req, res) => {
             success: true,
             message: 'User data',
             data: {
-                username: username,
-                displayName: user.displayName,
+                id: user.id,
+                username: user.username,
+                firstname: user.firstname,
+                lastname: user.lastname,
+                displayName: user.display_name,
                 role: user.role,
-                avatar_url: user.avatar_url,
-                bio: user.bio
+                profilePicture: user.avatar_url,
+                bio: user.bio,
+                createdAt: user.created_at,
+                isOnline: online,
             },
             error: null
         });
