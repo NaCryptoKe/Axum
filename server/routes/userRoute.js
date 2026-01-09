@@ -72,6 +72,10 @@ adminRouter.patch('/users/@:username/role', changeUserRole);
 // Description: Permanently delete a user from the database.
 // Access: Admin Users Only
 adminRouter.delete('/users/@:username/permanent', permanentDeleteUserController);
+// PATCH /admin/users/@:username/undelete
+// Description: Undelete a soft-deleted user account.
+// Access: Admin Users Only
+adminRouter.patch('/users/@:username/undelete', undeleteUserController);
 router.use('/admin', adminRouter);
 
 module.exports = router;

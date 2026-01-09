@@ -8,6 +8,8 @@ const {
     updateUserProfilePicture,
     updateUserRole,
     permanentDeleteUser,
+    undeleteUser,
+    getUserByUsernameIncludingDeleted,
 } = require('../models/userModel');
 const jwt = require("jsonwebtoken");
 require('dotenv').config();
@@ -663,6 +665,68 @@ const permanentDeleteUserController = async (req, res) => {
     }
 };
 
+const undeleteUserController = async (req, res) => {
+    const { user: actor } = req;
+    const { username } = req.params;
+
+    if (actor?.role !== 'admin') {
+        return res.status(403).json({
+            success: false,
+            message: "Forbidden",
+            error: { code: 403, details: "Only administrators can undelete user accounts." }
+        });
+    }
+
+    try {
+        const targetUser = await getUserByUsernameIncludingDeleted(username); 
+
+        if (!targetUser) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found.",
+                error: { code: 404, details: `User '${username}' not found.` }
+            });
+        }
+
+        if (!targetUser.is_deleted) {
+            return res.status(400).json({
+                success: false,
+                message: "User is not soft-deleted.",
+                error: { code: 400, details: `User '${username}' is not currently soft-deleted.` }
+            });
+        }
+        
+        const result = await undeleteUser(username);
+
+        if (!result) {
+            return res.status(400).json({
+                success: false,
+                message: "User account could not be undeleted.",
+                error: { code: 400, details: `An error occurred while attempting to undelete user '${username}'.` }
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: `User '${username}' has been successfully undeleted.`,
+            data: {
+                username: result.username,
+                is_deleted: result.is_deleted,
+                deleted_at: result.deleted_at
+            },
+            error: null
+        });
+
+    } catch (error) {
+        console.error("Undelete user error:", error);
+        return res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: { code: 500, details: error.message }
+        });
+    }
+};
+
 module.exports = {
     getUserProfile,
     onlineStatus,
@@ -673,4 +737,5 @@ module.exports = {
     softDelete,
     changeUserRole,
     permanentDeleteUserController,
+    undeleteUserController,
 }
