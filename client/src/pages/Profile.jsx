@@ -1,20 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api/api';
 import './Profile.css';
 import { useToasts } from '../context/ToastContext';
+import useUser from '../hooks/useUser';
 
 const Profile = () => {
-    const  {username}  = useParams();
-
-        console.log('Username from useParams:', username);
+    const { username } = useParams();
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const toast = useToasts();
+    const { user: currentUser, logout } = useUser();
+    const navigate = useNavigate();
 
     useEffect(() => {
         if (!username) {
-            setLoading(false); // If no username, stop loading and display "User not found"
+            setLoading(false);
             setUser(null);
             return;
         }
@@ -34,7 +35,12 @@ const Profile = () => {
         };
 
         fetchUser();
-    }, [username, toast]);
+    }, [username]);
+
+    const handleLogout = () => {
+        logout();
+        navigate('/');
+    };
 
     if (loading) {
         return (
@@ -59,6 +65,8 @@ const Profile = () => {
         month: 'long',
         day: 'numeric',
     });
+
+    const isOwnProfile = currentUser && currentUser.username === user.username;
 
     return (
         <div className="profile-page-container">
@@ -86,6 +94,12 @@ const Profile = () => {
                             Joined: {joinedDate}
                         </div>
                     </div>
+                    {isOwnProfile && (
+                        <div className="profile-actions">
+                            <button className="edit-profile-btn">Edit Profile</button>
+                            <button className="logout-btn" onClick={handleLogout}>Logout</button>
+                        </div>
+                    )}
                 </div>
 
                 <div className="badges-section">

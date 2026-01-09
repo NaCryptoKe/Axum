@@ -88,7 +88,7 @@ const login = async (req, res) => {
         const expiresAt = new Date(Date.now() + cookieMaxAge);
         const session = await createSession(user.id, userAgent, ipAddress, expiresAt);
 
-        const tokenPayload = { id: user.id, username: user.username, role: user.role, sessionId: session.id };
+        const tokenPayload = { id: user.id, username: user.username, role: user.role, sessionId: session.id, avatar_url: user.avatar_url };
         const token = jwt.sign(tokenPayload, process.env.SECRET_STRING, {
             algorithm: 'HS256',
             expiresIn: tokenExpiry,
@@ -104,7 +104,7 @@ const login = async (req, res) => {
         return res.status(200).json({
             success: true,
             message: "Successfully logged in",
-            data: { token, user: { id: user.id, username: user.username, email: user.email } },
+            data: { token, user: { id: user.id, username: user.username, email: user.email, avatar_url: user.avatar_url } },
             error: null
         });
     } catch (error) {

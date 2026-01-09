@@ -9,6 +9,8 @@ import OtpVerification from './pages/OtpVerification';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import Profile from './pages/Profile';
+import { ToastProvider } from './context/ToastContext';
+import { AuthProvider } from './context/AuthContext';
 import './hello.css';
 import './navbar.css';
 
@@ -19,30 +21,34 @@ function App() {
 
   return (
     <Router>
-      {/* Navbar stays here so it shows on every page */}
-      <Navbar 
-        isUserActive={isUserActive} 
-        isVideoActive={isVideoActive} 
-        isSearchFocused={isSearchFocused} 
-        setIsSearchFocused={setIsSearchFocused} 
-      /> 
-      
-      <Routes>
-        <Route path="/" element={<Home 
-          isUserActive={isUserActive} 
-          isVideoActive={isVideoActive} 
-          setIsUserActive={setIsUserActive} 
-          setIsVideoActive={setIsVideoActive}
-          isSearchFocused={isSearchFocused}
-        />} />
-        <Route path="/store" element={<Store />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/otp-verification" element={<OtpVerification />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password/:token" element={<ResetPassword />} />
-        <Route path="/:username" element={<Profile />} />
-      </Routes>
+      <ToastProvider>
+        <AuthProvider>
+          {/* Navbar stays here so it shows on every page */}
+          <Navbar 
+            isUserActive={isUserActive} 
+            isVideoActive={isVideoActive} 
+            isSearchFocused={isSearchFocused} 
+            setIsSearchFocused={setIsSearchFocused} 
+          /> 
+          
+          <Routes>
+            <Route path="/" element={<Home 
+              isUserActive={isUserActive} 
+              isVideoActive={isVideoActive} 
+              setIsUserActive={setIsUserActive} 
+              setIsVideoActive={setIsVideoActive}
+              isSearchFocused={isSearchFocused}
+            />} />
+            <Route path="/store" element={<Store />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/otp-verification" element={<OtpVerification />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password/:token" element={<ResetPassword />} />
+            <Route path="/:username" element={<Profile />} />
+          </Routes>
+        </AuthProvider>
+      </ToastProvider>
     </Router>
   );
 }

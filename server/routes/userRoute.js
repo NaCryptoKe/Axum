@@ -10,7 +10,8 @@ const {
     updateProfile,
     updateProfilePicture,
     changeUserRole,
-    permanentDeleteUserController
+    permanentDeleteUserController,
+    undeleteUserController
 } = require('../controllers/userController');
 
 const authenticateMiddleware = require('../middlewares/authenticateMiddleware');
@@ -29,28 +30,27 @@ router.get('/', (req, res) => {
 })
 
 router.use(authenticateMiddleware); // Apply authentication middleware to all subsequent routes
-router.use(isVerifiedMiddleware); // Apply email verification middleware to all subsequent routes
 
 // GET /@:username
 // Description: Get a user's profile by their username.
-// Access: Authenticated and Verified Users
+// Access: Authenticated Users
 router.get('/@:username', getUserProfile);
 // DELETE /@:username
 // Description: Soft delete a user by their username.
 // Access: Authenticated and Verified Users
-router.delete('/@:username', softDelete);
+router.delete('/@:username', isVerifiedMiddleware, softDelete);
 // GET /@:username/status
 // Description: Get a user's online status by their username.
-// Access: Authenticated and Verified Users
+// Access: Authenticated Users
 router.get('/@:username/status', onlineStatus);
 // PATCH /@:username/update
 // Description: Update an authenticated user's profile information.
 // Access: Authenticated and Verified Users
-router.patch('/@:username/update', updateProfile);
+router.patch('/@:username/update', isVerifiedMiddleware, updateProfile);
 // PATCH /@:username/update-profile-picture
 // Description: Update an authenticated user's profile picture.
 // Access: Authenticated and Verified Users
-router.patch('/@:username/update-profile-picture', updateProfilePicture);
+router.patch('/@:username/update-profile-picture', isVerifiedMiddleware, updateProfilePicture);
 
 // GET /active
 // Description: Get a list of all active users.

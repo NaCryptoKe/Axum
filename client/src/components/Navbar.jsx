@@ -1,20 +1,20 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import cartIcon from '../assets/shopping-cart.svg';
-import useUser from '../hooks/useUser';
+import { useAuth } from '../context/AuthContext';
 
 const Navbar = ({ isUserActive, isSearchFocused, setIsSearchFocused }) => {
     const location = useLocation();
     const navigate = useNavigate();
     const isHomePage = location.pathname === '/';
-    const { user, logout, isLoading } = useUser();
+    const { user, logout, loading: authLoading } = useAuth();
 
     const handleLogout = () => {
         logout();
         navigate('/');
     };
 
-    if (isLoading) {
+    if (authLoading) {
         return null; // Don't render navbar until we know user status
     }
 
@@ -47,8 +47,14 @@ const Navbar = ({ isUserActive, isSearchFocused, setIsSearchFocused }) => {
                 </div>
                 {user ? (
                     <>
-                        <Link to={`/@${user.username}`} className="login-btn">Profile</Link>
-                        <button onClick={handleLogout} className="login-btn" style={{marginLeft: '10px'}}>Logout</button>
+                        <Link to={`/@${user.username}`} className="profile-pic-link">
+                            <div 
+                                className="profile-pic"
+                                style={{
+                                    backgroundImage: `url(${user.avatar_url || 'https://via.placeholder.com/150'})`
+                                }}
+                            />
+                        </Link>
                     </>
                 ) : (
                     <Link to="/login" className="login-btn">Sign In</Link>
