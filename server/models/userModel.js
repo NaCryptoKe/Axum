@@ -44,6 +44,18 @@ const softDeleteUser = async (username) => {
     return result.rows[0]; // returns user info if updated
 };
 
+const undeleteUser = async (username) => {
+    const result = await pool.query(
+        `UPDATE core.users
+         SET is_deleted = false, deleted_at = NULL
+         WHERE username = $1
+             RETURNING id, username, is_deleted, deleted_at;`,
+        [username]
+    );
+
+    return result.rows[0];
+};
+
 const createUser = async ({ firstname, lastname, username, email, hashedPassword }) => {
     const result = await pool.query(
         `INSERT INTO core.users (firstname, lastname,username, email, display_name, hashed_password)
@@ -95,7 +107,7 @@ const getUserById = async (id) => {
 }
 const getUserByUsername = async (username) => {
     const userChecked = await pool.query(
-        `SELECT id, username, email, display_name, role, avatar_url, bio, email_verified, is_deleted
+        `SELECT id, username, email, display_name, role, avatar_url, bio, email_verified, is_deleted, created_at
          FROM core.users
          WHERE username = $1 AND is_deleted = false`,
         [username]
@@ -104,6 +116,17 @@ const getUserByUsername = async (username) => {
     return userChecked.rows[0];
 };
 
+
+const getUserByUsernameIncludingDeleted = async (username) => {
+    const userChecked = await pool.query(
+        `SELECT id, username, email, display_name, role, avatar_url, bio, email_verified, is_deleted, created_at
+         FROM core.users
+         WHERE username = $1`,
+        [username]
+    );
+
+    return userChecked.rows[0];
+};
 
 const getAllUsers = async () => {
     const result = await pool.query('SELECT * FROM core.users');
@@ -133,6 +156,14 @@ const permanentDeleteUser = async (id) => {
     return result.rowCount; // 1 if deleted, 0 if not found
 };
 
+const isEmailVerified = async (identifier) => {
+    const result = await pool.query(
+        `SELECT email_verified FROM core.users WHERE (username = $1 OR email = $1) AND is_deleted = false`,
+        [identifier]
+    );
+    return result.rows[0] ? result.rows[0].email_verified : false;
+};
+
 module.exports = {
     findByIdentifier,
     createUser,
@@ -147,4 +178,7 @@ module.exports = {
     softDeleteUser,
     updateUserRole,
     permanentDeleteUser,
+    isEmailVerified,
+    undeleteUser,
+    getUserByUsernameIncludingDeleted,
 };

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import api from '../api/api';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useToasts } from '../context/ToastContext';
+import { useAuth } from '../context/AuthContext';
 import './Login.css';
 
 const Login = ({ isModal = false }) => {
@@ -13,6 +13,9 @@ const Login = ({ isModal = false }) => {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const toast = useToasts();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { login } = useAuth();
+  const from = location.state?.from?.pathname || '/';
 
   const { identifier, password } = formData;
 
@@ -23,11 +26,11 @@ const Login = ({ isModal = false }) => {
     setLoading(true);
 
     try {
-      const response = await api.post('/auth/login', formData);
+      const response = await login(formData);
 
       if (response.data.success) {
         toast.success('Login successful!');
-        navigate('/'); // Redirect to home page on successful login
+        navigate(from, { replace: true });
       } else {
         const { error } = response.data;
         if (error && error.details) {

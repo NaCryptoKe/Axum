@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useCallback, useEffect } from 'react';
+import React, { createContext, useState, useContext, useCallback, useEffect, useMemo } from 'react';
 import Toast from '../components/toasts/Toast';
 
 const ToastContext = createContext(null);
@@ -18,12 +18,15 @@ export const ToastProvider = ({ children }) => {
 
     const addToast = useCallback((type, messages) => {
         const newToast = { id: Date.now() + Math.random(), type, messages };
-        if (toasts.length < MAX_TOASTS) {
-            setToasts(prevToasts => [...prevToasts, newToast]);
-        } else {
-            setQueuedToasts(prevQueued => [...prevQueued, newToast]);
-        }
-    }, [toasts.length]);
+        setToasts(prevToasts => {
+            if (prevToasts.length < MAX_TOASTS) {
+                return [...prevToasts, newToast];
+            } else {
+                setQueuedToasts(prevQueued => [...prevQueued, newToast]);
+                return prevToasts;
+            }
+        });
+    }, []); // No dependencies needed now
 
     const removeToast = useCallback((id) => {
         setToasts(prevToasts => prevToasts.filter(toast => toast.id !== id));
@@ -36,12 +39,12 @@ export const ToastProvider = ({ children }) => {
             setToasts(prevToasts => [...prevToasts, nextToast]);
         }
     }, [toasts, queuedToasts]);
-    
-    const toast = {
+
+    const toast = useMemo(() => ({
         success: (messages) => addToast('success', messages),
         error: (messages) => addToast('error', messages),
         warning: (messages) => addToast('warning', messages),
-    };
+    }), [addToast]);
 
     return (
         <ToastContext.Provider value={toast}>
@@ -59,3 +62,4 @@ export const ToastProvider = ({ children }) => {
         </ToastContext.Provider>
     );
 };
+
