@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const authenticateMiddleware = require('../middlewares/authenticateMiddleware');
 const isVerifiedMiddleware = require('../middlewares/isVerifiedMiddleware');
+const { checkRole } = require('../middlewares/organizationMiddleware');
+const adminMiddleware = require('../middlewares/adminMiddleware');
 
 const {
     registerOrganization,
@@ -10,25 +12,37 @@ const {
     deleteOrganization,
     verifyOrganizationController,
     getOrganizationBySlugController,
-    addMemberController,
+    joinOrganizationController,
+    addMemberByAdminController,
     getAllMembersController,
     updateMemberRoleController,
-    getMemberController
+    getMemberController,
+    removeMemberController
 } = require('../controllers/organizationController');
 
+// Public routes
 router.get('/', healthCheck);
 router.get('/@:slug', getOrganizationBySlugController);
 
+// Authenticated routes
 router.use(authenticateMiddleware);
 router.use(isVerifiedMiddleware);
 
 router.post('/register', registerOrganization);
-router.patch('/update/:id', editOrganization);
-router.post('/delete/:id', deleteOrganization);
-router.post('/verify/:id', verifyOrganizationController);
-router.post('/@:slug/add-member', addMemberController);
-router.get('/@:slug/members', getAllMembersController);
-router.post('/@:slug/update-role', updateMemberRoleController);
-router.get('/@:slug/@:username', getMemberController);
+router.post('/@:slug/join', joinOrganizationController);
+
+// Organization management routes with role checks
+router.patch('/@:slug', checkRole(['owner']), editOrganization);
+router.delete('/@:slug', checkRole(['owner']), deleteOrganization);
+router.post('/@:slug/verify', checkRole(['owner']), verifyOrganizationController);
+
+
+// Member management routes
+router.get('/@:slug/members', checkRole(['owner', 'admin', 'member']), getAllMembersController);
+router.post('/@:slug/members', checkRole(['owner', 'admin']), addMemberByAdminController);
+router.patch('/@:slug/members/@:username/role', checkRole(['owner', 'admin']), updateMemberRoleController);
+router.get('/@:slug/members/@:username', checkRole(['owner', 'admin', 'member']), getMemberController);
+router.delete('/@:slug/members/@:username', removeMemberController);
+
 
 module.exports = router;

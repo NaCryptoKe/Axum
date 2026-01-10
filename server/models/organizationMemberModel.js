@@ -61,10 +61,21 @@ const getAllMembers = async (org_id) => {
     return result.rows;
 };
 
+const removeMember = async (org_id, user_id) => {
+    const result = await pool.query(
+        `DELETE FROM core.organization_members
+         WHERE org_id = $1 AND user_id = $2
+         RETURNING org_id, user_id`,
+        [org_id, user_id]
+    );
+    return result.rows[0];
+};
+
 module.exports = {
     addMember,
     updateMemberRole,
     getMember,
     getAllMembers,
-    getUserOrganizations
+    getUserOrganizations,
+    removeMember
 };

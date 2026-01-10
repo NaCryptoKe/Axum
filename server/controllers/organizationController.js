@@ -11,7 +11,8 @@ const {
     addMember,
     updateMemberRole,
     getMember,
-    getAllMembers
+    getAllMembers,
+    removeMember
 } = require("../models/organizationMemberModel");
 
 const { getUserByUsername } = require("../models/userModel");
@@ -115,31 +116,18 @@ const registerOrganization = async (req, res) => {
 
 // ==== Update Organization ====
 const editOrganization = async (req, res) => {
-    const { user } = req;
-    const { id } = req.params;
+    const { organization, user } = req; // from checkRole middleware
     const { name, slug, description, website_url } = req.body;
 
-    if (!user?.valid) {
-        return res.status(401).json({
-            success: false,
-            message: "Not authorized",
-            data: null,
-            error: {
-                code: "UNAUTHORIZED",
-                details: "You must be logged in to update an organization"
-            }
-        });
-    }
-
     try {
-        const organization = await updateOrganization(id, user.id, {
+        const updatedOrganization = await updateOrganization(organization.id, user.id, {
             name,
             slug,
             description,
             website_url
         });
 
-        if (!organization) {
+        if (!updatedOrganization) {
             return res.status(404).json({
                 success: false,
                 message: "Organization not found or not owned by user",
@@ -154,7 +142,7 @@ const editOrganization = async (req, res) => {
         return res.status(200).json({
             success: true,
             message: "Organization updated successfully",
-            data: { organization },
+            data: { organization: updatedOrganization },
             error: null
         });
     } catch (err) {
@@ -186,26 +174,12 @@ const editOrganization = async (req, res) => {
 
 // ==== Delete Organization ====
 const deleteOrganization = async (req, res) => {
-    const { user } = req;
-    const { id } = req.params;
-    const org = await getOrganizationById(id);
-
-    if (!user?.valid || user?.id !== org?.owner_id) {
-        return res.status(401).json({
-            success: false,
-            message: "Not authorized",
-            data: null,
-            error: {
-                code: "UNAUTHORIZED",
-                details: "You must be logged in to delete an organization"
-            }
-        });
-    }
+    const { organization, user } = req; // from checkRole middleware
 
     try {
-        const organization = await softDeleteOrganization(id, user.id);
+        const deletedOrganization = await softDeleteOrganization(organization.id, user.id);
 
-        if (!organization) {
+        if (!deletedOrganization) {
             return res.status(404).json({
                 success: false,
                 message: "Organization not found or not owned by you",
@@ -220,7 +194,7 @@ const deleteOrganization = async (req, res) => {
         return res.status(200).json({
             success: true,
             message: "Organization deleted successfully",
-            data: { organization },
+            data: { organization: deletedOrganization },
             error: null
         });
     } catch (error) {
@@ -239,53 +213,15 @@ const deleteOrganization = async (req, res) => {
 
 // ==== Verify Organization ====
 const verifyOrganizationController = async (req, res) => {
-    const { user } = req;
-    const { id } = req.params;
-
-    if (!user?.valid) {
-        return res.status(401).json({
-            success: false,
-            message: "Not authorized",
-            data: null,
-            error: {
-                code: "UNAUTHORIZED",
-                details: "You must be logged in to verify an organization"
-            }
-        });
-    }
-
-    const org = await getOrganizationById(id);
-    if (!org) {
-        return res.status(404).json({
-            success: false,
-            message: "Organization not found",
-            data: null,
-            error: {
-                code: "NOT_FOUND",
-                details: "No organization found with the provided ID"
-            }
-        });
-    }
-
-    if (user.id !== org.owner_id) {
-        return res.status(403).json({
-            success: false,
-            message: "Forbidden",
-            data: null,
-            error: {
-                code: "FORBIDDEN",
-                details: "Only the owner can verify this organization"
-            }
-        });
-    }
+    const { organization, user } = req; // from checkRole middleware
 
     try {
-        const organization = await verifyOrganization(id, user.id);
+        const verifiedOrganization = await verifyOrganization(organization.id, user.id);
 
         return res.status(200).json({
             success: true,
             message: "Organization verified successfully",
-            data: { organization },
+            data: { organization: verifiedOrganization },
             error: null
         });
     } catch (error) {
@@ -360,8 +296,8 @@ const getOrganizationBySlugController = async (req, res) => {
     }
 };
 
-// ==== Add member ====
-const addMemberController = async (req, res) => {
+// ==== Join Organization ====
+const joinOrganizationController = async (req, res) => {
     const { user } = req;
     const { slug } = req.params;
 
@@ -374,10 +310,69 @@ const addMemberController = async (req, res) => {
         });
     }
     const org = await getOrganizationBySlug(slug);
-    const org_id = org?.id;
-    const user_id = user?.id;
+    if (!org) {
+        return res.status(404).json({
+            success: false,
+            message: "Organization not found",
+            data: null,
+            error: { code: "NOT_FOUND", details: "No organization found" }
+        });
+    }
+
+    const existingMember = await getMember(org.id, user.id);
+    if (existingMember) {
+        return res.status(409).json({
+            success: false,
+            message: "You are already a member of this organization.",
+            data: null,
+            error: { code: "CONFLICT", details: "User is already a member" }
+        });
+    }
+
     try {
-        const member = await addMember({ org_id, user_id });
+        const member = await addMember({ org_id: org.id, user_id: user.id });
+        return res.status(201).json({
+            success: true,
+            message: "Successfully joined the organization",
+            data: { member },
+            error: null
+        });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error",
+            data: null,
+            error: { code: "INTERNAL_ERROR", details: err.message }
+        });
+    }
+};
+
+// ==== Add member by Admin ====
+const addMemberByAdminController = async (req, res) => {
+    const { username, role } = req.body;
+    const { organization } = req; // from checkRole middleware
+
+    const targetUser = await getUserByUsername(username);
+    if (!targetUser) {
+        return res.status(404).json({
+            success: false,
+            message: "User to add not found.",
+            error: "NOT_FOUND"
+        });
+    }
+
+    const existingMember = await getMember(organization.id, targetUser.id);
+    if (existingMember) {
+        return res.status(409).json({
+            success: false,
+            message: "User is already a member of this organization.",
+            error: "CONFLICT"
+        });
+    }
+
+    try {
+        const member = await addMember({ org_id: organization.id, user_id: targetUser.id, role: role || 'member' });
         return res.status(201).json({
             success: true,
             message: "Member added successfully",
@@ -401,7 +396,7 @@ const updateMemberRoleController = async (req, res) => {
     const { username, role } = req.body;
     const { slug } = req.params;
 
-    // Step 1: Check if logged in
+    // Step 1: Check if logged in (redundant with middleware, but good for safety)
     if (!user?.valid) {
         return res.status(401).json({
             success: false,
@@ -531,6 +526,66 @@ const updateMemberRoleController = async (req, res) => {
     }
 };
 
+// ==== Remove Member ====
+const removeMemberController = async (req, res) => {
+    const { user } = req;
+    const { slug, username } = req.params;
+
+    const targetUser = await getUserByUsername(username);
+    const org = await getOrganizationBySlug(slug);
+
+    if (!targetUser || !org) {
+        return res.status(404).json({ notFound: "User or organization not found" });
+    }
+
+    const org_id = org.id;
+    const target_user_id = targetUser.id;
+
+    const currentUserMember = await getMember(org_id, user.id);
+    const targetMember = await getMember(org_id, target_user_id);
+
+    if (!targetMember) {
+        return res.status(404).json({ notFound: "Target user is not a member" });
+    }
+
+    const actorRole = currentUserMember ? currentUserMember.role : null;
+    const targetRole = targetMember.role;
+
+    // Case 1: User is leaving the organization
+    if (target_user_id === user.id) {
+        if (targetRole === 'owner') {
+            return res.status(403).json({
+                forbidden: "Owner cannot leave the organization. Please transfer ownership first."
+            });
+        }
+        try {
+            await removeMember(org_id, user.id);
+            return res.status(200).json({ success: "Successfully left the organization" });
+        } catch (err) {
+            return res.status(500).json({ error: "Internal server error" });
+        }
+    }
+
+    // Case 2: User is removing another member (requires privileges)
+    if (!['owner', 'admin'].includes(actorRole)) {
+        return res.status(403).json({ forbidden: "You do not have permission to remove members" });
+    }
+    if (actorRole === 'admin' && ['owner', 'admin'].includes(targetRole)) {
+        return res.status(403).json({ forbidden: "Admins cannot remove other admins or owners" });
+    }
+    if (actorRole === 'owner' && targetRole === 'owner') {
+        return res.status(403).json({ forbidden: "Owners cannot remove other owners" });
+    }
+
+    try {
+        await removeMember(org_id, target_user_id);
+        return res.status(200).json({ success: "Member removed successfully" });
+    } catch (err) {
+        return res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+
 // ==== Get single member ====
 const getMemberController = async (req, res) => {
     const { slug, username } = req.params;
@@ -598,18 +653,25 @@ const getAllMembersController = async (req, res) => {
     }
 
     const org = await getOrganizationBySlug(slug);
-    const org_id = org?.id;
-    if (org?.owner_id !== user?.id) {
-        return res.status(401).json({
+    if (!org) {
+        return res.status(404).json({
             success: false,
-            message: "Not authorized",
-            data: null,
-            error: { code: "UNAUTHORIZED", details: "Login required" }
+            message: "Organization not found",
+            error: 'NOT_FOUND'
+        });
+    }
+
+    const member = await getMember(org.id, user.id);
+    if (!member) {
+         return res.status(403).json({
+            success: false,
+            message: 'You must be a member to view the member list.',
+            error: 'FORBIDDEN'
         });
     }
 
     try {
-        const members = await getAllMembers(org_id);
+        const members = await getAllMembers(org.id);
         return res.status(200).json({
             success: true,
             message: "Members retrieved",
@@ -635,8 +697,10 @@ module.exports = {
     deleteOrganization,
     verifyOrganizationController,
     getOrganizationBySlugController,
-    addMemberController,
+    joinOrganizationController,
+    addMemberByAdminController,
     getAllMembersController,
     updateMemberRoleController,
-    getMemberController
+    getMemberController,
+    removeMemberController
 };
