@@ -51,7 +51,7 @@ app.use('/api/users', userRoute);
 app.use('/api/finance', financeRoute);
 app.use('/api/debug', debugRoute);
 app.use('/api/admin', adminRoute);
-app.use('/api/organization', organizationRoute);
+app.use('/api/organizations', organizationRoute);
 app.use('/api/games', gameRoute);
 
 // --- Root Endpoint ---

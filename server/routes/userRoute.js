@@ -14,6 +14,8 @@ const {
     undeleteUserController
 } = require('../controllers/userController');
 
+const { getUserOrganizations, getUserOrganizationsControl } = require('../controllers/organizationController');
+
 const authenticateMiddleware = require('../middlewares/authenticateMiddleware');
 const isVerifiedMiddleware = require('../middlewares/isVerifiedMiddleware');
 const adminMiddleware = require('../middlewares/adminMiddleware');
@@ -34,6 +36,7 @@ router.use(authenticateMiddleware); // Apply authentication middleware to all su
 // GET /@:username
 // Description: Get a user's profile by their username.
 // Access: Authenticated Users
+router.get('/:userId/organizations', getUserOrganizationsControl);
 router.get('/@:username', getUserProfile);
 // DELETE /@:username
 // Description: Soft delete a user by their username.
