@@ -1,10 +1,11 @@
 const {
-    createOrganization,
+    createOrganization: createOrg,
     updateOrganization,
     softDeleteOrganization,
     getOrganizationById,
     verifyOrganization,
-    getOrganizationBySlug
+    getOrganizationBySlug,
+    getUserOrganizations
 } = require("../models/organizationModel");
 
 const {
@@ -16,6 +17,71 @@ const {
 } = require("../models/organizationMemberModel");
 
 const { getUserByUsername } = require("../models/userModel");
+
+const createOrganization = async (req, res) => {
+    const { user } = req;
+    if (!user?.valid) {
+        return res.status(401).json({
+            success: false,
+            message: "Not authorized",
+            data: null,
+            error: {
+                code: "UNAUTHORIZED",
+                details: "You must be logged in to create a new organization"
+            }
+        });
+    }
+
+    const { name } = req.body;
+    if (!name || typeof name !== "string" || name.trim().length === 0) {
+        return res.status(400).json({
+            success: false,
+            message: "Invalid organization name",
+            data: null,
+            error: {
+                code: "INVALID_INPUT",
+                details: "Organization name is required and must be a non-empty string"
+            }
+        });
+    }
+
+    try {
+        const organization = await createOrg({
+            owner_id: user.id,
+            name,
+            slug: name.toLowerCase().replace(/\s+/g, '-'),
+        });
+        await addMember({ org_id: organization.id, user_id: user.id, role: 'owner' });
+        return res.status(201).json({
+            success: true,
+            message: "Organization created successfully",
+            data: organization,
+            error: null
+        });
+    } catch (error) {
+        console.error("Error creating organization:", error);
+        if (error.code === "23505") { // unique_violation
+            return res.status(409).json({
+                success: false,
+                message: "Organization name already exists",
+                data: null,
+                error: {
+                    code: "DUPLICATE_NAME",
+                    details: "The provided name is already in use by another organization"
+                }
+            });
+        }
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error",
+            data: null,
+            error: {
+                code: "INTERNAL_ERROR",
+                details: error.message
+            }
+        });
+    }
+};
 
 // ==== Health Check ====
 const healthCheck = (req, res) => {
@@ -70,7 +136,7 @@ const registerOrganization = async (req, res) => {
     }
 
     try {
-        const organization = await createOrganization({
+        const organization = await createOrg({
             owner_id: user.id,
             name,
             slug,
@@ -689,10 +755,33 @@ const getAllMembersController = async (req, res) => {
     }
 };
 
+const getUserOrganizationsControl = async (req, res) => {
+        const { userId } = req.params;
+        try {
+            const organizations = await getUserOrganizations(userId);
+            return res.status(200).json({
+                success: true,
+                message: "Organizations retrieved successfully",
+                data: organizations,
+                error: null
+            });
+        } catch (error) {
+            console.error("Error fetching user organizations:", error);
+            return res.status(500).json({
+                success: false,
+                message: "Internal server error",
+                data: null,
+                error: {
+                    code: "INTERNAL_ERROR",
+                    details: error.message
+                }
+            });
+        }
+    }
+
 // ==== Exports ====
 module.exports = {
     healthCheck,
-    registerOrganization,
     editOrganization,
     deleteOrganization,
     verifyOrganizationController,
@@ -702,5 +791,7 @@ module.exports = {
     getAllMembersController,
     updateMemberRoleController,
     getMemberController,
-    removeMemberController
+    removeMemberController,
+    createOrganization,
+    getUserOrganizationsControl
 };
