@@ -1,37 +1,67 @@
 const express = require('express');
+const router = express.Router();
 const {
-    createGameController,
-    updateGameController,
-    softDeleteGameController,
-    createVersionController,
-    getGameVersionsController,
-    updateVersionController
+    createGame,
+    getGame,
+    getOrganizationGames,
+    updateGame,
+    deleteGame,
+    createGameVersion,
+    getGameVersions,
+    createGameAsset,
+    getAssetsByVersion,
+    deleteGameAsset,
+    createTag,
+    getAllTags,
+    addTagToGame,
+    removeTagFromGame,
+    createGameReview,
+    getGameReviews,
+    softDeleteGameReview
 } = require('../controllers/gameController');
+
 const authenticateMiddleware = require('../middlewares/authenticateMiddleware');
 const isVerifiedMiddleware = require('../middlewares/isVerifiedMiddleware');
+const adminMiddleware = require('../middlewares/adminMiddleware');
 
-const router = express.Router();
-
-// Test route
-router.get('/', (req, res) => {
-    res.json({ message: "HELLO GAMES WORKING!!" });
+router.get('/health', (req, res) => {
+    res.status(200).json({ success: true, message: "Game router is running." });
 });
 
+// Middleware for all subsequent routes
 router.use(authenticateMiddleware);
-router.use(isVerifiedMiddleware);
 
-// -------------------
-// GAME CRUD ROUTES
-// -------------------
-router.post('/create', createGameController);
-router.put('/update', updateGameController);
-router.post('/delete', softDeleteGameController);
+// --- Game Routes ---
+router.post('/', isVerifiedMiddleware, createGame);
+router.get('/org/:org_slug', getOrganizationGames);
+router.get('/:org_slug/:game_slug', getGame);
+router.put('/:id', isVerifiedMiddleware, updateGame);
+router.delete('/:id', isVerifiedMiddleware, deleteGame);
 
-// -------------------
-// GAME VERSION ROUTES
-// -------------------
-router.post('/version/create', createVersionController);
-router.get('/:game_id/versions', getGameVersionsController);
-router.put('/version/update', updateVersionController);
+// --- Game Version Routes ---
+router.post('/versions', isVerifiedMiddleware, createGameVersion);
+router.get('/versions/:game_id', getGameVersions);
+
+// --- Game Asset Routes ---
+router.post('/assets', isVerifiedMiddleware, createGameAsset);
+router.get('/assets/:version_id', getAssetsByVersion);
+router.delete('/assets/:id', isVerifiedMiddleware, deleteGameAsset);
+
+// --- Tag Routes ---
+const tagRouter = express.Router();
+tagRouter.use(isVerifiedMiddleware);
+tagRouter.get('/', getAllTags);
+tagRouter.post('/', adminMiddleware, createTag); // Only admins should create global tags
+tagRouter.post('/assign', addTagToGame);
+tagRouter.post('/unassign', removeTagFromGame);
+router.use('/tags', tagRouter);
+
+// --- Review Routes ---
+const reviewRouter = express.Router();
+reviewRouter.use(isVerifiedMiddleware);
+reviewRouter.post('/', createGameReview);
+reviewRouter.get('/:game_id', getGameReviews);
+reviewRouter.delete('/:id', softDeleteGameReview);
+router.use('/reviews', reviewRouter);
 
 module.exports = router;
