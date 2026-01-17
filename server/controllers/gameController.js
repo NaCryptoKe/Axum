@@ -1,6 +1,7 @@
 const gameModel = require('../models/gameModel');
 const orgModel = require('../models/organizationModel');
 const { getMember } = require('../models/organizationMemberModel');
+const { slugify } = require('../utils/slugify');
 
 const createGame = async (req, res) => {
     const { user } = req;
@@ -14,6 +15,8 @@ const createGame = async (req, res) => {
         return res.status(400).json({ success: false, message: "Missing required fields", error: { code: 400, details: "org_id, title, and slug are required." } });
     }
 
+    const slugifiedSlug = slugify(slug);
+
     try {
         const member = await getMember(org_id, user.id);
         if (!member || !['admin', 'owner', 'developer'].includes(member.role)) {
@@ -23,7 +26,7 @@ const createGame = async (req, res) => {
         const newGame = await gameModel.createGame({
             org_id,
             title,
-            slug,
+            slug: slugifiedSlug,
             description,
             status,
             release_date,
@@ -82,6 +85,10 @@ const updateGame = async (req, res) => {
 
     if (!user?.id) {
         return res.status(401).json({ success: false, message: "Unauthorized", error: { code: 401, details: "User not authenticated." } });
+    }
+
+    if (updates.slug) {
+        updates.slug = slugify(updates.slug);
     }
 
     try {
