@@ -31,13 +31,6 @@ router.get('/health', (req, res) => {
 // Middleware for all subsequent routes
 router.use(authenticateMiddleware);
 
-// --- Game Routes ---
-router.post('/', isVerifiedMiddleware, createGame);
-router.get('/org/:org_slug', getOrganizationGames);
-router.get('/:org_slug/:game_slug', getGame);
-router.put('/:id', isVerifiedMiddleware, updateGame);
-router.delete('/:id', isVerifiedMiddleware, deleteGame);
-
 // --- Game Version Routes ---
 router.post('/versions', isVerifiedMiddleware, createGameVersion);
 router.get('/versions/:game_id', getGameVersions);
@@ -63,5 +56,12 @@ reviewRouter.post('/', createGameReview);
 reviewRouter.get('/:game_id', getGameReviews);
 reviewRouter.delete('/:id', softDeleteGameReview);
 router.use('/reviews', reviewRouter);
+
+// --- Game Routes ---
+router.post('/', isVerifiedMiddleware, createGame);
+router.get('/org/:org_slug', getOrganizationGames);
+router.get('/:org_slug/:game_slug', getGame);
+router.put('/:id', isVerifiedMiddleware, updateGame);
+router.delete('/:id', isVerifiedMiddleware, deleteGame);
 
 module.exports = router;
