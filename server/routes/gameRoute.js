@@ -58,6 +58,8 @@ reviewRouter.delete('/:id', softDeleteGameReview);
 router.use('/reviews', reviewRouter);
 
 // --- Game Routes ---
+router.post('/create', isVerifiedMiddleware, createGame);
+router.put('/update/:id', isVerifiedMiddleware, updateGame);
 router.post('/', isVerifiedMiddleware, createGame);
 router.get('/org/:org_slug', getOrganizationGames);
 router.get('/:org_slug/:game_slug', getGame);
