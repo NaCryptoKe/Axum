@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const gameModel = require('../models/gameModel');
 const orgModel = require('../models/organizationModel');
 const { getMember } = require('../models/organizationMemberModel');
@@ -15,49 +16,62 @@ const createGame = async (req, res) => {
         return res.status(400).json({ success: false, message: "Missing required fields", error: { code: 400, details: "org_id, title, and slug are required." } });
     }
 
-    const slugifiedSlug = slugify(slug);
+    const baseSlug = slugify(slug);
+    let finalSlug = baseSlug;
+    let newGame;
+    let attempts = 0;
 
-    try {
-        const member = await getMember(org_id, user.id);
-        if (!member || !['admin', 'owner', 'developer'].includes(member.role)) {
-            return res.status(403).json({ success: false, message: "Forbidden", error: { code: 403, details: "User does not have permission to create a game in this organization." } });
-        }
+    const member = await getMember(org_id, user.id);
+    if (!member || !['admin', 'owner', 'developer'].includes(member.role)) {
+        return res.status(403).json({ success: false, message: "Forbidden", error: { code: 403, details: "User does not have permission to create a game in this organization." } });
+    }
 
-        const newGame = await gameModel.createGame({
-            org_id,
-            title,
-            slug: slugifiedSlug,
-            description,
-            status,
-            release_date,
-            cover_image_url,
-            metadata,
-            created_by: user.id
-        });
-
-        if (newGame) {
-            await gameModel.createGameVersion({
-                game_id: newGame.id,
-                version_name: '0.0',
-                changelog: 'Initial version.',
-                status: 'draft'
+    while (attempts < 5) {
+        try {
+            newGame = await gameModel.createGame({
+                org_id,
+                title,
+                slug: finalSlug,
+                description,
+                status,
+                release_date,
+                cover_image_url,
+                metadata,
+                created_by: user.id
             });
-
-            if (tags_cache && Array.isArray(tags_cache)) {
-                for (const tag_id of tags_cache) {
-                    await gameModel.addTagToGame(newGame.id, tag_id);
-                }
+            break; 
+        } catch (error) {
+            if (error.code === '23505' && attempts < 4) {
+                const suffix = crypto.randomBytes(3).toString('hex');
+                finalSlug = `${baseSlug}-${suffix}`;
+                attempts++;
+            } else {
+                console.error("Create Game Error:", error);
+                return res.status(500).json({ success: false, message: "Server Error", error: { code: 500, details: error.message } });
             }
         }
-
-        return res.status(201).json({ success: true, message: "Game created successfully.", data: newGame, error: null });
-    } catch (error) {
-        if (error.code === '23505') { // unique_violation
-            return res.status(409).json({ success: false, message: "Conflict", error: { code: 409, details: "A game with this slug already exists in this organization." } });
-        }
-        console.error("Create Game Error:", error);
-        return res.status(500).json({ success: false, message: "Server Error", error: { code: 500, details: error.message } });
     }
+
+    if (!newGame) {
+        return res.status(500).json({ success: false, message: "Failed to create a unique slug after multiple attempts." });
+    }
+
+    if (newGame) {
+        await gameModel.createGameVersion({
+            game_id: newGame.id,
+            version_name: '0.0',
+            changelog: 'Initial version.',
+            status: 'draft'
+        });
+
+        if (tags_cache && Array.isArray(tags_cache)) {
+            for (const tag_id of tags_cache) {
+                await gameModel.addTagToGame(newGame.id, tag_id);
+            }
+        }
+    }
+
+    return res.status(201).json({ success: true, message: "Game created successfully.", data: newGame, error: null });
 };
 
 const getGame = async (req, res) => {
