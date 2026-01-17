@@ -33,7 +33,7 @@ describe('Game Router', () => {
 
     describe('POST /games', () => {
         it('should call createGame and return 201', async () => {
-            const gameData = { name: 'Test Game', description: 'A fun game.' };
+            const gameData = { name: 'Test Game', description: 'A fun game.', tags_cache: [1, 2] };
             gameController.createGame.mockImplementation((req, res) => res.status(201).json({ success: true, data: gameData }));
             const res = await request(app).post('/games').send(gameData);
             expect(res.statusCode).toEqual(201);
@@ -82,7 +82,7 @@ describe('Game Router', () => {
 
     describe('POST /games/create', () => {
         it('should call createGame and return 201', async () => {
-            const gameData = { name: 'Test Game', description: 'A fun game.' };
+            const gameData = { name: 'Test Game', description: 'A fun game.', tags_cache: [1, 2] };
             gameController.createGame.mockImplementation((req, res) => res.status(201).json({ success: true, data: gameData }));
             const res = await request(app).post('/games/create').send(gameData);
             expect(res.statusCode).toEqual(201);

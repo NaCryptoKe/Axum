@@ -5,7 +5,7 @@ const { slugify } = require('../utils/slugify');
 
 const createGame = async (req, res) => {
     const { user } = req;
-    const { org_id, title, slug, description, status, release_date, cover_image_url, metadata } = req.body;
+    const { org_id, title, slug, description, status, release_date, cover_image_url, metadata, tags_cache } = req.body;
 
     if (!user?.id) {
         return res.status(401).json({ success: false, message: "Unauthorized", error: { code: 401, details: "User not authenticated." } });
@@ -42,6 +42,12 @@ const createGame = async (req, res) => {
                 changelog: 'Initial version.',
                 status: 'draft'
             });
+
+            if (tags_cache && Array.isArray(tags_cache)) {
+                for (const tag_id of tags_cache) {
+                    await gameModel.addTagToGame(newGame.id, tag_id);
+                }
+            }
         }
 
         return res.status(201).json({ success: true, message: "Game created successfully.", data: newGame, error: null });
