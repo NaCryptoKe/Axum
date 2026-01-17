@@ -126,6 +126,11 @@ const updateGame = async (req, res) => {
             return res.status(404).json({ success: false, message: "Not Found", error: { code: 404, details: "Game not found." } });
         }
 
+        const org = await orgModel.getOrganizationById(game.org_id);
+        if (!org) {
+            return res.status(404).json({ success: false, message: "Not Found", error: { code: 404, details: "Organization not found." } });
+        }
+
         const member = await getMember(game.org_id, user.id);
         if (!member || !['admin', 'owner', 'developer'].includes(member.role)) {
             return res.status(403).json({ success: false, message: "Forbidden", error: { code: 403, details: "User does not have permission to update this game." } });
