@@ -75,6 +75,7 @@ const createGame = async (req, res) => {
 };
 
 const getGame = async (req, res) => {
+    console.log('DEBUG')
     const { org_slug, game_slug } = req.params;
     try {
         const org = await orgModel.getOrganizationBySlug(org_slug);
@@ -212,6 +213,7 @@ const getGameVersions = async (req, res) => {
 };
 
 const createGameAsset = async (req, res) => {
+    console.log("HELLO")
     const { user } = req;
     const { version_id, asset_type, storage_path, file_name, file_size_bytes, checksum } = req.body;
 

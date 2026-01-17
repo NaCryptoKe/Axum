@@ -34,6 +34,7 @@ router.use(authenticateMiddleware);
 // --- Game Version Routes ---
 router.post('/versions', isVerifiedMiddleware, createGameVersion);
 router.get('/versions/:game_id', getGameVersions);
+// needs a update version api
 
 // --- Game Asset Routes ---
 router.post('/assets', isVerifiedMiddleware, createGameAsset);
@@ -47,23 +48,23 @@ tagRouter.get('/', getAllTags);
 tagRouter.post('/', adminMiddleware, createTag); // Only admins should create global tags
 tagRouter.post('/assign', addTagToGame);
 tagRouter.post('/unassign', removeTagFromGame);
+// should add a route to get all the tags of a certain game given it's id
 router.use('/tags', tagRouter);
 
 // --- Review Routes ---
 const reviewRouter = express.Router();
 reviewRouter.use(isVerifiedMiddleware);
-reviewRouter.post('/', createGameReview);
+reviewRouter.post('/', createGameReview); // If a user has already reviewd a game, they shouldn't be able to create another one only update the already existing one.
+// A game dev shouldn't be able to review their own games.
 reviewRouter.get('/:game_id', getGameReviews);
 reviewRouter.delete('/:id', softDeleteGameReview);
 router.use('/reviews', reviewRouter);
 
 // --- Game Routes ---
-router.post('/create', isVerifiedMiddleware, createGame);
-router.put('/update/:id', isVerifiedMiddleware, updateGame);
 router.post('/', isVerifiedMiddleware, createGame);
+router.put('/:id', isVerifiedMiddleware, updateGame);
 router.get('/org/:org_slug', getOrganizationGames);
 router.get('/:org_slug/:game_slug', getGame);
-router.put('/:id', isVerifiedMiddleware, updateGame);
 router.delete('/:id', isVerifiedMiddleware, deleteGame);
 
 module.exports = router;

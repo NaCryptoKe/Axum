@@ -64,7 +64,7 @@ router.get("/verify-payment/:tx_ref", async (req, res) => {
 
 // Success endpoint
 router.get("/payment-success", (req, res) => {
-    res.send("✅ Payment successful!");
+    res.send("Payment successful!");
 });
 
 module.exports = router;

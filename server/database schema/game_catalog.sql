@@ -13,6 +13,7 @@ CREATE TYPE game_catalog.asset_type AS ENUM (
   'build_windows', 'build_linux', 'build_mac',
   'screenshot', 'video', 'soundtrack', 'documentation', 'other'
 );
+-- add asset types such as logo, trailer
 
 -- Main game entity
 CREATE TABLE game_catalog.games (
@@ -51,14 +52,14 @@ CREATE TABLE game_catalog.game_versions (
 
 -- Stored assets (builds, images, etc.)
 CREATE TABLE game_catalog.game_assets (
-                                          id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                                          version_id        UUID NOT NULL REFERENCES game_catalog.game_versions(id) ON DELETE CASCADE,
-                                          asset_type        game_catalog.asset_type NOT NULL,
-                                          storage_path      TEXT NOT NULL,
-                                          file_name         TEXT,
-                                          file_size_bytes   BIGINT,
-                                          checksum          TEXT,
-                                          created_at        TIMESTAMPTZ NOT NULL DEFAULT now()
+  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  version_id        UUID NOT NULL REFERENCES game_catalog.game_versions(id) ON DELETE CASCADE,
+  asset_type        game_catalog.asset_type NOT NULL,
+  storage_path      TEXT NOT NULL,
+  file_name         TEXT,
+  file_size_bytes   BIGINT,
+  checksum          TEXT,
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 -- Global tags taxonomy
