@@ -35,6 +35,15 @@ const createGame = async (req, res) => {
             created_by: user.id
         });
 
+        if (newGame) {
+            await gameModel.createGameVersion({
+                game_id: newGame.id,
+                version_name: '0.0',
+                changelog: 'Initial version.',
+                status: 'draft'
+            });
+        }
+
         return res.status(201).json({ success: true, message: "Game created successfully.", data: newGame, error: null });
     } catch (error) {
         if (error.code === '23505') { // unique_violation
