@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const gameModel = require('../models/gameModel');
 const orgModel = require('../models/organizationModel');
+const communityModel = require('../models/communityModel'); // Import community model
 const { getMember } = require('../models/organizationMemberModel');
 const { slugify } = require('../utils/slugify');
 
@@ -57,6 +58,7 @@ const createGame = async (req, res) => {
     }
 
     if (newGame) {
+        // Create initial version
         await gameModel.createGameVersion({
             game_id: newGame.id,
             version_name: '0.0',
@@ -64,10 +66,26 @@ const createGame = async (req, res) => {
             status: 'draft'
         });
 
+        // Add tags
         if (tags_cache && Array.isArray(tags_cache)) {
             for (const tag_id of tags_cache) {
                 await gameModel.addTagToGame(newGame.id, tag_id);
             }
+        }
+
+        // Create a dedicated community space for the game
+        try {
+            await communityModel.createSpace({
+                creator_id: newGame.created_by,
+                related_game_id: newGame.id,
+                organization_id: newGame.org_id,
+                name: `${newGame.title} Community`,
+                slug: `${newGame.slug}-community`,
+                description: `Official community hub for ${newGame.title}.`
+            });
+        } catch (spaceError) {
+            // Log the error but don't fail the whole game creation process
+            console.error(`Failed to create community space for game ${newGame.id}:`, spaceError);
         }
     }
 

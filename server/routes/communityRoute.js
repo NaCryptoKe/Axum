@@ -10,13 +10,16 @@ const {
     getPostsBySpace,
     updatePost,
     softDeletePost,
+    undeletePost,
     createComment,
     getComment,
     getCommentsByPost,
     updateComment,
     softDeleteComment,
     addPostVote,
-    removePostVote
+    removePostVote,
+    addCommentVote,
+    removeCommentVote
 } = require('../controllers/communityController');
 
 const authenticateMiddleware = require('../middlewares/authenticateMiddleware');
@@ -32,16 +35,17 @@ router.use(isVerifiedMiddleware);
 
 // --- Space Routes ---
 router.post('/spaces', createSpace);
-router.get('/spaces/:id', getSpace); // Using :id for both ID and slug based on controller logic
+router.get('/spaces/:slug', getSpace);
 router.put('/spaces/:id', updateSpace);
 router.delete('/spaces/:id', softDeleteSpace);
 
 // --- Post Routes ---
 router.post('/posts', createPost);
 router.get('/posts/:id', getPost);
-router.get('/spaces/:space_id/posts', getPostsBySpace);
+router.get('/spaces/:space_slug/posts', getPostsBySpace);
 router.put('/posts/:id', updatePost);
 router.delete('/posts/:id', softDeletePost);
+router.put('/posts/:id/undelete', undeletePost); // Added undelete route
 
 // --- Comment Routes ---
 router.post('/comments', createComment);
@@ -53,6 +57,10 @@ router.delete('/comments/:id', softDeleteComment);
 // --- Post Vote Routes ---
 router.post('/posts/:post_id/vote', addPostVote);
 router.delete('/posts/:post_id/vote', removePostVote);
+
+// --- Comment Vote Routes ---
+router.post('/comments/:comment_id/vote', addCommentVote);
+router.delete('/comments/:comment_id/vote', removeCommentVote);
 
 
 module.exports = router;

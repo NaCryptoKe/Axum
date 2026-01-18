@@ -42,15 +42,9 @@ const createSpace = async (req, res) => {
 };
 
 const getSpace = async (req, res) => {
-    const { id } = req.params; // Can get by ID or slug depending on route setup
+    const { slug } = req.params;
     try {
-        let space;
-        if (id.includes('-')) { // Heuristic: if ID contains hyphens, it's likely a slug
-            space = await communityModel.getSpaceBySlug(id);
-        } else {
-            space = await communityModel.getSpaceById(id);
-        }
-
+        const space = await communityModel.getSpaceBySlug(slug);
         if (!space) return res.status(404).json({ success: false, message: "Space not found." });
         return res.status(200).json({ success: true, message: "Space retrieved.", data: space });
     } catch (error) {
@@ -165,9 +159,11 @@ const getPost = async (req, res) => {
 };
 
 const getPostsBySpace = async (req, res) => {
-    const { space_id } = req.params;
+    const { space_slug } = req.params;
     try {
-        const posts = await communityModel.getPostsBySpace(space_id);
+        const space = await communityModel.getSpaceBySlug(space_slug);
+        if (!space) return res.status(404).json({ success: false, message: "Space not found." });
+        const posts = await communityModel.getPostsBySpace(space.id);
         return res.status(200).json({ success: true, message: "Posts retrieved.", data: posts });
     } catch (error) {
         console.error("Get Posts By Space Error:", error);
@@ -244,6 +240,40 @@ const softDeletePost = async (req, res) => {
         return res.status(200).json({ success: true, message: "Post deleted successfully." });
     } catch (error) {
         console.error("Soft Delete Post Error:", error);
+        return res.status(500).json({ success: false, message: "Server Error", error: error.message });
+    }
+};
+
+const undeletePost = async (req, res) => {
+    const { user } = req;
+    const { id } = req.params;
+
+    if (!user?.id) return res.status(401).json({ success: false, message: "Unauthorized" });
+
+    try {
+        const existingPost = await communityModel.getPostById(id, true); // Get even if deleted
+        if (!existingPost) return res.status(404).json({ success: false, message: "Post not found." });
+
+        // Authorization check - only moderators or admins can undelete
+        const space = await communityModel.getSpaceById(existingPost.space_id);
+        let authorized = false;
+        if (space && space.related_game_id) {
+            const game = await gameModel.getGameById(space.related_game_id);
+            if (game) {
+                const member = await getMember(game.org_id, user.id);
+                if (member && ['admin', 'owner', 'moderator'].includes(member.role)) {
+                    authorized = true;
+                }
+            }
+        }
+        if (!authorized) {
+            return res.status(403).json({ success: false, message: "Forbidden: Not authorized to undelete this post." });
+        }
+
+        await communityModel.undeletePost(id);
+        return res.status(200).json({ success: true, message: "Post undeleted successfully." });
+    } catch (error) {
+        console.error("Undelete Post Error:", error);
         return res.status(500).json({ success: false, message: "Server Error", error: error.message });
     }
 };
@@ -340,8 +370,9 @@ const softDeleteComment = async (req, res) => {
             return res.status(403).json({ success: false, message: "Forbidden: Not authorized to delete this comment." });
         }
 
+        // The model function should handle recursive deletion of sub-comments
         await communityModel.softDeleteComment(id);
-        return res.status(200).json({ success: true, message: "Comment deleted successfully." });
+        return res.status(200).json({ success: true, message: "Comment and its replies deleted successfully." });
     } catch (error) {
         console.error("Soft Delete Comment Error:", error);
         return res.status(500).json({ success: false, message: "Server Error", error: error.message });
@@ -351,7 +382,8 @@ const softDeleteComment = async (req, res) => {
 // --- Post Vote Controllers ---
 const addPostVote = async (req, res) => {
     const { user } = req;
-    const { post_id, value } = req.body; // value should be 1 for upvote, -1 for downvote
+    const { post_id } = req.params;
+    const { value } = req.body; // value should be 1 for upvote, -1 for downvote
 
     if (!user?.id) return res.status(401).json({ success: false, message: "Unauthorized" });
     if (!post_id || ![-1, 1].includes(value)) return res.status(400).json({ success: false, message: "Post ID and a valid vote value (1 or -1) are required." });
@@ -375,7 +407,7 @@ const addPostVote = async (req, res) => {
 
 const removePostVote = async (req, res) => {
     const { user } = req;
-    const { post_id } = req.body;
+    const { post_id } = req.params;
 
     if (!user?.id) return res.status(401).json({ success: false, message: "Unauthorized" });
     if (!post_id) return res.status(400).json({ success: false, message: "Post ID is required." });
@@ -392,6 +424,50 @@ const removePostVote = async (req, res) => {
     }
 };
 
+// --- Comment Vote Controllers ---
+const addCommentVote = async (req, res) => {
+    const { user } = req;
+    const { comment_id } = req.params;
+    const { value } = req.body;
+
+    if (!user?.id) return res.status(401).json({ success: false, message: "Unauthorized" });
+    if (!comment_id || ![-1, 1].includes(value)) return res.status(400).json({ success: false, message: "Comment ID and a valid vote value (1 or -1) are required." });
+
+    try {
+        const comment = await communityModel.getCommentById(comment_id);
+        if (!comment) return res.status(404).json({ success: false, message: "Comment not found." });
+
+        if (comment.author_id === user.id) {
+            return res.status(403).json({ success: false, message: "Forbidden: Cannot vote on your own comment." });
+        }
+
+        const vote = await communityModel.addCommentVote({ comment_id, user_id: user.id, value });
+        return res.status(201).json({ success: true, message: "Vote added/updated successfully.", data: vote });
+    } catch (error) {
+        console.error("Add Comment Vote Error:", error);
+        return res.status(500).json({ success: false, message: "Server Error", error: error.message });
+    }
+};
+
+const removeCommentVote = async (req, res) => {
+    const { user } = req;
+    const { comment_id } = req.params;
+
+    if (!user?.id) return res.status(401).json({ success: false, message: "Unauthorized" });
+    if (!comment_id) return res.status(400).json({ success: false, message: "Comment ID is required." });
+
+    try {
+        const rowsAffected = await communityModel.removeCommentVote(comment_id, user.id);
+        if (rowsAffected === 0) {
+            return res.status(404).json({ success: false, message: "Vote not found or already removed." });
+        }
+        return res.status(200).json({ success: true, message: "Vote removed successfully." });
+    } catch (error) {
+        console.error("Remove Comment Vote Error:", error);
+        return res.status(500).json({ success: false, message: "Server Error", error: error.message });
+    }
+};
+
 module.exports = {
     createSpace,
     getSpace,
@@ -402,11 +478,14 @@ module.exports = {
     getPostsBySpace,
     updatePost,
     softDeletePost,
+    undeletePost,
     createComment,
     getComment,
     getCommentsByPost,
     updateComment,
     softDeleteComment,
     addPostVote,
-    removePostVote
+    removePostVote,
+    addCommentVote,
+    removeCommentVote
 };

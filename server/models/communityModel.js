@@ -1,12 +1,12 @@
 const pool = require('../config/db');
 
 // --- Space Functions ---
-const createSpace = async ({ creator_id, related_game_id, name, slug, description }) => {
+const createSpace = async ({ creator_id, related_game_id, organization_id, name, slug, description }) => {
     const { rows } = await pool.query(
-        `INSERT INTO community.spaces (creator_id, related_game_id, name, slug, description)
-        VALUES ($1, $2, $3, $4, $5)
+        `INSERT INTO community.spaces (creator_id, related_game_id, organization_id, name, slug, description)
+        VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING *`,
-        [creator_id, related_game_id, name, slug, description]
+        [creator_id, related_game_id, organization_id, name, slug, description]
     );
     return rows[0];
 };
@@ -60,11 +60,12 @@ const createPost = async ({ space_id, author_id, title, body }) => {
     return rows[0];
 };
 
-const getPostById = async (id) => {
-    const { rows } = await pool.query(
-        'SELECT * FROM community.posts WHERE id = $1 AND is_deleted = false',
-        [id]
-    );
+const getPostById = async (id, includeDeleted = false) => {
+    let query = 'SELECT * FROM community.posts WHERE id = $1';
+    if (!includeDeleted) {
+        query += ' AND is_deleted = false';
+    }
+    const { rows } = await pool.query(query, [id]);
     return rows[0];
 };
 
@@ -92,6 +93,14 @@ const updatePost = async (id, { title, body }) => {
 const softDeletePost = async (id) => {
     const { rows } = await pool.query(
         'UPDATE community.posts SET is_deleted = true, deleted_at = NOW() WHERE id = $1 RETURNING *',
+        [id]
+    );
+    return rows[0];
+};
+
+const undeletePost = async (id) => {
+    const { rows } = await pool.query(
+        'UPDATE community.posts SET is_deleted = false, deleted_at = NULL WHERE id = $1 RETURNING *',
         [id]
     );
     return rows[0];
@@ -138,10 +147,19 @@ const updateComment = async (id, { body }) => {
 
 const softDeleteComment = async (id) => {
     const { rows } = await pool.query(
-        'UPDATE community.comments SET is_deleted = true, deleted_at = NOW() WHERE id = $1 RETURNING *',
+        `WITH RECURSIVE comment_tree AS (
+            SELECT id FROM community.comments WHERE id = $1
+            UNION ALL
+            SELECT c.id FROM community.comments c
+            INNER JOIN comment_tree ct ON c.parent_comment_id = ct.id
+        )
+        UPDATE community.comments
+        SET is_deleted = true, deleted_at = NOW()
+        WHERE id IN (SELECT id FROM comment_tree)
+        RETURNING *`,
         [id]
     );
-    return rows[0];
+    return rows;
 };
 
 // --- Post Vote Functions ---
@@ -164,7 +182,26 @@ const removePostVote = async (post_id, user_id) => {
     return result.rowCount;
 };
 
-// No direct updatePostVote is needed as addPostVote handles ON CONFLICT for updates
+// --- Comment Vote Functions ---
+const addCommentVote = async ({ comment_id, user_id, value }) => {
+    const { rows } = await pool.query(
+        `INSERT INTO community.comment_votes (comment_id, user_id, value)
+        VALUES ($1, $2, $3)
+        ON CONFLICT (comment_id, user_id) DO UPDATE SET value = EXCLUDED.value, created_at = NOW()
+        RETURNING *`,
+        [comment_id, user_id, value]
+    );
+    return rows[0];
+};
+
+const removeCommentVote = async (comment_id, user_id) => {
+    const result = await pool.query(
+        'DELETE FROM community.comment_votes WHERE comment_id = $1 AND user_id = $2',
+        [comment_id, user_id]
+    );
+    return result.rowCount;
+};
+
 
 module.exports = {
     createSpace,
@@ -177,6 +214,7 @@ module.exports = {
     getPostsBySpace,
     updatePost,
     softDeletePost,
+    undeletePost,
     createComment,
     getCommentById,
     getCommentsByPost,
@@ -184,4 +222,6 @@ module.exports = {
     softDeleteComment,
     addPostVote,
     removePostVote,
+    addCommentVote,
+    removeCommentVote,
 };

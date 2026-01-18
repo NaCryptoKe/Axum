@@ -5,6 +5,7 @@ CREATE TABLE community.spaces (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   creator_id      UUID REFERENCES core.users(id) ON DELETE SET NULL,
   related_game_id UUID REFERENCES game_catalog.games(id) ON DELETE SET NULL,
+  organization_id UUID REFERENCES core.organizations(id) ON DELETE SET NULL, -- For official vs. fan spaces
   name            TEXT NOT NULL,
   slug            TEXT NOT NULL UNIQUE CHECK (slug ~ '^[a-z0-9-]+$'),
   description     TEXT,
@@ -51,4 +52,13 @@ CREATE TABLE community.post_votes (
   value         SMALLINT NOT NULL CHECK (value IN (-1, 1)),
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
   PRIMARY KEY (post_id, user_id)
+);
+
+-- Voting on comments (upvote/downvote)
+CREATE TABLE community.comment_votes (
+  comment_id    UUID NOT NULL REFERENCES community.comments(id) ON DELETE CASCADE,
+  user_id       UUID NOT NULL REFERENCES core.users(id) ON DELETE CASCADE,
+  value         SMALLINT NOT NULL CHECK (value IN (-1, 1)),
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (comment_id, user_id)
 );
