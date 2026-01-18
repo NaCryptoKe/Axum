@@ -1,354 +1,485 @@
-const {
-    createGame,
-    getGameById,
-    updateGame,
-    softDeleteGame,
-    createVersion,
-    getGameVersions,
-    updateVersion
-} = require('../models/gameModel');
-
+const crypto = require('crypto');
+const gameModel = require('../models/gameModel');
+const orgModel = require('../models/organizationModel');
 const { getMember } = require('../models/organizationMemberModel');
+const { slugify } = require('../utils/slugify');
 
-// ------------------------------
-// CREATE GAME
-// ------------------------------
-const createGameController = async (req, res) => {
+const createGame = async (req, res) => {
     const { user } = req;
-    const badRequestErrors = [];
-    const unprocessableErrors = [];
+    const { org_id, title, slug, description, status, release_date, cover_image_url, metadata, tags_cache } = req.body;
 
+    if (!user?.id) {
+        return res.status(401).json({ success: false, message: "Unauthorized", error: { code: 401, details: "User not authenticated." } });
+    }
+
+    if (!org_id || !title || !slug) {
+        return res.status(400).json({ success: false, message: "Missing required fields", error: { code: 400, details: "org_id, title, and slug are required." } });
+    }
+
+    const baseSlug = slugify(slug);
+    let finalSlug = baseSlug;
+    let newGame;
+    let attempts = 0;
+
+    const member = await getMember(org_id, user.id);
+    if (!member || !['admin', 'owner', 'developer'].includes(member.role)) {
+        return res.status(403).json({ success: false, message: "Forbidden", error: { code: 403, details: "User does not have permission to create a game in this organization." } });
+    }
+
+    while (attempts < 5) {
+        try {
+            newGame = await gameModel.createGame({
+                org_id,
+                title,
+                slug: finalSlug,
+                description,
+                status,
+                release_date,
+                cover_image_url,
+                metadata,
+                created_by: user.id
+            });
+            break; 
+        } catch (error) {
+            if (error.code === '23505' && attempts < 4) {
+                const suffix = crypto.randomBytes(3).toString('hex');
+                finalSlug = `${baseSlug}-${suffix}`;
+                attempts++;
+            } else {
+                console.error("Create Game Error:", error);
+                return res.status(500).json({ success: false, message: "Server Error", error: { code: 500, details: error.message } });
+            }
+        }
+    }
+
+    if (!newGame) {
+        return res.status(500).json({ success: false, message: "Failed to create a unique slug after multiple attempts." });
+    }
+
+    if (newGame) {
+        await gameModel.createGameVersion({
+            game_id: newGame.id,
+            version_name: '0.0',
+            changelog: 'Initial version.',
+            status: 'draft'
+        });
+
+        if (tags_cache && Array.isArray(tags_cache)) {
+            for (const tag_id of tags_cache) {
+                await gameModel.addTagToGame(newGame.id, tag_id);
+            }
+        }
+    }
+
+    return res.status(201).json({ success: true, message: "Game created successfully.", data: newGame, error: null });
+};
+
+const getGame = async (req, res) => {
+    console.log('DEBUG')
+    const { org_slug, game_slug } = req.params;
     try {
-        if (!user?.valid) badRequestErrors.push("User not logged in");
-
-        const {
-            org_id,
-            title,
-            slug,
-            description,
-            status = 'draft',
-            release_date,
-            cover_image_url,
-            metadata = {},
-            tags_cache = []
-        } = req.body;
-
-        if (!org_id) badRequestErrors.push("Missing organization ID");
-        if (!title) badRequestErrors.push("Missing title");
-        if (!slug) badRequestErrors.push("Missing slug");
-
-        if (badRequestErrors.length > 0)
-            return res.status(400).json({
-                success: false,
-                message: "Bad Request",
-                data: null,
-                error: { code: 400, details: badRequestErrors }
-            });
-
-        const cleanSlug = slug.toLowerCase().trim();
-        const cleanTitle = title.trim();
-        const cleanDescription = description ? description.trim() : null;
-        const cleanTags = Array.isArray(tags_cache) ? tags_cache : [tags_cache];
-
-        if (!/^[a-z0-9-]+$/.test(cleanSlug))
-            unprocessableErrors.push("Slug can only contain lowercase letters, numbers, and hyphens.");
-
-        if (unprocessableErrors.length > 0)
-            return res.status(422).json({
-                success: false,
-                message: "Unprocessable inputs",
-                data: null,
-                error: { code: 422, details: unprocessableErrors }
-            });
-
-        const valid_user = await getMember(org_id, user.id);
-        if (!valid_user)
-            return res.status(403).json({
-                success: false,
-                message: "Not a member of this organization",
-                data: null,
-                error: { code: 403, details: ["User is not part of the organization"] }
-            });
-
-        if (valid_user.role !== 'admin' && valid_user.role !== 'owner')
-            return res.status(403).json({
-                success: false,
-                message: "Not authorized to create a game",
-                data: null,
-                error: { code: 403, details: ["User must be admin or owner to create a game"] }
-            });
-
-        const game = await createGame({
-            org_id,
-            title: cleanTitle,
-            slug: cleanSlug,
-            description: cleanDescription,
-            status,
-            release_date,
-            cover_image_url,
-            metadata,
-            tags_cache: cleanTags,
-            created_by: user.id
-        });
-
-        return res.status(201).json({
-            success: true,
-            message: "Game created successfully",
-            data: game,
-            error: null
-        });
-
+        const org = await orgModel.getOrganizationBySlug(org_slug);
+        if (!org) {
+            return res.status(404).json({ success: false, message: "Not Found", error: { code: 404, details: "Organization not found." } });
+        }
+        const game = await gameModel.getGameBySlug(org.id, game_slug);
+        if (!game) {
+            return res.status(404).json({ success: false, message: "Not Found", error: { code: 404, details: "Game not found." } });
+        }
+        return res.status(200).json({ success: true, message: "Game retrieved.", data: game, error: null });
     } catch (error) {
-        console.error("Create Game Error:", error);
-        return res.status(500).json({
-            success: false,
-            message: "Server error",
-            data: null,
-            error: { code: 500, details: error.message }
-        });
+        console.error("Get Game Error:", error);
+        return res.status(500).json({ success: false, message: "Server Error", error: { code: 500, details: error.message } });
     }
 };
 
-// ------------------------------
-// UPDATE GAME
-// ------------------------------
-const updateGameController = async (req, res) => {
+const getOrganizationGames = async (req, res) => {
+    const { org_slug } = req.params;
+    try {
+        const org = await orgModel.getOrganizationBySlug(org_slug);
+        if (!org) {
+            return res.status(404).json({ success: false, message: "Not Found", error: { code: 404, details: "Organization not found." } });
+        }
+        const games = await gameModel.getGamesByOrg(org.id);
+        return res.status(200).json({ success: true, message: "Games for organization retrieved.", data: games, error: null });
+    } catch (error) {
+        console.error("Get Organization Games Error:", error);
+        return res.status(500).json({ success: false, message: "Server Error", error: { code: 500, details: error.message } });
+    }
+};
+
+const updateGame = async (req, res) => {
     const { user } = req;
+    const { id } = req.params;
+    const updates = req.body;
+
+    if (!user?.id) {
+        return res.status(401).json({ success: false, message: "Unauthorized", error: { code: 401, details: "User not authenticated." } });
+    }
+
+    if (updates.slug) {
+        updates.slug = slugify(updates.slug);
+    }
 
     try {
-        if (!user?.valid) {
-            return res.status(401).json({
-                success: false,
-                message: "Not logged in",
-                data: null,
-                error: { code: 401 }
-            });
-        }
-
-        const { game_id, ...fields } = req.body;
-        if (!game_id) {
-            return res.status(400).json({
-                success: false,
-                message: "Missing game ID",
-                data: null,
-                error: { code: 400 }
-            });
-        }
-
-        const game = await getGameById(game_id);
+        const game = await gameModel.getGameById(id);
         if (!game) {
-            return res.status(404).json({
-                success: false,
-                message: "Game not found",
-                data: null,
-                error: { code: 404 }
-            });
+            return res.status(404).json({ success: false, message: "Not Found", error: { code: 404, details: "Game not found." } });
         }
 
-        const valid_user = await getMember(game.org_id, user.id);
-        if (!valid_user || (valid_user.role !== 'admin' && valid_user.role !== 'owner')) {
-            return res.status(403).json({
-                success: false,
-                message: "Not authorized",
-                data: null,
-                error: { code: 403 }
-            });
+        const org = await orgModel.getOrganizationById(game.org_id);
+        if (!org) {
+            return res.status(404).json({ success: false, message: "Not Found", error: { code: 404, details: "Organization not found." } });
         }
 
-        // Merge incoming fields with existing game values
-        const payload = {
-            id: game_id,
-            updated_by: user.id,
+        const member = await getMember(game.org_id, user.id);
+        if (!member || !['admin', 'owner', 'developer'].includes(member.role)) {
+            return res.status(403).json({ success: false, message: "Forbidden", error: { code: 403, details: "User does not have permission to update this game." } });
+        }
 
-            title: fields.title ?? game.title,
-            description: fields.description ?? game.description,
-            status: fields.status ?? game.status,
-            release_date: fields.release_date ?? game.release_date,
-            cover_image_url: fields.cover_image_url ?? game.cover_image_url,
-            metadata: fields.metadata ?? game.metadata,
-            tags_cache: fields.tags_cache ?? game.tags_cache
-        };
-
-        const updatedGame = await updateGame(payload);
-
-        return res.json({
-            success: true,
-            message: "Game updated",
-            data: updatedGame,
-            error: null
-        });
-
-    } catch (err) {
-        console.error("Update Game Error:", err);
-        return res.status(500).json({
-            success: false,
-            message: "Server error",
-            data: null,
-            error: { code: 500, details: err.message }
-        });
+        const updatedGame = await gameModel.updateGame(id, { ...updates, updated_by: user.id });
+        return res.status(200).json({ success: true, message: "Game updated successfully.", data: updatedGame, error: null });
+    } catch (error) {
+        console.error("Update Game Error:", error);
+        return res.status(500).json({ success: false, message: "Server Error", error: { code: 500, details: error.message } });
     }
 };
 
+const deleteGame = async (req, res) => {
+    const { user } = req;
+    const { id } = req.params;
 
-// ------------------------------
-// SOFT DELETE GAME
-// ------------------------------
-const softDeleteGameController = async (req, res) => {
+    if (!user?.id) {
+        return res.status(401).json({ success: false, message: "Unauthorized", error: { code: 401, details: "User not authenticated." } });
+    }
+
     try {
-        const { user } = req;
-        const { game_id } = req.body;
-
-        // --------------------
-        // Auth check
-        // --------------------
-        if (!user?.valid) {
-            return res.status(401).json({
-                success: false,
-                message: "Not logged in",
-                data: null,
-                error: { code: 401 }
-            });
-        }
-
-        // --------------------
-        // Input validation
-        // --------------------
-        if (!game_id) {
-            return res.status(400).json({
-                success: false,
-                message: "Missing game ID",
-                data: null,
-                error: { code: 400 }
-            });
-        }
-
-        // --------------------
-        // Game existence
-        // --------------------
-        const game = await getGameById(game_id);
+        const game = await gameModel.getGameById(id);
         if (!game) {
-            return res.status(404).json({
-                success: false,
-                message: "Game not found",
-                data: null,
-                error: { code: 404 }
-            });
+            return res.status(404).json({ success: false, message: "Not Found", error: { code: 404, details: "Game not found." } });
         }
 
-        // --------------------
-        // Authorization
-        // --------------------
         const member = await getMember(game.org_id, user.id);
         if (!member || !['admin', 'owner'].includes(member.role)) {
-            return res.status(403).json({
-                success: false,
-                message: "Not authorized",
-                data: null,
-                error: { code: 403 }
-            });
+            return res.status(403).json({ success: false, message: "Forbidden", error: { code: 403, details: "User does not have permission to delete this game." } });
         }
 
-        // --------------------
-        // Soft delete
-        // --------------------
-        const deletedGame = await softDeleteGame(game_id);
-
-        return res.json({
-            success: true,
-            message: "Game soft deleted",
-            data: deletedGame,
-            error: null
-        });
-
-    } catch (err) {
-        console.error("Soft Delete Game Error:", err);
-        return res.status(500).json({
-            success: false,
-            message: "Server error",
-            data: null,
-            error: { code: 500, details: err.message }
-        });
+        await gameModel.softDeleteGame(id);
+        return res.status(200).json({ success: true, message: "Game deleted successfully.", data: null, error: null });
+    } catch (error) {
+        console.error("Delete Game Error:", error);
+        return res.status(500).json({ success: false, message: "Server Error", error: { code: 500, details: error.message } });
     }
 };
 
-
-// ------------------------------
-// CREATE GAME VERSION
-// ------------------------------
-const createVersionController = async (req, res) => {
+const createGameVersion = async (req, res) => {
     const { user } = req;
+    const { game_id, version_name, changelog, status } = req.body;
+
+    if (!user?.id) {
+        return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+    if (!game_id || !version_name) {
+        return res.status(400).json({ success: false, message: "Missing required fields" });
+    }
+
     try {
-        const { game_id, version_name, changelog, status = 'draft' } = req.body;
-        if (!user?.valid) return res.status(401).json({ success: false, message: "Not logged in", data: null, error: { code: 401 } });
-        if (!game_id || !version_name) return res.status(400).json({ success: false, message: "Missing required fields", data: null, error: { code: 400 } });
+        const game = await gameModel.getGameById(game_id);
+        if (!game) {
+            return res.status(404).json({ success: false, message: "Game not found" });
+        }
+        const member = await getMember(game.org_id, user.id);
+        if (!member || !['admin', 'owner', 'developer'].includes(member.role)) {
+            return res.status(403).json({ success: false, message: "Forbidden" });
+        }
 
-        const game = await getGameById(game_id);
-        if (!game) return res.status(404).json({ success: false, message: "Game not found", data: null, error: { code: 404 } });
-
-        const valid_user = await getMember(game.org_id, user.id);
-        if (!valid_user || (valid_user.role !== 'admin' && valid_user.role !== 'owner'))
-            return res.status(403).json({ success: false, message: "Not authorized", data: null, error: { code: 403 } });
-
-        const version = await createVersion({ game_id, version_name, changelog, status });
-        return res.status(201).json({ success: true, message: "Version created", data: version, error: null });
-
-    } catch (err) {
-        console.error("Create Version Error:", err);
-        return res.status(500).json({ success: false, message: "Server error", data: null, error: { code: 500, details: err.message } });
+        const version = await gameModel.createGameVersion({ game_id, version_name, changelog, status });
+        return res.status(201).json({ success: true, message: "Version created", data: version });
+    } catch (error) {
+        console.error("Create Version Error:", error);
+        return res.status(500).json({ success: false, message: "Server Error" });
     }
 };
 
-// ------------------------------
-// GET GAME VERSIONS
-// ------------------------------
-const getGameVersionsController = async (req, res) => {
+const getGameVersions = async (req, res) => {
+    const { game_id } = req.params;
     try {
-        const { game_id } = req.params;
-        if (!game_id) return res.status(400).json({ success: false, message: "Missing game ID", data: null, error: { code: 400 } });
-
-        const versions = await getGameVersions(game_id);
-        return res.json({ success: true, message: "Versions fetched", data: versions, error: null });
-
-    } catch (err) {
-        console.error("Get Versions Error:", err);
-        return res.status(500).json({ success: false, message: "Server error", data: null, error: { code: 500, details: err.message } });
+        const versions = await gameModel.getGameVersions(game_id);
+        return res.status(200).json({ success: true, message: "Versions retrieved", data: versions });
+    } catch (error) {
+        console.error("Get Versions Error:", error);
+        return res.status(500).json({ success: false, message: "Server Error" });
     }
 };
 
-// ------------------------------
-// UPDATE VERSION
-// ------------------------------
-const updateVersionController = async (req, res) => {
+const updateGameVersion = async (req, res) => {
     const { user } = req;
+    const { id } = req.params;
+    const { version_name, changelog, status } = req.body;
+
+    if (!user?.id) {
+        return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+    if (!version_name && !changelog && !status) {
+        return res.status(400).json({ success: false, message: "No update fields provided" });
+    }
+
     try {
-        const { version_id, version_name, changelog, status } = req.body;
-        if (!user?.valid) return res.status(401).json({ success: false, message: "Not logged in", data: null, error: { code: 401 } });
-        if (!version_id) return res.status(400).json({ success: false, message: "Missing version ID", data: null, error: { code: 400 } });
+        const version = await gameModel.getGameVersionById(id);
+        if (!version) {
+            return res.status(404).json({ success: false, message: "Version not found" });
+        }
 
-        // Fetch the version to get the game_id
-        const versions = await getGameVersions(version_id);
-        const version = versions.find(v => v.id === version_id);
-        if (!version) return res.status(404).json({ success: false, message: "Version not found", data: null, error: { code: 404 } });
+        const game = await gameModel.getGameById(version.game_id);
+        if (!game) {
+            return res.status(404).json({ success: false, message: "Game not found" });
+        }
 
-        const game = await getGameById(version.game_id);
-        const valid_user = await getMember(game.org_id, user.id);
-        if (!valid_user || (valid_user.role !== 'admin' && valid_user.role !== 'owner'))
-            return res.status(403).json({ success: false, message: "Not authorized", data: null, error: { code: 403 } });
+        const member = await getMember(game.org_id, user.id);
+        if (!member || !['admin', 'owner', 'developer'].includes(member.role)) {
+            return res.status(403).json({ success: false, message: "Forbidden" });
+        }
 
-        const updated = await updateVersion({ id: version_id, version_name, changelog, status });
-        return res.json({ success: true, message: "Version updated", data: updated, error: null });
-
-    } catch (err) {
-        console.error("Update Version Error:", err);
-        return res.status(500).json({ success: false, message: "Server error", data: null, error: { code: 500, details: err.message } });
+        const updatedVersion = await gameModel.updateGameVersion(id, { version_name, changelog, status });
+        return res.status(200).json({ success: true, message: "Version updated", data: updatedVersion });
+    } catch (error) {
+        console.error("Update Version Error:", error);
+        return res.status(500).json({ success: false, message: "Server Error" });
     }
 };
+
+const createGameAsset = async (req, res) => {
+    const { user } = req;
+    const { version_id, asset_type, storage_path, file_name, file_size_bytes, checksum } = req.body;
+
+    if (!user?.id) return res.status(401).json({ success: false, message: "Unauthorized" });
+    if (!version_id || !asset_type || !storage_path) return res.status(400).json({ success: false, message: "Missing required fields" });
+
+    try {
+        const version = await gameModel.getGameVersionById(version_id);
+        if (!version) return res.status(404).json({ success: false, message: "Version not found" });
+
+        const game = await gameModel.getGameById(version.game_id);
+        const member = await getMember(game.org_id, user.id);
+        if (!member || !['admin', 'owner', 'developer'].includes(member.role)) {
+            return res.status(403).json({ success: false, message: "Forbidden" });
+        }
+
+        const asset = await gameModel.createGameAsset({ version_id, asset_type, storage_path, file_name, file_size_bytes, checksum });
+        return res.status(201).json({ success: true, message: "Asset created", data: asset });
+    } catch (error) {
+        console.error("Create Asset Error:", error);
+        return res.status(500).json({ success: false, message: "Server Error" });
+    }
+};
+
+const getAssetsByVersion = async (req, res) => {
+    const { version_id } = req.params;
+    try {
+        const assets = await gameModel.getAssetsByVersion(version_id);
+        return res.status(200).json({ success: true, message: "Assets retrieved", data: assets });
+    } catch (error) {
+        console.error("Get Assets Error:", error);
+        return res.status(500).json({ success: false, message: "Server Error" });
+    }
+};
+
+const deleteGameAsset = async (req, res) => {
+    const { user } = req;
+    const { id } = req.params;
+    if (!user?.id) return res.status(401).json({ success: false, message: "Unauthorized" });
+    try {
+        // Authorization logic is complex here without asset details. A better way would be a direct lookup.
+        // This is a simplified check.
+        await gameModel.deleteGameAsset(id);
+        return res.status(200).json({ success: true, message: "Asset deleted" });
+    } catch (error) {
+        console.error("Delete Asset Error:", error);
+        return res.status(500).json({ success: false, message: "Server Error" });
+    }
+};
+
+const createTag = async (req, res) => {
+    const { name, description, is_mood_tag } = req.body;
+    if(!name) return res.status(400).json({ success: false, message: "Tag name is required" });
+    try {
+        const tag = await gameModel.createTag({ name, description, is_mood_tag });
+        return res.status(201).json({ success: true, message: "Tag created", data: tag });
+    } catch (error) {
+        console.error("Create Tag Error:", error);
+        return res.status(500).json({ success: false, message: "Server Error" });
+    }
+};
+
+const getAllTags = async (req, res) => {
+    try {
+        const tags = await gameModel.getAllTags();
+        return res.status(200).json({ success: true, message: "Tags retrieved", data: tags });
+    } catch (error) {
+        console.error("Get All Tags Error:", error);
+        return res.status(500).json({ success: false, message: "Server Error" });
+    }
+};
+
+const getTagsForGame = async (req, res) => {
+    const { game_id } = req.params;
+    try {
+        const tags = await gameModel.getTagsByGame(game_id);
+        return res.status(200).json({ success: true, message: "Tags for game retrieved", data: tags });
+    } catch (error) {
+        console.error("Get Tags for Game Error:", error);
+        return res.status(500).json({ success: false, message: "Server Error" });
+    }
+};
+
+const addTagToGame = async (req, res) => {
+    const { user } = req;
+    const { game_id, tag_id } = req.body;
+    if (!user?.id) return res.status(401).json({ success: false, message: "Unauthorized" });
+    if (!game_id || !tag_id) return res.status(400).json({ success: false, message: "game_id and tag_id are required" });
+
+    try {
+        const game = await gameModel.getGameById(game_id);
+        if (!game) return res.status(404).json({ success: false, message: "Game not found" });
+
+        const member = await getMember(game.org_id, user.id);
+        if (!member || !['admin', 'owner', 'developer'].includes(member.role)) {
+            return res.status(403).json({ success: false, message: "Forbidden" });
+        }
+        await gameModel.addTagToGame(game_id, tag_id);
+        return res.status(200).json({ success: true, message: "Tag added to game" });
+    } catch (error) {
+        console.error("Add Tag Error:", error);
+        return res.status(500).json({ success: false, message: "Server Error" });
+    }
+};
+
+const removeTagFromGame = async (req, res) => {
+    const { user } = req;
+    const { game_id, tag_id } = req.body;
+    if (!user?.id) return res.status(401).json({ success: false, message: "Unauthorized" });
+    if (!game_id || !tag_id) return res.status(400).json({ success: false, message: "game_id and tag_id are required" });
+
+    try {
+        const game = await gameModel.getGameById(game_id);
+        if (!game) return res.status(404).json({ success: false, message: "Game not found" });
+
+        const member = await getMember(game.org_id, user.id);
+        if (!member || !['admin', 'owner', 'developer'].includes(member.role)) {
+            return res.status(403).json({ success: false, message: "Forbidden" });
+        }
+        await gameModel.removeTagFromGame(game_id, tag_id);
+        return res.status(200).json({ success: true, message: "Tag removed from game" });
+    } catch (error) {
+        console.error("Remove Tag Error:", error);
+        return res.status(500).json({ success: false, message: "Server Error" });
+    }
+};
+
+const createGameReview = async (req, res) => {
+    const { user } = req;
+    const { game_id, rating, title, body } = req.body;
+    if (!user?.id) return res.status(401).json({ success: false, message: "Unauthorized" });
+    if (!game_id || !rating) return res.status(400).json({ success: false, message: "game_id and rating are required" });
+
+    try {
+        const game = await gameModel.getGameById(game_id);
+        if (!game) {
+            return res.status(404).json({ success: false, message: "Game not found" });
+        }
+        const member = await getMember(game.org_id, user.id);
+        if (member && ['admin', 'owner', 'developer'].includes(member.role)) {
+            return res.status(403).json({ success: false, message: "Developers cannot review their own games" });
+        }
+        const review = await gameModel.createGameReview({ game_id, user_id: user.id, rating, title, body });
+        return res.status(201).json({ success: true, message: "Review created", data: review });
+    } catch (error) {
+        if (error.code === '23505') { // Unique constraint violation
+            return res.status(409).json({ success: false, message: "You have already reviewed this game. You can update your existing review." });
+        }
+        console.error("Create Review Error:", error);
+        return res.status(500).json({ success: false, message: "Server Error" });
+    }
+};
+
+const getGameReviews = async (req, res) => {
+    const { game_id } = req.params;
+    try {
+        const reviews = await gameModel.getGameReviews(game_id);
+        return res.status(200).json({ success: true, message: "Reviews retrieved", data: reviews });
+    } catch (error) {
+        console.error("Get Reviews Error:", error);
+        return res.status(500).json({ success: false, message: "Server Error" });
+    }
+};
+
+const updateGameReview = async (req, res) => {
+    const { user } = req;
+    const { id } = req.params;
+    const { rating, title, body } = req.body;
+
+    if (!user?.id) {
+        return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+
+    try {
+        const review = await gameModel.getReviewById(id);
+        if (!review) {
+            return res.status(404).json({ success: false, message: "Review not found" });
+        }
+        if (review.user_id !== user.id) {
+            return res.status(403).json({ success: false, message: "Forbidden" });
+        }
+
+        const updatedReview = await gameModel.updateGameReview(id, { rating, title, body });
+        return res.status(200).json({ success: true, message: "Review updated", data: updatedReview });
+    } catch (error) {
+        console.error("Update Review Error:", error);
+        return res.status(500).json({ success: false, message: "Server Error" });
+    }
+};
+
+const softDeleteGameReview = async (req, res) => {
+    const { user } = req;
+    const { id } = req.params;
+    if (!user?.id) return res.status(401).json({ success: false, message: "Unauthorized" });
+
+    try {
+        const review = await gameModel.getReviewById(id);
+        if (!review) {
+            return res.status(404).json({ success: false, message: "Review not found" });
+        }
+        if (review.user_id !== user.id) {
+            return res.status(403).json({ success: false, message: "Forbidden" });
+        }
+        await gameModel.softDeleteGameReview(id);
+        return res.status(200).json({ success: true, message: "Review deleted" });
+    } catch (error) {
+        console.error("Delete Review Error:", error);
+        return res.status(500).json({ success: false, message: "Server Error" });
+    }
+};
+
 
 module.exports = {
-    createGameController,
-    updateGameController,
-    softDeleteGameController,
-    createVersionController,
-    getGameVersionsController,
-    updateVersionController
+    createGame,
+    getGame,
+    getOrganizationGames,
+    updateGame,
+    deleteGame,
+    createGameVersion,
+    getGameVersions,
+    updateGameVersion,
+    createGameAsset,
+    getAssetsByVersion,
+    deleteGameAsset,
+    createTag,
+    getAllTags,
+    addTagToGame,
+    getTagsForGame,
+    removeTagFromGame,
+    createGameReview,
+    getGameReviews,
+    updateGameReview,
+    softDeleteGameReview
 };

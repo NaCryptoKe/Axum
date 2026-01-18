@@ -14,7 +14,7 @@ const config = {
 };
 
 router.get('/', (req, res) => {
-    res.send('PAYMENT WORKING');
+    res.json('PAYMENT WORKING');
 });
 
 router.post('/pay', authenticateMiddleware, isVerifiedMiddleware, async (req, res) => {
@@ -33,7 +33,7 @@ router.post('/pay', authenticateMiddleware, isVerifiedMiddleware, async (req, re
             last_name,
             tx_ref: TEXT_REF,
             callback_url: `${CALLBACK_URL}/${TEXT_REF}`,
-            //return_url: RETURN_URL,
+            return_url: RETURN_URL,
         };
 
         const response = await axios.post(CHAPA_URL, data, config);
@@ -64,7 +64,7 @@ router.get("/verify-payment/:tx_ref", async (req, res) => {
 
 // Success endpoint
 router.get("/payment-success", (req, res) => {
-    res.send("✅ Payment successful!");
+    res.send("Payment successful!");
 });
 
 module.exports = router;

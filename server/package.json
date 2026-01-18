@@ -4,7 +4,8 @@
   "description": "[🌐 Live Demo](https://axumarcade.wuaze.com/public/)",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon server.js"
+    "start": "nodemon server.js",
+    "test": "jest"
   },
   "repository": {
     "type": "git",
@@ -18,6 +19,9 @@
     "url": "https://github.com/NaCryptoKe/AxumArcade/issues"
   },
   "homepage": "https://github.com/NaCryptoKe/AxumArcade#readme",
+  "jest": {
+    "transformIgnorePatterns": []
+  },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",
     "argon2": "^0.44.0",
@@ -40,6 +44,11 @@
     "uuid": "^13.0.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.11"
+    "@babel/core": "^7.28.6",
+    "@babel/preset-env": "^7.28.6",
+    "babel-jest": "^30.2.0",
+    "jest": "^30.2.0",
+    "nodemon": "^3.1.11",
+    "supertest": "^7.2.2"
   }
 }
