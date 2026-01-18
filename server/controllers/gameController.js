@@ -249,7 +249,6 @@ const updateGameVersion = async (req, res) => {
 };
 
 const createGameAsset = async (req, res) => {
-    console.log("HELLO")
     const { user } = req;
     const { version_id, asset_type, storage_path, file_name, file_size_bytes, checksum } = req.body;
 
@@ -257,8 +256,7 @@ const createGameAsset = async (req, res) => {
     if (!version_id || !asset_type || !storage_path) return res.status(400).json({ success: false, message: "Missing required fields" });
 
     try {
-        const versions = await gameModel.getGameVersions(null); // This is inefficient
-        const version = versions.find(v => v.id === version_id);
+        const version = await gameModel.getGameVersionById(version_id);
         if (!version) return res.status(404).json({ success: false, message: "Version not found" });
 
         const game = await gameModel.getGameById(version.game_id);
