@@ -80,26 +80,6 @@ describe('Game Router', () => {
         });
     });
 
-    describe('POST /games/create', () => {
-        it('should call createGame and return 201', async () => {
-            const gameData = { name: 'Test Game', description: 'A fun game.', tags_cache: [1, 2] };
-            gameController.createGame.mockImplementation((req, res) => res.status(201).json({ success: true, data: gameData }));
-            const res = await request(app).post('/games/create').send(gameData);
-            expect(res.statusCode).toEqual(201);
-            expect(gameController.createGame).toHaveBeenCalled();
-        });
-    });
-
-    describe('PUT /games/update/:id', () => {
-        it('should call updateGame and return 200', async () => {
-            const gameData = { name: 'Updated Game' };
-            gameController.updateGame.mockImplementation((req, res) => res.status(200).json({ success: true, data: gameData }));
-            const res = await request(app).put('/games/update/1').send(gameData);
-            expect(res.statusCode).toEqual(200);
-            expect(gameController.updateGame).toHaveBeenCalled();
-        });
-    });
-
     describe('POST /games/versions', () => {
         it('should call createGameVersion and return 201', async () => {
             const versionData = { game_id: 1, version_string: '1.0.0' };

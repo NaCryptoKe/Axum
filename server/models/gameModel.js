@@ -110,6 +110,28 @@ const getGameVersions = async (game_id) => {
     return rows;
 };
 
+const getGameVersionById = async (id) => {
+    const { rows } = await pool.query(
+        'SELECT * FROM game_catalog.game_versions WHERE id = $1',
+        [id]
+    );
+    return rows[0];
+};
+
+const updateGameVersion = async (id, { version_name, changelog, status }) => {
+    const { rows } = await pool.query(
+        `UPDATE game_catalog.game_versions
+        SET
+            version_name = COALESCE($1, version_name),
+            changelog = COALESCE($2, changelog),
+            status = COALESCE($3, status)
+        WHERE id = $4
+        RETURNING *`,
+        [version_name, changelog, status, id]
+    );
+    return rows[0];
+};
+
 const createGameAsset = async ({ version_id, asset_type, storage_path, file_name, file_size_bytes, checksum }) => {
     const { rows } = await pool.query(
         'INSERT INTO game_catalog.game_assets (version_id, asset_type, storage_path, file_name, file_size_bytes, checksum) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
@@ -149,6 +171,16 @@ const getAllTags = async () => {
     return rows;
 };
 
+const getTagsByGame = async (game_id) => {
+    const { rows } = await pool.query(
+        `SELECT t.* FROM game_catalog.tags t
+        JOIN game_catalog.game_tags gt ON t.id = gt.tag_id
+        WHERE gt.game_id = $1`,
+        [game_id]
+    );
+    return rows;
+};
+
 const addTagToGame = async (game_id, tag_id) => {
     const { rows } = await pool.query(
         'INSERT INTO game_catalog.game_tags (game_id, tag_id) VALUES ($1, $2) ON CONFLICT DO NOTHING RETURNING *',
@@ -169,8 +201,6 @@ const createGameReview = async ({ game_id, user_id, rating, title, body }) => {
     const { rows } = await pool.query(
         `INSERT INTO game_catalog.game_reviews (game_id, user_id, rating, title, body)
         VALUES ($1, $2, $3, $4, $5)
-        ON CONFLICT (game_id, user_id) DO UPDATE
-        SET rating = EXCLUDED.rating, title = EXCLUDED.title, body = EXCLUDED.body, updated_at = NOW()
         RETURNING *`,
         [game_id, user_id, rating, title, body]
     );
@@ -183,6 +213,29 @@ const getGameReviews = async (game_id) => {
         [game_id]
     );
     return rows;
+};
+
+const getReviewById = async (id) => {
+    const { rows } = await pool.query(
+        'SELECT * FROM game_catalog.game_reviews WHERE id = $1 AND is_deleted = false',
+        [id]
+    );
+    return rows[0];
+};
+
+const updateGameReview = async (id, { rating, title, body }) => {
+    const { rows } = await pool.query(
+        `UPDATE game_catalog.game_reviews
+        SET
+            rating = COALESCE($1, rating),
+            title = COALESCE($2, title),
+            body = COALESCE($3, body),
+            updated_at = NOW()
+        WHERE id = $4
+        RETURNING *`,
+        [rating, title, body, id]
+    );
+    return rows[0];
 };
 
 const softDeleteGameReview = async (id) => {
@@ -202,14 +255,19 @@ module.exports = {
     softDeleteGame,
     createGameVersion,
     getGameVersions,
+    getGameVersionById,
+    updateGameVersion,
     createGameAsset,
     getAssetsByVersion,
     deleteGameAsset,
     createTag,
     getAllTags,
+    getTagsByGame,
     addTagToGame,
     removeTagFromGame,
     createGameReview,
     getGameReviews,
+    getReviewById,
+    updateGameReview,
     softDeleteGameReview
 };

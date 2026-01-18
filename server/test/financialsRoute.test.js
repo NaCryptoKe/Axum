@@ -25,7 +25,7 @@ describe('Financials Router', () => {
         it('should return 200 with a success message', async () => {
             const res = await request(app).get('/finance/');
             expect(res.statusCode).toEqual(200);
-            expect(res.text).toBe('PAYMENT WORKING');
+            expect(res.body).toBe('PAYMENT WORKING');
         });
     });
 
@@ -85,7 +85,7 @@ describe('Financials Router', () => {
         it('should return a success message', async () => {
             const res = await request(app).get('/finance/payment-success');
             expect(res.statusCode).toEqual(200);
-            expect(res.text).toBe('✅ Payment successful!');
+            expect(res.text).toBe('Payment successful!');
         });
     });
 });

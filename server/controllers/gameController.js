@@ -212,6 +212,42 @@ const getGameVersions = async (req, res) => {
     }
 };
 
+const updateGameVersion = async (req, res) => {
+    const { user } = req;
+    const { id } = req.params;
+    const { version_name, changelog, status } = req.body;
+
+    if (!user?.id) {
+        return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+    if (!version_name && !changelog && !status) {
+        return res.status(400).json({ success: false, message: "No update fields provided" });
+    }
+
+    try {
+        const version = await gameModel.getGameVersionById(id);
+        if (!version) {
+            return res.status(404).json({ success: false, message: "Version not found" });
+        }
+
+        const game = await gameModel.getGameById(version.game_id);
+        if (!game) {
+            return res.status(404).json({ success: false, message: "Game not found" });
+        }
+
+        const member = await getMember(game.org_id, user.id);
+        if (!member || !['admin', 'owner', 'developer'].includes(member.role)) {
+            return res.status(403).json({ success: false, message: "Forbidden" });
+        }
+
+        const updatedVersion = await gameModel.updateGameVersion(id, { version_name, changelog, status });
+        return res.status(200).json({ success: true, message: "Version updated", data: updatedVersion });
+    } catch (error) {
+        console.error("Update Version Error:", error);
+        return res.status(500).json({ success: false, message: "Server Error" });
+    }
+};
+
 const createGameAsset = async (req, res) => {
     console.log("HELLO")
     const { user } = req;
@@ -287,6 +323,17 @@ const getAllTags = async (req, res) => {
     }
 };
 
+const getTagsForGame = async (req, res) => {
+    const { game_id } = req.params;
+    try {
+        const tags = await gameModel.getTagsByGame(game_id);
+        return res.status(200).json({ success: true, message: "Tags for game retrieved", data: tags });
+    } catch (error) {
+        console.error("Get Tags for Game Error:", error);
+        return res.status(500).json({ success: false, message: "Server Error" });
+    }
+};
+
 const addTagToGame = async (req, res) => {
     const { user } = req;
     const { game_id, tag_id } = req.body;
@@ -338,9 +385,20 @@ const createGameReview = async (req, res) => {
     if (!game_id || !rating) return res.status(400).json({ success: false, message: "game_id and rating are required" });
 
     try {
+        const game = await gameModel.getGameById(game_id);
+        if (!game) {
+            return res.status(404).json({ success: false, message: "Game not found" });
+        }
+        const member = await getMember(game.org_id, user.id);
+        if (member && ['admin', 'owner', 'developer'].includes(member.role)) {
+            return res.status(403).json({ success: false, message: "Developers cannot review their own games" });
+        }
         const review = await gameModel.createGameReview({ game_id, user_id: user.id, rating, title, body });
         return res.status(201).json({ success: true, message: "Review created", data: review });
     } catch (error) {
+        if (error.code === '23505') { // Unique constraint violation
+            return res.status(409).json({ success: false, message: "You have already reviewed this game. You can update your existing review." });
+        }
         console.error("Create Review Error:", error);
         return res.status(500).json({ success: false, message: "Server Error" });
     }
@@ -357,13 +415,45 @@ const getGameReviews = async (req, res) => {
     }
 };
 
+const updateGameReview = async (req, res) => {
+    const { user } = req;
+    const { id } = req.params;
+    const { rating, title, body } = req.body;
+
+    if (!user?.id) {
+        return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+
+    try {
+        const review = await gameModel.getReviewById(id);
+        if (!review) {
+            return res.status(404).json({ success: false, message: "Review not found" });
+        }
+        if (review.user_id !== user.id) {
+            return res.status(403).json({ success: false, message: "Forbidden" });
+        }
+
+        const updatedReview = await gameModel.updateGameReview(id, { rating, title, body });
+        return res.status(200).json({ success: true, message: "Review updated", data: updatedReview });
+    } catch (error) {
+        console.error("Update Review Error:", error);
+        return res.status(500).json({ success: false, message: "Server Error" });
+    }
+};
+
 const softDeleteGameReview = async (req, res) => {
     const { user } = req;
     const { id } = req.params;
     if (!user?.id) return res.status(401).json({ success: false, message: "Unauthorized" });
 
     try {
-        // A proper implementation would check if user is the author or an admin/moderator
+        const review = await gameModel.getReviewById(id);
+        if (!review) {
+            return res.status(404).json({ success: false, message: "Review not found" });
+        }
+        if (review.user_id !== user.id) {
+            return res.status(403).json({ success: false, message: "Forbidden" });
+        }
         await gameModel.softDeleteGameReview(id);
         return res.status(200).json({ success: true, message: "Review deleted" });
     } catch (error) {
@@ -381,14 +471,17 @@ module.exports = {
     deleteGame,
     createGameVersion,
     getGameVersions,
+    updateGameVersion,
     createGameAsset,
     getAssetsByVersion,
     deleteGameAsset,
     createTag,
     getAllTags,
     addTagToGame,
+    getTagsForGame,
     removeTagFromGame,
     createGameReview,
     getGameReviews,
+    updateGameReview,
     softDeleteGameReview
 };

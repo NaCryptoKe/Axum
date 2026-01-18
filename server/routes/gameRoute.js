@@ -8,15 +8,18 @@ const {
     deleteGame,
     createGameVersion,
     getGameVersions,
+    updateGameVersion,
     createGameAsset,
     getAssetsByVersion,
     deleteGameAsset,
     createTag,
     getAllTags,
+    getTagsForGame,
     addTagToGame,
     removeTagFromGame,
     createGameReview,
     getGameReviews,
+    updateGameReview,
     softDeleteGameReview
 } = require('../controllers/gameController');
 
@@ -34,7 +37,8 @@ router.use(authenticateMiddleware);
 // --- Game Version Routes ---
 router.post('/versions', isVerifiedMiddleware, createGameVersion);
 router.get('/versions/:game_id', getGameVersions);
-// needs a update version api
+router.put('/versions/:id', isVerifiedMiddleware, updateGameVersion);
+
 
 // --- Game Asset Routes ---
 router.post('/assets', isVerifiedMiddleware, createGameAsset);
@@ -45,16 +49,17 @@ router.delete('/assets/:id', isVerifiedMiddleware, deleteGameAsset);
 const tagRouter = express.Router();
 tagRouter.use(isVerifiedMiddleware);
 tagRouter.get('/', getAllTags);
+tagRouter.get('/:game_id', getTagsForGame);
 tagRouter.post('/', adminMiddleware, createTag); // Only admins should create global tags
 tagRouter.post('/assign', addTagToGame);
 tagRouter.post('/unassign', removeTagFromGame);
-// should add a route to get all the tags of a certain game given it's id
 router.use('/tags', tagRouter);
 
 // --- Review Routes ---
 const reviewRouter = express.Router();
 reviewRouter.use(isVerifiedMiddleware);
-reviewRouter.post('/', createGameReview); // If a user has already reviewd a game, they shouldn't be able to create another one only update the already existing one.
+reviewRouter.post('/', createGameReview); // If a user has already reviewed a game, they shouldn't be able to create another one only update the already existing one.
+reviewRouter.put('/:id', updateGameReview);
 // A game dev shouldn't be able to review their own games.
 reviewRouter.get('/:game_id', getGameReviews);
 reviewRouter.delete('/:id', softDeleteGameReview);
