@@ -41,7 +41,6 @@ router.get('/spaces/:slug', getSpace);
 router.put('/spaces/:id', updateSpace);
 router.delete('/spaces/:id', softDeleteSpace);
 router.put('/spaces/:id/undelete', undeleteSpace);
-// Create a undelete space api as well
 
 // --- Post Routes ---
 router.post('/posts', createPost);

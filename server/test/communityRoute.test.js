@@ -68,6 +68,15 @@ describe('Community Router', () => {
                 expect(communityController.softDeleteSpace).toHaveBeenCalled();
             });
         });
+
+        describe('PUT /api/community/spaces/:id/undelete', () => {
+            it('should call undeleteSpace and return 200', async () => {
+                communityController.undeleteSpace.mockImplementation((req, res) => res.status(200).json({ success: true }));
+                const res = await request(app).put(`/api/community/spaces/${spaceId}/undelete`);
+                expect(res.statusCode).toEqual(200);
+                expect(communityController.undeleteSpace).toHaveBeenCalled();
+            });
+        });
     });
 
     // --- Post Routes ---

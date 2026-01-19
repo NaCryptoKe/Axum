@@ -16,6 +16,7 @@ const adminRoute = require('./routes/adminRoute');
 const organizationRoute = require('./routes/organizationRoute');
 const gameRoute = require('./routes/gameRoute');
 const communityRoute = require('./routes/communityRoute');
+const socialRoute = require('./routes/socialRoute');
 
 // --- Middleware Imports ---
 const log = require('./middlewares/logRoute');
@@ -55,6 +56,7 @@ app.use('/api/admin', adminRoute);
 app.use('/api/organizations', organizationRoute);
 app.use('/api/games', gameRoute);
 app.use('/api/community', communityRoute);
+app.use('/api/social', socialRoute);
 
 // --- Root Endpoint ---
 // A simple health check endpoint to confirm the server is running.
