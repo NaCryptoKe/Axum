@@ -356,15 +356,15 @@ const updateProfilePicture = async (req, res) => {
 
 const allUsers = async (req, res) => {
     const { user } = req;
+    const { page = 1, limit = 10 } = req.query;
 
     if (!user?.valid || (user.role !== 'admin' && user.role !== 'moderator')) {
         return res.status(401).json({
-            success: false,
+            status: "error",
             message: "Not authorized",
-            data: null,
             error: {
-                code: 401,
-                details: "You must be an admin or a moderator",
+                code: "UNAUTHORIZED",
+                details: "You must be an admin or a moderator"
             }
         });
     }
@@ -372,41 +372,54 @@ const allUsers = async (req, res) => {
         const users = await getAllUsers();
         if (!users || users.length === 0)
             return res.status(404).json({
-                success: false,
+                status: "error",
                 message: 'No users found',
-                data: null,
                 error: {
-                    code: 404,
+                    code: "NOT_FOUND",
                     details: `No users found`,
                 }
             });
+        
+        const totalRecords = users.length;
+        const totalPages = Math.ceil(totalRecords / limit);
+        const offset = (page - 1) * limit;
+        const paginatedUsers = users.slice(offset, offset + limit);
 
-        const formattedUsers = users.map(user => ({
-            user_id: user.id,
+        const formattedUsers = paginatedUsers.map(user => ({
+            userId: user.id,
             username: user.username,
             email: user.email,
-            email_verified: user.email_verified,
+            emailVerified: user.email_verified,
             displayName: user.display_name,
-            avatar_url: user.avatar_url,
+            avatarUrl: user.avatar_url,
             role: user.role,
-            deleted_at: user.is_deleted ? user.deleted_at : null,
-            created: user.created_at,
-            updated: user.updated_at
+            deletedAt: user.is_deleted ? user.deleted_at : null,
+            createdAt: user.created_at,
+            updatedAt: user.updated_at
         }));
+
         return res.status(200).json({
-            success: true,
-            message: "All users found",
-            data: { "All Users": formattedUsers },
-            error: null
+            status: "success",
+            data: formattedUsers,
+            pagination: {
+                totalRecords,
+                currentPage: parseInt(page),
+                totalPages,
+                limit: parseInt(limit),
+                hasNext: page < totalPages,
+                hasPrev: page > 1
+            },
+            meta: {
+                timestamp: new Date().toISOString()
+            }
         });
     } catch (error) {
         console.error("Get All User Sessions Error:", error);
         return res.status(500).json({
-            success: false,
+            status: "error",
             message: 'Server error',
-            data: null,
             error: {
-                code: 500,
+                code: "INTERNAL_ERROR",
                 details: error.message
             }
         });
@@ -422,11 +435,10 @@ const softDelete = async (req, res) => {
 
     if (!user?.valid || (!isOwner && !isAdminOrModerator)) {
         return res.status(401).json({
-            success: false,
+            status: "error",
             message: "Not authorized",
-            data: null,
             error: {
-                code: 401,
+                code: "UNAUTHORIZED",
                 details: "You must be logged in and can only delete your own account or be an Admin/Moderator."
             }
         });
@@ -434,43 +446,41 @@ const softDelete = async (req, res) => {
 
     try {
         if (!username) return res.status(400).json({
-            success: false,
+            status: "error",
             message: 'Missing username',
-            data: null,
             error: {
-                code: 404,
+                code: "BAD_REQUEST",
                 details: `Username wasn't provided`,
             }
         });
         const result = await softDeleteUser(username);
 
-        if (!result) return res.status(400).json({
-            success: false,
+        if (!result) return res.status(404).json({
+            status: "error",
             message: 'User not found',
-            data: null,
             error: {
-                code: 404,
+                code: "NOT_FOUND",
                 details: `User by the name of ${username} does not exist`,
             }
         });
 
         return res.status(200).json({
-            success: true,
-            message: 'User Deleted',
+            status: "success",
             data: {
                 username: username,
                 deleted: true
             },
-            error: null
+            meta: {
+                timestamp: new Date().toISOString()
+            }
         });
     } catch (error) {
         console.error(error);
         return res.status(500).json({
-            success: false,
+            status: "error",
             message: 'Server Error',
-            data: null,
             error: {
-                code: 500,
+                code: "INTERNAL_ERROR",
                 details: `Server Error`,
             }
         });
@@ -478,40 +488,53 @@ const softDelete = async (req, res) => {
 }
 
 const allActiveUsers = async (req, res) => {
+    const { page = 1, limit = 10 } = req.query;
     try {
         const users = await getAllActiveUsers();
         if (!users || users.length === 0) {
             return res.status(404).json({
-                success: false,
+                status: "error",
                 message: 'No active users found',
-                data: null,
                 error: {
-                    code: 404,
+                    code: "NOT_FOUND",
                     details: 'There are currently no active users.'
                 }
             });
         }
         
-        const formattedUsers = users.map(u => ({
+        const totalRecords = users.length;
+        const totalPages = Math.ceil(totalRecords / limit);
+        const offset = (page - 1) * limit;
+        const paginatedUsers = users.slice(offset, offset + limit);
+
+        const formattedUsers = paginatedUsers.map(u => ({
             username: u.username,
-            display_name: u.display_name,
-            avatar_url: u.avatar_url
+            displayName: u.display_name,
+            avatarUrl: u.avatar_url
         }));
 
         return res.status(200).json({
-            success: true,
-            message: 'Active users retrieved successfully.',
-            data: { users: formattedUsers },
-            error: null,
+            status: "success",
+            data: formattedUsers,
+            pagination: {
+                totalRecords,
+                currentPage: parseInt(page),
+                totalPages,
+                limit: parseInt(limit),
+                hasNext: page < totalPages,
+                hasPrev: page > 1
+            },
+            meta: {
+                timestamp: new Date().toISOString()
+            }
         });
     } catch (error) {
         console.error("Error getting active users:", error);
         res.status(500).json({
-            success: false,
+            status: "error",
             message: 'Server error',
-            data: null,
             error: {
-                code: 500,
+                code: "INTERNAL_ERROR",
                 details: error.message,
             }
         });

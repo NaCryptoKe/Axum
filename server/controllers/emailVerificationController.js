@@ -19,16 +19,16 @@ const generateOtp = async (req, res) => {
         const { user_id } = req.body;
 
         if (!user_id) {
-            return res.status(400).json({ success: false, message: 'Bad Request', error: { details: ['user_id is required'] } });
+            return res.status(400).json({ status: "error", message: 'Bad Request', error: { code: "BAD_REQUEST", details: 'user_id is required' } });
         }
 
         const user = await getUserById(user_id);
         if (!user) {
-            return res.status(404).json({ success: false, message: 'User not found', error: { details: 'No user found with the provided user_id.' } });
+            return res.status(404).json({ status: "error", message: 'User not found', error: { code: "NOT_FOUND", details: 'No user found with the provided user_id.' } });
         }
 
         if (user.is_verified) {
-            return res.status(409).json({ success: false, message: 'Account already verified', error: { details: 'This user account has already been verified.' } });
+            return res.status(409).json({ status: "error", message: 'Account already verified', error: { code: "CONFLICT", details: 'This user account has already been verified.' } });
         }
 
         const expires_at = new Date(Date.now() + 5 * 60 * 1000); // 5 min expiry
@@ -37,11 +37,18 @@ const generateOtp = async (req, res) => {
         await sendOtpEmail(user_id, otp); // Pass user's ID
         console.log(otp); // For testing purposes, should be removed in production
 
-        return res.status(201).json({ success: true, message: 'OTP generated and sent successfully.', data: { expires_at: expires_at.toISOString() } });
+        return res.status(201).json({ 
+            status: "success", 
+            data: { expiresAt: expires_at.toISOString() },
+            meta: {
+                timestamp: new Date().toISOString(),
+                requestId: req.id
+            }
+        });
 
     } catch (err) {
         console.error("Generate OTP error:", err);
-        return res.status(500).json({ success: false, message: 'Server error', error: { details: err.message } });
+        return res.status(500).json({ status: "error", message: 'Server error', error: { code: "INTERNAL_ERROR", details: err.message } });
     }
 };
 
@@ -63,13 +70,13 @@ const verifyOtp = async (req, res) => {
         if (!otp) badRequestErrors.push('otp is required');
 
         if (badRequestErrors.length > 0) {
-            return res.status(400).json({ success: false, message: 'Bad Request', error: { details: badRequestErrors } });
+            return res.status(400).json({ status: "error", message: 'Bad Request', error: { code: "BAD_REQUEST", details: badRequestErrors } });
         }
 
         const result = await checkOtp(user_id, otp);
 
         if (!result.success) {
-            return res.status(400).json({ success: false, message: result.message, error: { details: result.message } });
+            return res.status(400).json({ status: "error", message: result.message, error: { code: "INVALID_OTP", details: result.message } });
         }
 
         await verifyUserEmail(user_id);
@@ -97,11 +104,18 @@ const verifyOtp = async (req, res) => {
             maxAge: cookieMaxAge
         });
 
-        return res.status(200).json({ success: true, message: 'Email successfully verified.', data: { user: { id: user.id, username: user.username } } });
+        return res.status(200).json({ 
+            status: "success", 
+            data: { user: { id: user.id, username: user.username } },
+            meta: {
+                timestamp: new Date().toISOString(),
+                requestId: req.id
+            }
+        });
 
     } catch (err) {
         console.error("Submit OTP error:", err);
-        return res.status(500).json({ success: false, message: 'Server error', error: { details: err.message } });
+        return res.status(500).json({ status: "error", message: 'Server error', error: { code: "INTERNAL_ERROR", details: err.message } });
     }
 };
 

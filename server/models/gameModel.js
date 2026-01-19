@@ -223,6 +223,14 @@ const getReviewById = async (id) => {
     return rows[0];
 };
 
+const getReviewByUserAndGame = async (game_id, user_id) => {
+    const { rows } = await pool.query(
+        'SELECT * FROM game_catalog.game_reviews WHERE game_id = $1 AND user_id = $2 AND is_deleted = false',
+        [game_id, user_id]
+    );
+    return rows[0];
+};
+
 const updateGameReview = async (id, { rating, title, body }) => {
     const { rows } = await pool.query(
         `UPDATE game_catalog.game_reviews
@@ -268,6 +276,7 @@ module.exports = {
     createGameReview,
     getGameReviews,
     getReviewById,
+    getReviewByUserAndGame,
     updateGameReview,
     softDeleteGameReview
 };

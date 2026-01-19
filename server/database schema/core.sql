@@ -2,19 +2,19 @@ CREATE SCHEMA core;
 
 -- User Roles for authorization
 CREATE TYPE core.user_role AS ENUM (
-  'player',
-  'creator',
-  'moderator',
-  'admin'
+    'player',
+    'creator',
+    'moderator',
+    'admin'
 );
 -- Organization Member Roles for permission scoping within an organization
 CREATE TYPE core.org_member_role AS ENUM (
-  'member',
-  'moderator',
-  'developer',
-  'finance',
-  'admin',
-  'owner'
+    'member',
+    'moderator',
+    'developer',
+    'finance',
+    'admin',
+    'owner'
 );
 
 -- Main user table
