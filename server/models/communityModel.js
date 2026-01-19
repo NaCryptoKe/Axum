@@ -11,11 +11,12 @@ const createSpace = async ({ creator_id, related_game_id, organization_id, name,
     return rows[0];
 };
 
-const getSpaceById = async (id) => {
-    const { rows } = await pool.query(
-        'SELECT * FROM community.spaces WHERE id = $1 AND is_deleted = false',
-        [id]
-    );
+const getSpaceById = async (id, includeDeleted = false) => {
+    let query = 'SELECT * FROM community.spaces WHERE id = $1';
+    if (!includeDeleted) {
+        query += ' AND is_deleted = false';
+    }
+    const { rows } = await pool.query(query, [id]);
     return rows[0];
 };
 
@@ -44,6 +45,14 @@ const updateSpace = async (id, { name, slug, description }) => {
 const softDeleteSpace = async (id) => {
     const { rows } = await pool.query(
         'UPDATE community.spaces SET is_deleted = true, deleted_at = NOW() WHERE id = $1 RETURNING *',
+        [id]
+    );
+    return rows[0];
+};
+
+const undeleteSpace = async (id) => {
+    const { rows } = await pool.query(
+        'UPDATE community.spaces SET is_deleted = false, deleted_at = NULL WHERE id = $1 RETURNING *',
         [id]
     );
     return rows[0];
@@ -117,11 +126,12 @@ const createComment = async ({ post_id, author_id, parent_comment_id, body }) =>
     return rows[0];
 };
 
-const getCommentById = async (id) => {
-    const { rows } = await pool.query(
-        'SELECT * FROM community.comments WHERE id = $1 AND is_deleted = false',
-        [id]
-    );
+const getCommentById = async (id, includeDeleted = false) => {
+    let query = 'SELECT * FROM community.comments WHERE id = $1';
+    if (!includeDeleted) {
+        query += ' AND is_deleted = false';
+    }
+    const { rows } = await pool.query(query, [id]);
     return rows[0];
 };
 
@@ -160,6 +170,14 @@ const softDeleteComment = async (id) => {
         [id]
     );
     return rows;
+};
+
+const undeleteComment = async (id) => {
+    const { rows } = await pool.query(
+        'UPDATE community.comments SET is_deleted = false, deleted_at = NULL WHERE id = $1 RETURNING *',
+        [id]
+    );
+    return rows[0];
 };
 
 // --- Post Vote Functions ---
@@ -209,6 +227,7 @@ module.exports = {
     getSpaceBySlug,
     updateSpace,
     softDeleteSpace,
+    undeleteSpace,
     createPost,
     getPostById,
     getPostsBySpace,
@@ -220,6 +239,7 @@ module.exports = {
     getCommentsByPost,
     updateComment,
     softDeleteComment,
+    undeleteComment,
     addPostVote,
     removePostVote,
     addCommentVote,

@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const communityModel = require('../models/communityModel');
 const { getMember } = require('../models/organizationMemberModel'); // Assuming some org-level permissions might be needed
 const gameModel = require('../models/gameModel'); // To verify related_game_id if used
@@ -57,6 +58,7 @@ const updateSpace = async (req, res) => {
     const { user } = req;
     const { id } = req.params;
     const { name, slug, description } = req.body;
+    let finalSlug = slug;
 
     if (!user?.id) return res.status(401).json({ success: false, message: "Unauthorized" });
 
@@ -64,7 +66,6 @@ const updateSpace = async (req, res) => {
         const existingSpace = await communityModel.getSpaceById(id);
         if (!existingSpace) return res.status(404).json({ success: false, message: "Space not found." });
 
-        // Only creator or org admin/owner/developer if related_game_id is set
         let authorized = (existingSpace.creator_id === user.id);
         if (existingSpace.related_game_id) {
             const game = await gameModel.getGameById(existingSpace.related_game_id);
@@ -77,13 +78,29 @@ const updateSpace = async (req, res) => {
         }
         if (!authorized) return res.status(403).json({ success: false, message: "Forbidden: Not authorized to update this space." });
 
-        const updatedSpace = await communityModel.updateSpace(id, { name, slug: slug ? slugify(slug) : undefined, description });
+        if (slug && slugify(slug) !== existingSpace.slug) {
+            const baseSlug = slugify(slug);
+            let attempts = 0;
+            finalSlug = baseSlug;
+
+            while (attempts < 5) {
+                const spaceWithSlug = await communityModel.getSpaceBySlug(finalSlug);
+                if (!spaceWithSlug) {
+                    break;
+                }
+                const suffix = crypto.randomBytes(3).toString('hex');
+                finalSlug = `${baseSlug}-${suffix}`;
+                attempts++;
+                if (attempts === 5) {
+                    return res.status(500).json({ success: false, message: "Failed to create a unique slug after multiple attempts." });
+                }
+            }
+        }
+
+        const updatedSpace = await communityModel.updateSpace(id, { name, slug: finalSlug, description });
         return res.status(200).json({ success: true, message: "Space updated successfully.", data: updatedSpace });
     } catch (error) {
         console.error("Update Space Error:", error);
-        if (error.code === '23505') {
-            return res.status(409).json({ success: false, message: "A space with this slug or related game already exists." });
-        }
         return res.status(500).json({ success: false, message: "Server Error", error: error.message });
     }
 };
@@ -115,6 +132,37 @@ const softDeleteSpace = async (req, res) => {
         return res.status(200).json({ success: true, message: "Space deleted successfully." });
     } catch (error) {
         console.error("Soft Delete Space Error:", error);
+        return res.status(500).json({ success: false, message: "Server Error", error: error.message });
+    }
+};
+
+const undeleteSpace = async (req, res) => {
+    const { user } = req;
+    const { id } = req.params;
+
+    if (!user?.id) return res.status(401).json({ success: false, message: "Unauthorized" });
+
+    try {
+        const existingSpace = await communityModel.getSpaceById(id, true); // Get even if deleted
+        if (!existingSpace) return res.status(404).json({ success: false, message: "Space not found." });
+
+        // Only creator or org admin/owner/developer if related_game_id is set can undelete
+        let authorized = (existingSpace.creator_id === user.id);
+        if (existingSpace.related_game_id) {
+            const game = await gameModel.getGameById(existingSpace.related_game_id);
+            if (game) {
+                const member = await getMember(game.org_id, user.id);
+                if (member && ['admin', 'owner', 'developer'].includes(member.role)) {
+                    authorized = true;
+                }
+            }
+        }
+        if (!authorized) return res.status(403).json({ success: false, message: "Forbidden: Not authorized to undelete this space." });
+
+        await communityModel.undeleteSpace(id);
+        return res.status(200).json({ success: true, message: "Space undeleted successfully." });
+    } catch (error) {
+        console.error("Undelete Space Error:", error);
         return res.status(500).json({ success: false, message: "Server Error", error: error.message });
     }
 };
@@ -379,6 +427,41 @@ const softDeleteComment = async (req, res) => {
     }
 };
 
+const undeleteComment = async (req, res) => {
+    const { user } = req;
+    const { id } = req.params;
+
+    if (!user?.id) return res.status(401).json({ success: false, message: "Unauthorized" });
+
+    try {
+        const existingComment = await communityModel.getCommentById(id, true); // Get even if deleted
+        if (!existingComment) return res.status(404).json({ success: false, message: "Comment not found." });
+
+        // Authorization check - assuming only moderators or admins can undelete
+        const post = await communityModel.getPostById(existingComment.post_id);
+        const space = await communityModel.getSpaceById(post.space_id);
+        let authorized = false;
+        if (space && space.related_game_id) {
+            const game = await gameModel.getGameById(space.related_game_id);
+            if (game) {
+                const member = await getMember(game.org_id, user.id);
+                if (member && ['admin', 'owner', 'moderator'].includes(member.role)) {
+                    authorized = true;
+                }
+            }
+        }
+        if (!authorized) {
+            return res.status(403).json({ success: false, message: "Forbidden: Not authorized to undelete this comment." });
+        }
+
+        await communityModel.undeleteComment(id);
+        return res.status(200).json({ success: true, message: "Comment undeleted successfully." });
+    } catch (error) {
+        console.error("Undelete Comment Error:", error);
+        return res.status(500).json({ success: false, message: "Server Error", error: error.message });
+    }
+};
+
 // --- Post Vote Controllers ---
 const addPostVote = async (req, res) => {
     const { user } = req;
@@ -473,6 +556,7 @@ module.exports = {
     getSpace,
     updateSpace,
     softDeleteSpace,
+    undeleteSpace,
     createPost,
     getPost,
     getPostsBySpace,
@@ -484,6 +568,7 @@ module.exports = {
     getCommentsByPost,
     updateComment,
     softDeleteComment,
+    undeleteComment,
     addPostVote,
     removePostVote,
     addCommentVote,

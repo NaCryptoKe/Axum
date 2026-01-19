@@ -5,6 +5,7 @@ const {
     getSpace,
     updateSpace,
     softDeleteSpace,
+    undeleteSpace,
     createPost,
     getPost,
     getPostsBySpace,
@@ -16,6 +17,7 @@ const {
     getCommentsByPost,
     updateComment,
     softDeleteComment,
+    undeleteComment,
     addPostVote,
     removePostVote,
     addCommentVote,
@@ -38,6 +40,8 @@ router.post('/spaces', createSpace);
 router.get('/spaces/:slug', getSpace);
 router.put('/spaces/:id', updateSpace);
 router.delete('/spaces/:id', softDeleteSpace);
+router.put('/spaces/:id/undelete', undeleteSpace);
+// Create a undelete space api as well
 
 // --- Post Routes ---
 router.post('/posts', createPost);
@@ -45,7 +49,7 @@ router.get('/posts/:id', getPost);
 router.get('/spaces/:space_slug/posts', getPostsBySpace);
 router.put('/posts/:id', updatePost);
 router.delete('/posts/:id', softDeletePost);
-router.put('/posts/:id/undelete', undeletePost); // Added undelete route
+router.put('/posts/:id/undelete', undeletePost);
 
 // --- Comment Routes ---
 router.post('/comments', createComment);
@@ -53,6 +57,7 @@ router.get('/comments/:id', getComment);
 router.get('/posts/:post_id/comments', getCommentsByPost);
 router.put('/comments/:id', updateComment);
 router.delete('/comments/:id', softDeleteComment);
+router.put('/comments/:id/undelete', undeleteComment);
 
 // --- Post Vote Routes ---
 router.post('/posts/:post_id/vote', addPostVote);
