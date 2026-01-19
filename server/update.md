@@ -1,135 +1,142 @@
-To handle **News** (one-to-many broadcasts like game updates or studio announcements) and **Notifications** (one-to-one alerts like "User X followed you"), you should create two distinct areas. These have very different read/write patterns: News is written once and read by many; Notifications are written frequently and read by specific individuals.
+To create a backend response system that frontend developers love, you need to provide **consistency**, **predictability**, and **actionable error data**. A "detailed" response should tell the frontend exactly what happened, why it happened, and how to display it to the user.
 
-Here is the SQL for these additions.
+Below is an expanded, standardized response architecture for your platform.
 
-### 1. News & Articles Schema
+---
 
-This schema manages official content from developers or the platform itself. It links heavily to your `game_catalog` and `core.organizations`.
+## 1. The Standard Success Response (Single Object)
 
-```sql
-CREATE SCHEMA publishing;
+When the frontend requests a specific resource, like a user profile or a game's details, use this structure.
 
--- Categories for news (e.g., 'Patch Notes', 'Dev Log', 'Sale', 'Press Release')
-CREATE TABLE publishing.categories (
-    id          SERIAL PRIMARY KEY,
-    name        TEXT NOT NULL UNIQUE,
-    slug        TEXT NOT NULL UNIQUE
-);
-
--- The Articles Table
-CREATE TABLE publishing.articles (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    
-    -- Authoring & Ownership
-    author_id       UUID REFERENCES core.users(id) ON DELETE SET NULL, -- The specific writer
-    org_id          UUID REFERENCES core.organizations(id) ON DELETE CASCADE, -- The studio posting it
-    game_id         UUID REFERENCES game_catalog.games(id) ON DELETE CASCADE, -- (Optional) Specific to a game
-    
-    -- Content
-    title           TEXT NOT NULL,
-    slug            TEXT NOT NULL CHECK (slug ~ '^[a-z0-9-]+$'),
-    summary         TEXT, -- Short blurb for cards/previews
-    body            TEXT NOT NULL, -- Full HTML or Markdown content
-    cover_image_url TEXT,
-    
-    -- Classification
-    category_id     INT REFERENCES publishing.categories(id) ON DELETE SET NULL,
-    
-    -- Publishing Logic
-    is_published    BOOLEAN NOT NULL DEFAULT false,
-    published_at    TIMESTAMPTZ, -- Allows scheduling future posts
-    is_pinned       BOOLEAN NOT NULL DEFAULT false, -- Pin to top of store page/feed
-    
-    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-    
-    -- Ensure unique slugs per organization to prevent URL collisions
-    UNIQUE (org_id, slug)
-);
+```json
+{
+  "status": "success",
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "username": "GamerOne",
+    "display_name": "ProPlayer_99",
+    "relationship": {
+       "is_following": true,
+       "is_follower": true,
+       "is_friend": true
+    },
+    "created_at": "2024-05-20T14:30:00Z"
+  },
+  "meta": {
+    "timestamp": "2026-01-19T12:50:44Z",
+    "request_id": "req_882345"
+  }
+}
 
 ```
 
-### 2. Notifications Schema
+* **`status`**: Use `"success"` or `"error"`. This allows `if (res.status === 'success')` checks.
+* **`data`**: Always an object or array. Never null on success.
+* **`meta`**: Contains non-business data like request IDs (essential for debugging backend logs).
 
-This schema handles the alert stream for users. I have used a `JSONB` payload column here—this is best practice for notifications because the "data" you need changes based on the event type (e.g., a "Friend Request" needs a user ID, while a "Game Sale" needs a game ID and a price).
+---
 
-```sql
-CREATE SCHEMA notifications;
+## 2. The Paginated Response (Lists)
 
--- Notification Types (Enum for code consistency)
-CREATE TYPE notifications.event_type AS ENUM (
-    'social_follow',         -- Someone followed you
-    'social_msg_request',    -- You have a pending message
-    'game_update',           -- A game in your library updated
-    'wishlist_sale',         -- A game you want is on sale
-    'system_alert',          -- Maintenance, bans, warnings
-    'community_reply'        -- Someone replied to your post/comment
-);
+For features like your **Game Catalog**, **Followers List**, or **Notifications**, frontend devs need to know if there is more data to fetch.
 
--- The Notification Inbox
-CREATE TABLE notifications.items (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    recipient_id    UUID NOT NULL REFERENCES core.users(id) ON DELETE CASCADE,
-    
-    -- Who/What caused this? (Optional, as system alerts have no actor)
-    actor_id        UUID REFERENCES core.users(id) ON DELETE SET NULL,
-    
-    -- What happened?
-    type            notifications.event_type NOT NULL,
-    
-    -- Flexible Data: stores { "post_id": "...", "game_slug": "...", "preview_text": "..." }
-    data            JSONB NOT NULL DEFAULT '{}'::jsonb,
-    
-    -- State
-    is_read         BOOLEAN NOT NULL DEFAULT false,
-    read_at         TIMESTAMPTZ,
-    
-    created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
--- Notification Settings (Opt-out logic)
--- If a row exists here, the user DOES NOT want this type of notification.
-CREATE TABLE notifications.preferences (
-    user_id         UUID NOT NULL REFERENCES core.users(id) ON DELETE CASCADE,
-    event_type      notifications.event_type NOT NULL,
-    email_enabled   BOOLEAN NOT NULL DEFAULT true,  -- Receive email?
-    push_enabled    BOOLEAN NOT NULL DEFAULT true,  -- Receive push/in-app?
-    
-    PRIMARY KEY (user_id, event_type)
-);
+```json
+{
+  "status": "success",
+  "data": [
+    { "id": "...", "title": "Cyber Quest", "slug": "cyber-quest" },
+    { "id": "...", "title": "Space Miners", "slug": "space-miners" }
+  ],
+  "pagination": {
+    "total_records": 154,
+    "current_page": 1,
+    "total_pages": 16,
+    "limit": 10,
+    "has_next": true,
+    "has_prev": false
+  },
+  "meta": { "timestamp": "..." }
+}
 
 ```
 
-### Integration Logic
+* **`pagination`**: This tells the frontend whether to show a "Load More" button or page numbers.
 
-Here is how these tables interact with your existing data:
+---
 
-1. **Sending Game News:**
-* When an organization creates a row in `publishing.articles` linked to `game_catalog.games(id)`, you would trigger a background job.
-* The job looks up everyone who has that game in `player_data.libraries`.
-* The job inserts a row into `notifications.items` for each of those users with `type = 'game_update'`.
+## 3. Detailed Error Handling
 
+Your current error format is good, but it fails for **Form Validation** (e.g., when signing up a user). You need to distinguish between a "General Error" and "Field Errors."
 
-2. **Social Follows:**
-* When User A follows User B (in the `social.follows` table discussed previously), you insert a row into `notifications.items`:
-* `recipient_id`: User B
-* `actor_id`: User A
-* `type`: `'social_follow'`
+### Scenario A: Validation Error (Multiple Fields)
 
+If a user tries to sign up with an invalid email and a taken username.
 
-
-
-3. **Performance Note:**
-* The `notifications.items` table grows very fast. You should consider adding a **Partial Index** for unread items, as that is the query run on every page load:
-
-
-```sql
-CREATE INDEX idx_unread_notifs 
-ON notifications.items(recipient_id) 
-WHERE is_read = false;
+```json
+{
+  "status": "error",
+  "message": "Validation failed",
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "type": "Bad Request",
+    "fields": {
+      "username": {
+        "code": "ALREADY_TAKEN",
+        "message": "This username is already in use."
+      },
+      "email": {
+        "code": "INVALID_FORMAT",
+        "message": "Please provide a valid email address."
+      }
+    }
+  }
+}
 
 ```
 
+* **`fields`**: This allows the frontend to map errors directly to the input boxes (e.g., highlight the username box in red).
 
+### Scenario B: Business Logic/Permission Error
 
-**Next Step:** Would you like me to write a stored procedure (PL/pgSQL) that automatically creates a notification when a user receives a new message request?
+For your messaging system, if a user tries to message someone who isn't a friend and the request isn't approved yet.
+
+```json
+{
+  "status": "error",
+  "message": "Cannot send message",
+  "error": {
+    "code": "MESSAGE_APPROVAL_REQUIRED",
+    "details": "You must be mutual followers to message this user directly without approval.",
+    "help_url": "https://api.yoursite.com/docs/errors/message-approval"
+  }
+}
+
+```
+
+---
+
+## 4. Recommended HTTP Status Code Mapping
+
+The frontend uses the HTTP status code (the one in the header, not just the JSON body) to decide how to handle the response globally.
+
+| Status Code | Usage in Your System |
+| --- | --- |
+| **200 OK** | Successful fetch or update. |
+| **201 Created** | Successful creation of a post or follow. |
+| **400 Bad Request** | Validation errors or malformed JSON. |
+| **401 Unauthorized** | Session expired or invalid token. |
+| **403 Forbidden** | User is not a moderator but tried to delete a post. |
+| **404 Not Found** | Game slug or User ID does not exist. |
+| **429 Too Many Requests** | Rate limiting (e.g., spamming message requests). |
+| **500 Internal Server Error** | Database is down or code crashed. |
+
+---
+
+## 5. Summary Checklist for Frontend Satisfaction
+
+1. **CamelCase everything**: Most frontend devs use JavaScript/TypeScript, where `camelCase` is the standard. Use `displayName` instead of `display_name` if possible, but stay consistent.
+2. **Date Formats**: Always return dates in **ISO 8601** format (`2026-01-19T12:50:44Z`) so they can easily be parsed by `new Date()`.
+3. **No Nulls in Lists**: If a user has no friends, return `data: []`, not `data: null`. It prevents the frontend from crashing when they try to `.map()` the data.
+4. **Enums as Strings**: For roles or order statuses, send back strings like `"admin"` or `"published"` rather than ID numbers like `1` or `2`.
+
+**Next Step:** Would you like me to create a TypeScript Interface or a JSON Schema that your frontend team can use to automatically validate these responses?

@@ -7,38 +7,52 @@ const { slugify } = require('../utils/slugify');
 // --- Space Controllers ---
 const createSpace = async (req, res) => {
     const { user } = req;
-    const { related_game_id, name, slug, description } = req.body;
+    const { relatedGameId, name, slug, description } = req.body;
 
-    if (!user?.id) return res.status(401).json({ success: false, message: "Unauthorized" });
-    if (!name || !slug) return res.status(400).json({ success: false, message: "Name and slug are required." });
+    if (!user?.id) return res.status(401).json({ status: "error", message: "Unauthorized", error: { code: "UNAUTHORIZED", details: "User not authenticated." } });
+    if (!name || !slug) return res.status(400).json({ status: "error", message: "Name and slug are required.", error: { code: "BAD_REQUEST", details: "Name and slug are required." } });
 
     let finalSlug = slugify(slug);
     try {
-        if (related_game_id) {
-            const game = await gameModel.getGameById(related_game_id);
-            if (!game) return res.status(404).json({ success: false, message: "Related game not found." });
+        if (relatedGameId) {
+            const game = await gameModel.getGameById(relatedGameId);
+            if (!game) return res.status(404).json({ status: "error", message: "Related game not found.", error: { code: "NOT_FOUND", details: "Related game not found." } });
 
-            // Check if user has permission to create a space for this game's organization
             const member = await getMember(game.org_id, user.id);
             if (!member || !['admin', 'owner', 'developer'].includes(member.role)) {
-                return res.status(403).json({ success: false, message: "Forbidden: Not authorized to create space for this game." });
+                return res.status(403).json({ status: "error", message: "Forbidden: Not authorized to create space for this game.", error: { code: "FORBIDDEN", details: "Not authorized to create space for this game." } });
             }
         }
 
         const space = await communityModel.createSpace({
             creator_id: user.id,
-            related_game_id,
+            related_game_id: relatedGameId,
             name,
             slug: finalSlug,
             description
         });
-        return res.status(201).json({ success: true, message: "Space created successfully.", data: space });
+        return res.status(201).json({ 
+            status: "success", 
+            data: {
+                id: space.id,
+                creatorId: space.creator_id,
+                relatedGameId: space.related_game_id,
+                name: space.name,
+                slug: space.slug,
+                description: space.description,
+                createdAt: space.created_at
+            },
+            meta: {
+                timestamp: new Date().toISOString(),
+                requestId: req.id
+            }
+        });
     } catch (error) {
         console.error("Create Space Error:", error);
         if (error.code === '23505') { // Unique constraint violation
-            return res.status(409).json({ success: false, message: "A space with this slug or related game already exists." });
+            return res.status(409).json({ status: "error", message: "A space with this slug or related game already exists.", error: { code: "CONFLICT", details: "A space with this slug or related game already exists." } });
         }
-        return res.status(500).json({ success: false, message: "Server Error", error: error.message });
+        return res.status(500).json({ status: "error", message: "Server Error", error: { code: "INTERNAL_ERROR", details: error.message } });
     }
 };
 
@@ -46,11 +60,26 @@ const getSpace = async (req, res) => {
     const { slug } = req.params;
     try {
         const space = await communityModel.getSpaceBySlug(slug);
-        if (!space) return res.status(404).json({ success: false, message: "Space not found." });
-        return res.status(200).json({ success: true, message: "Space retrieved.", data: space });
+        if (!space) return res.status(404).json({ status: "error", message: "Space not found.", error: { code: "NOT_FOUND", details: "Space not found." } });
+        return res.status(200).json({
+            status: "success",
+            data: {
+                id: space.id,
+                creatorId: space.creator_id,
+                relatedGameId: space.related_game_id,
+                name: space.name,
+                slug: space.slug,
+                description: space.description,
+                createdAt: space.created_at
+            },
+            meta: {
+                timestamp: new Date().toISOString(),
+                requestId: req.id
+            }
+        });
     } catch (error) {
         console.error("Get Space Error:", error);
-        return res.status(500).json({ success: false, message: "Server Error", error: error.message });
+        return res.status(500).json({ status: "error", message: "Server Error", error: { code: "INTERNAL_ERROR", details: error.message } });
     }
 };
 
