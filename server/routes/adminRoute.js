@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const {getUserProfile,onlineStatus,allUsers, allActiveUsers, updateProfile, softDelete} = require('../controllers/userController');
+const { allUsers, allActiveUsers, softDelete } = require('../controllers/userController');
+const { successResponse } = require('../utils/responseHandler');
 
-router.get('/', (req, res) => {
-    res.send ('ADMIN WORKING');
+router.get('/health', (req, res) => {
+    return successResponse(res, 'ADMIN WORKING');
 })
 
 router.get('/users', allUsers);

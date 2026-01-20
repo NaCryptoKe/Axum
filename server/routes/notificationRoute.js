@@ -8,10 +8,11 @@ const {
     getPreferences
 } = require('../controllers/notificationController');
 
+const { successResponse } = require('../utils/responseHandler');
 const authenticateMiddleware = require('../middlewares/authenticateMiddleware');
 
 router.get('/health', (req, res) => {
-    res.status(200).json({ success: true, message: "Notification router is running." });
+    return successResponse(res, "Notification router is running.");
 });
 
 router.use(authenticateMiddleware); // All notification routes require authentication

@@ -10,12 +10,13 @@ const {
     deleteArticle
 } = require('../controllers/publishingController');
 
+const { successResponse } = require('../utils/responseHandler');
 const authenticateMiddleware = require('../middlewares/authenticateMiddleware');
 const isVerifiedMiddleware = require('../middlewares/isVerifiedMiddleware');
 const adminMiddleware = require('../middlewares/adminMiddleware'); // For category creation, if restricted
 
 router.get('/health', (req, res) => {
-    res.status(200).json({ success: true, message: "Publishing router is running." });
+    return successResponse(res, "Publishing router is running.");
 });
 
 router.use(authenticateMiddleware); // All publishing routes require authentication

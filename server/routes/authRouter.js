@@ -22,7 +22,7 @@ const authenticateMiddleware = require('../middlewares/authenticateMiddleware');
 
 const router = express.Router();
 
-router.get('/', healthCheck);
+router.get('/health', healthCheck);
 
 // Basic Authentication Routes
 router.post('/register', register);

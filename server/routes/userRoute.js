@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 
+const { successResponse } = require('../utils/responseHandler');
+
 const {
     getUserProfile,
     onlineStatus,
@@ -20,15 +22,10 @@ const authenticateMiddleware = require('../middlewares/authenticateMiddleware');
 const isVerifiedMiddleware = require('../middlewares/isVerifiedMiddleware');
 const adminMiddleware = require('../middlewares/adminMiddleware');
 
-// GET /
+// GET /health
 // Description: A basic test route to check if the user router is working.
-router.get('/', (req, res) => {
-    return res.status(200).json({
-        "success": true,
-        "message": "USER WORKING",
-        "data": null,
-        "error": null
-    });
+router.get('/health', (req, res) => {
+    return successResponse(res, "USER WORKING");
 })
 
 router.use(authenticateMiddleware); // Apply authentication middleware to all subsequent routes

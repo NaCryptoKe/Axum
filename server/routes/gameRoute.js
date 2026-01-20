@@ -23,12 +23,13 @@ const {
     softDeleteGameReview
 } = require('../controllers/gameController');
 
+const { successResponse } = require('../utils/responseHandler');
 const authenticateMiddleware = require('../middlewares/authenticateMiddleware');
 const isVerifiedMiddleware = require('../middlewares/isVerifiedMiddleware');
 const adminMiddleware = require('../middlewares/adminMiddleware');
 
 router.get('/health', (req, res) => {
-    res.status(200).json({ success: true, message: "Game router is running." });
+    return successResponse(res, "Game router is running.");
 });
 
 // Middleware for all subsequent routes

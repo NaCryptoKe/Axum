@@ -1,6 +1,7 @@
 const express = require('express');
 const axios = require("axios").default;
 const router = express.Router();
+const { successResponse, errorResponse } = require('../utils/responseHandler');
 const authenticateMiddleware = require('../middlewares/authenticateMiddleware');
 const isVerifiedMiddleware = require('../middlewares/isVerifiedMiddleware');
 
@@ -13,8 +14,8 @@ const config = {
     }
 };
 
-router.get('/', (req, res) => {
-    res.json('PAYMENT WORKING');
+router.get('/health', (req, res) => {
+    return successResponse(res, 'PAYMENT WORKING');
 });
 
 router.post('/pay', authenticateMiddleware, isVerifiedMiddleware, async (req, res) => {
@@ -38,13 +39,13 @@ router.post('/pay', authenticateMiddleware, isVerifiedMiddleware, async (req, re
 
         const response = await axios.post(CHAPA_URL, data, config);
 
-        res.json({
+        return successResponse(res, {
             checkout_url: response.data.data.checkout_url,
             tx_ref: TEXT_REF
         });
     } catch (err) {
         console.error("Payment initialization error:", err.response?.data || err.message);
-        res.status(500).json({ error: "Payment initialization failed" });
+        return errorResponse(res, "Payment initialization failed", 500);
     }
 });
 
@@ -55,16 +56,16 @@ router.get("/verify-payment/:tx_ref", async (req, res) => {
         const response = await axios.get(verifyURL, config);
 
         console.log("Verification response:", response.data);
-        res.json(response.data);
+        return successResponse(res, response.data);
     } catch (err) {
         console.error("Verification error:", err.message);
-        res.status(500).json({ error: "Payment verification failed" });
+        return errorResponse(res, "Payment verification failed", 500);
     }
 });
 
 // Success endpoint
 router.get("/payment-success", (req, res) => {
-    res.send("Payment successful!");
+    return successResponse(res, "Payment successful!");
 });
 
 module.exports = router;

@@ -19,10 +19,14 @@ const communityRoute = require('./routes/communityRoute');
 const socialRoute = require('./routes/socialRoute');
 const publishingRoute = require('./routes/publishingRoute');
 const notificationRoute = require('./routes/notificationRoute');
+const analyticsRoute = require('./routes/analyticsRoute');
 
 // --- Middleware Imports ---
 const log = require('./middlewares/logRoute');
 const updateLastSeen = require('./middlewares/updateLastSeenMiddleware');
+
+// --- Response Handler Imports ---
+const { successResponse } = require('./utils/responseHandler');
 
 // --- Express App Initialization ---
 const app = express();
@@ -61,16 +65,12 @@ app.use('/api/community', communityRoute);
 app.use('/api/social', socialRoute);
 app.use('/api/publishing', publishingRoute);
 app.use('/api/notifications', notificationRoute);
+app.use('/api/analytics', analyticsRoute);
 
 // --- Root Endpoint ---
 // A simple health check endpoint to confirm the server is running.
-app.get('/', (req, res) => {
-    return res.status(200).json({
-        success: true,
-        message: 'Welcome to the server!',
-        data: null,
-        error: null
-    });
+app.get('/health', (req, res) => {
+    return successResponse(res, 'Welcome to the server!');
 });
 
 // --- Server Startup ---

@@ -11,10 +11,11 @@ const {
     getMessages
 } = require('../controllers/socialController');
 
+const { successResponse } = require('../utils/responseHandler');
 const authenticateMiddleware = require('../middlewares/authenticateMiddleware');
 
 router.get('/health', (req, res) => {
-    res.status(200).json({ success: true, message: "Social router is running." });
+    return successResponse(res, "Social router is running.");
 });
 
 router.use(authenticateMiddleware);
