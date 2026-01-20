@@ -1,55 +1,14 @@
-import React, { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Navbar from './components/Navbar';
-import Home from './pages/Home';
-import Store from './pages/Store';
-import Register from './pages/Register';
-import Login from './pages/Login';
-import OtpVerification from './pages/OtpVerification';
-import ForgotPassword from './pages/ForgotPassword';
-import ResetPassword from './pages/ResetPassword';
-import Profile from './pages/Profile';
-import { ToastProvider } from './context/ToastContext';
-import { AuthProvider } from './context/AuthContext';
-import './hello.css';
-import './navbar.css';
+// client/src/App.jsx
+import React from 'react';
+import { ToastProvider } from './components/Toast/ToastProvider';
+import { TOAST_THEME } from './config/toastTheme'; // Import your config
+import Routes from './routes'; // Assuming you have a routes file
 
 function App() {
-  const [isUserActive, setIsUserActive] = useState(true);
-  const [isVideoActive, setIsVideoActive] = useState(false);
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
-
   return (
-    <Router>
-      <ToastProvider>
-        <AuthProvider>
-          {/* Navbar stays here so it shows on every page */}
-          <Navbar 
-            isUserActive={isUserActive} 
-            isVideoActive={isVideoActive} 
-            isSearchFocused={isSearchFocused} 
-            setIsSearchFocused={setIsSearchFocused} 
-          /> 
-          
-          <Routes>
-            <Route path="/" element={<Home 
-              isUserActive={isUserActive} 
-              isVideoActive={isVideoActive} 
-              setIsUserActive={setIsUserActive} 
-              setIsVideoActive={setIsVideoActive}
-              isSearchFocused={isSearchFocused}
-            />} />
-            <Route path="/store" element={<Store />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/otp-verification" element={<OtpVerification />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password/:token" element={<ResetPassword />} />
-            <Route path="/:username" element={<Profile />} />
-          </Routes>
-        </AuthProvider>
-      </ToastProvider>
-    </Router>
+    <ToastProvider theme={TOAST_THEME} position="bottom-right">
+      <Routes /> 
+    </ToastProvider>
   );
 }
 
