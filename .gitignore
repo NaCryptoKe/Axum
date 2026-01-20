@@ -10,6 +10,7 @@ server/node_modules
 
 # Project-specific ignored folders (from your list)
 trial/
+server/
 
 # Build/Transpiled Files (Common for front-end frameworks like React/Vite/Webpack)
 dist/
