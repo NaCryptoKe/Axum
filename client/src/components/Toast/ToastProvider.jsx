@@ -1,8 +1,10 @@
 import React, { createContext, useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
+// Change this line:
+import { useBackgroundCanvas, calculateComplement } from '../Navbar/useGlass'; 
 import './Toast.css';
 
-// Default configuration that serves as a fallback
+// ... (DEFAULT_THEME remains the same) ...
 const DEFAULT_THEME = {
     limit: 5,
     defaultDuration: 4000,
@@ -58,7 +60,9 @@ export const ToastContext = createContext(null);
 const Toast = ({ toast, removeToast, globalConfig }) => {
     const { id, type, title, subtitle, duration, icon, color } = toast;
     const [isExiting, setIsExiting] = useState(false);
-    
+    const [dynamicTintColor, setDynamicTintColor] = useState("255, 255, 255"); // State for tint
+    const toastRef = useRef(null); // Ref for the toast element
+
     // Merge global type config with specific toast overrides
     const typeConfig = globalConfig.types[type] || globalConfig.types.info;
     const finalDuration = duration || globalConfig.defaultDuration;
@@ -66,32 +70,35 @@ const Toast = ({ toast, removeToast, globalConfig }) => {
     const finalIcon = icon || typeConfig.icon;
     const finalTitle = title || typeConfig.title;
 
-    const timerRef = useRef(null);
     const removeRef = useRef(null);
     const borderTimerRef = useRef(null);
 
+    // Sample color when the toast appears
+    useLayoutEffect(() => {
+        if (toastRef.current) {
+            const rect = toastRef.current.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            
+            sampleColorAt(centerX, centerY).then(({ r, g, b }) => {
+                setDynamicTintColor(calculateComplement(r, g, b));
+            });
+        }
+    }, []); // Run only once when the toast mounts
+
     const handleRemove = useCallback(() => {
         setIsExiting(true);
-        // Wait for animation to finish before actual removal
         removeRef.current = setTimeout(() => {
             removeToast(id);
         }, 600); 
     }, [id, removeToast]);
 
     useEffect(() => {
-        // Auto-dismiss timer
-        timerRef.current = setTimeout(() => {
-            handleRemove();
-        }, finalDuration);
-
-        return () => {
-            clearTimeout(timerRef.current);
-            clearTimeout(removeRef.current);
-        };
+        const timerRef = setTimeout(handleRemove, finalDuration);
+        return () => clearTimeout(timerRef);
     }, [finalDuration, handleRemove]);
 
     useEffect(() => {
-        // Border animation
         if (borderTimerRef.current) {
             borderTimerRef.current.animate([
                 { transform: 'scaleX(1)' },
@@ -105,12 +112,15 @@ const Toast = ({ toast, removeToast, globalConfig }) => {
 
     return (
         <div
+            ref={toastRef}
             className={`toast-notification ${isExiting ? 'exit' : ''}`}
-            style={{ '--accent-color': finalColor }}
+            style={{ 
+                '--accent-color': finalColor,
+                '--local-tint-color': dynamicTintColor // Set the local CSS variable
+            }}
             role="alert"
         >
             <div className="status-icon">
-                {/* Render React Node or fallback if string (legacy support) */}
                 {typeof finalIcon === 'string' ? (
                      <svg
                      viewBox="0 0 24 24"
@@ -135,6 +145,7 @@ const Toast = ({ toast, removeToast, globalConfig }) => {
     );
 };
 
+// ... (ToastProvider remains the same) ...
 export const ToastProvider = ({ 
     children, 
     theme = {}, 
@@ -143,6 +154,8 @@ export const ToastProvider = ({
     const [toasts, setToasts] = useState([]);
     const filterRef = useRef(null);
 
+    const { sampleColorAt, isCanvasReady } = useBackgroundCanvas();
+    
     // Merge custom theme with defaults
     const config = useMemo(() => {
         return {

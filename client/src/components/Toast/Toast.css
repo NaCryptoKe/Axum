@@ -55,7 +55,8 @@
     z-index: -1;
     border-radius: 80px;
     box-shadow: inset 0 0 var(--shadow-blur) var(--shadow-spread) var(--shadow-color);
-    background-color: rgba(var(--tint-color), var(--tint-opacity));
+    /* Use local tint color if available, otherwise fall back to global */
+    background-color: rgba(var(--local-tint-color, var(--tint-color)), var(--tint-opacity));
 }
 
 .toast-notification::after {

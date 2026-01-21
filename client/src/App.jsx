@@ -1,14 +1,22 @@
 // client/src/App.jsx
 import React from 'react';
-import { ToastProvider } from './components/Toast/ToastProvider';
-import { TOAST_THEME } from './config/toastTheme'; // Import your config
-import Routes from './routes'; // Assuming you have a routes file
+import { BrowserRouter } from 'react-router-dom';
+import Navbar from './components/Navbar/Navbar';
 
 function App() {
+  // These links match the paths in your routes/index.jsx
+  const navLinks = [
+    { name: 'Home', href: '/' },
+    { name: 'About', href: '/about' },
+    { name: 'Products', href: '/products' },
+    { name: 'Contact', href: '/contact' },
+    { name: 'Toast Test', href: '/toast-test' },
+  ];
+
   return (
-    <ToastProvider theme={TOAST_THEME} position="bottom-right">
-      <Routes /> 
-    </ToastProvider>
+    <BrowserRouter>
+        <Navbar links={navLinks} />
+    </BrowserRouter>
   );
 }
 

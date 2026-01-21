@@ -1,0 +1,171 @@
+.login-page-container {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* Background should match your project's main wallpaper */
+    background: url('../ghost-of-yotei-game-3840x2160-19048.jpg') center / cover no-repeat;
+}
+
+.login-card {
+    position: relative;
+    width: 100%;
+    max-width: 400px;
+    padding: 40px;
+    border-radius: 28px;
+    isolation: isolate;
+    box-shadow: 0px 10px var(--outer-shadow-blur) rgba(0, 0, 0, 0.3);
+    color: #1d1d1f;
+}
+
+/* Glass Surface */
+.login-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: 28px;
+    box-shadow: inset 0 0 var(--shadow-blur) var(--shadow-spread) var(--shadow-color);
+    background-color: rgba(var(--tint-color), var(--tint-opacity));
+}
+
+/* Blur and Distortion Layer */
+.login-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+    border-radius: 28px;
+    backdrop-filter: blur(var(--frost-blur));
+    -webkit-backdrop-filter: blur(var(--frost-blur));
+    filter: url(#login-glass-distortion);
+}
+
+.login-header h1 {
+    font-size: 24px;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.login-header p {
+    font-size: 14px;
+    opacity: 0.6;
+    margin-bottom: 30px;
+}
+
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    text-align: left;
+}
+
+.input-group label {
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.input-group input {
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: 1px solid rgba(0,0,0,0.1);
+    background: rgba(255,255,255,0.4);
+    font-size: 15px;
+    transition: all 0.2s;
+}
+
+.input-group input:focus {
+    outline: none;
+    border-color: #0071e3;
+    background: rgba(255,255,255,0.8);
+}
+
+.tos-row {
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+}
+
+.checkbox-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+}
+
+.forgot-password {
+    text-align: right;
+    margin-top: -10px;
+}
+
+.forgot-password a, .signup-footer a {
+    color: #0071e3;
+    text-decoration: none;
+    font-size: 13px;
+}
+
+.login-btn {
+    padding: 14px;
+    border-radius: 12px;
+    border: none;
+    background: #1d1d1f;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.login-btn:hover {
+    opacity: 0.9;
+}
+
+.divider {
+    margin: 20px 0;
+    position: relative;
+    text-align: center;
+}
+
+.divider::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: rgba(0,0,0,0.1);
+    z-index: 1;
+}
+
+.divider span {
+    background: transparent;
+    padding: 0 10px;
+    position: relative;
+    z-index: 2;
+    font-size: 12px;
+    color: rgba(0,0,0,0.4);
+}
+
+.google-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(0,0,0,0.1);
+    background: white;
+    font-weight: 500;
+    cursor: pointer;
+    margin-bottom: 20px;
+}
+
+.signup-footer {
+    font-size: 13px;
+}
