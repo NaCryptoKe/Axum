@@ -1,0 +1,183 @@
+.media-row-container {
+    position: relative;
+    width: 100%;
+    /* Remove isolation: isolate; it was restricting the scale expansion */
+}
+
+/* --- The Liquid Glass Layer --- */
+.media-row-glass-base {
+    position: absolute;
+    inset: 0;
+    z-index: 1; /* Lowest layer */
+    pointer-events: none;
+}
+
+.media-row-glass-base::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.2); 
+}
+
+.media-row-glass-base::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+    filter: url(#navbar-glass-distortion);
+}
+
+/* --- The Content Layer --- */
+.media-row-content {
+    position: relative;
+    z-index: 2; /* Sits above the glass */
+}
+
+.media-row-header {
+    font-size: 22px;
+    color: #ffffff;
+    font-weight: 700;
+    padding: 30px 0 0 7.5%;
+    margin: 0;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+}
+
+.media-scroller {
+    display: flex;
+    gap: 8px; /* Standard Netflix gap */
+    overflow-x: auto;
+    overflow-y: visible; /* Now it can actually expand upward! */
+    
+    /* FIX: High vertical padding prevents the card from hitting the container edge */
+    padding: 60px 7.5%; 
+    margin-top: -30px; 
+    
+    scrollbar-width: none;
+}
+
+.media-scroller::-webkit-scrollbar {
+    display: none;
+}
+
+/* --- The Card --- */
+.media-card {
+    flex: 0 0 280px; /* HD width */
+    aspect-ratio: 16 / 9;
+    position: relative;
+    cursor: pointer;
+    /* FIX: Transform from center ensures equal growth in all 4 directions */
+    transform-origin: center center;
+    transition: transform 0.4s cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.media-card:hover {
+    /* Scale of 1.4 requires the 60px padding above */
+    transform: scale(1.2); 
+    z-index: 999; /* Ensure it's above everything else on the page */
+}
+
+/* Handle edge behavior without snapping origin */
+.media-card:hover {
+    box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+}
+
+.media-card-inner {
+    width: 100%;
+    height: 100%;
+    border-radius: 4px;
+    overflow: hidden;
+    background: #141414;
+}
+
+.media-cover {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.media-card-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.media-card:hover .media-card-overlay {
+    opacity: 1;
+}
+
+.media-row-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.nav-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(40px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 1000; /* Above the expanded cards */
+    transition: all 0.3s ease;
+    opacity: 0; /* Hidden by default */
+}
+
+/* Show buttons when the row is hovered */
+.media-row-container:hover .nav-btn {
+    opacity: 1;
+}
+
+.nav-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateY(-50%) scale(1.1);
+}
+
+.nav-btn.left {
+    left: 20px;
+}
+
+.nav-btn.right {
+    right: 20px;
+}
+
+.nav-btn svg {
+    width: 24px;
+    height: 24px;
+}
+
+/* Ensure scroller doesn't have accidental scrollbars on some browsers */
+.media-scroller {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    overflow-y: visible;
+    padding: 60px 7.5%; 
+    margin-top: -30px; 
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    scroll-behavior: smooth; /* Native smooth scroll for trackpads */
+}
+
+/* Adjusting the card slightly to ensure no clipping with new wrapper */
+.media-card {
+    flex: 0 0 280px;
+    aspect-ratio: 16 / 9;
+    position: relative;
+    cursor: pointer;
+    transform-origin: center center;
+    transition: transform 0.4s cubic-bezier(0.33, 1, 0.68, 1);
+}

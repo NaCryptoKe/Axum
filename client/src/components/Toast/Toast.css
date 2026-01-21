@@ -1,24 +1,18 @@
 :root {
-    /* Glass variables - Managed by JS */
-    --shadow-blur: 20px;
-    --shadow-spread: -5px;
-    --shadow-color: rgba(255, 255, 255, 0.5);
-    --tint-color: 255, 255, 255;
-    --tint-opacity: 0.1;
-    --frost-blur: 10px;
+    --toast-shadow-blur: 2000px;
+    --toast-shadow-spread: -5px;
+    --toast-shadow-color: rgba(255, 255, 255, 0.5);
     --toast-width: 360px;
-    
-    --airbnb-font: 'Inter', -apple-system, sans-serif;
+    --toast-font: system-ui, -apple-system, sans-serif;
 }
 
-/* --- Wrapper Positioning --- */
 .toast-wrapper {
     position: fixed;
     display: flex;
     flex-direction: column;
     gap: 12px;
     z-index: 9999;
-    pointer-events: none; /* Allows clicking through the empty wrapper area */
+    pointer-events: none;
 }
 
 /* Position Variants */
@@ -26,14 +20,10 @@
 .toast-wrapper.bottom-left { bottom: 20px; left: 20px; }
 .toast-wrapper.top-right { top: 20px; right: 20px; flex-direction: column-reverse; }
 .toast-wrapper.top-left { top: 20px; left: 20px; flex-direction: column-reverse; }
-.toast-wrapper.top-center { top: 20px; left: 50%; transform: translateX(-50%); flex-direction: column-reverse; }
-.toast-wrapper.bottom-center { bottom: 20px; left: 50%; transform: translateX(-50%); }
 
-/* --- Toast Notification --- */
 .toast-notification {
     position: relative;
-    width: var(--toast-width);
-    max-width: 90vw;
+    width: 360px;
     padding: 12px 20px;
     display: flex;
     align-items: center;
@@ -42,21 +32,17 @@
     isolation: isolate;
     overflow: hidden;
     box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.4);
-    animation: slideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    pointer-events: auto; /* Re-enable clicks on the toast itself */
-    background: rgba(255, 255, 255, 0.05); /* Slight fallback background */
+    pointer-events: auto;
+    background: rgba(255, 255, 255, 0.05);
 }
 
-/* Liquid Glass Layers */
 .toast-notification::before {
     content: '';
     position: absolute;
     inset: 0;
     z-index: -1;
-    border-radius: 80px;
-    box-shadow: inset 0 0 var(--shadow-blur) var(--shadow-spread) var(--shadow-color);
-    /* Use local tint color if available, otherwise fall back to global */
-    background-color: rgba(var(--local-tint-color, var(--tint-color)), var(--tint-opacity));
+    box-shadow: inset 0 0 20px -5px rgba(255,255,255,0.5);
+    background-color: rgba(255, 255, 255, var(--toast-tint-opacity));
 }
 
 .toast-notification::after {
@@ -64,10 +50,53 @@
     position: absolute;
     inset: 0;
     z-index: -2;
-    border-radius: 80px;
-    backdrop-filter: blur(var(--frost-blur));
-    -webkit-backdrop-filter: blur(var(--frost-blur));
-    filter: url(#glass-distortion);
+    backdrop-filter: blur(var(--toast-frost-blur));
+    filter: url(#toast-glass-distortion);
+}
+
+/* Updated Text Colors */
+.toast-content { 
+    flex-grow: 1; 
+    font-family: var(--toast-font); 
+}
+
+.toast-title { 
+    color: #1d1d1f; /* Apple-style deep black/grey */
+    font-weight: 600; 
+    font-size: 14px; 
+    line-height: 1.2;
+}
+
+.toast-subtitle { 
+    color: rgba(0, 0, 0, 0.6); /* Translucent black for info text */
+    font-size: 11px; 
+    margin-top: 2px;
+}
+
+/* Updated Close Button to match dark text */
+.close-btn {
+    background: none;
+    border: none;
+    color: #000;
+    font-size: 22px;
+    cursor: pointer;
+    opacity: 0.4;
+    padding: 0;
+    line-height: 1;
+}
+
+.close-btn:hover { 
+    opacity: 0.8; 
+}
+
+.timer-border {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 4px;
+    width: 100%;
+    background: var(--accent-color);
+    transform-origin: left;
 }
 
 /* Animations */
@@ -80,11 +109,12 @@
     to { opacity: 0; transform: scale(0.9) translateY(10px); }
 }
 
+.toast-notification { animation: slideIn 0.5s ease forwards; }
+
 .toast-notification.exit {
     animation: slideOut 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Content Styles */
 .status-icon {
     width: 32px;
     height: 32px;
@@ -97,32 +127,9 @@
     flex-shrink: 0;
 }
 
-/* Target SVG specifically, whether string or component */
-.status-icon svg { width: 16px; height: 16px; color: white; stroke: white; }
-
-.toast-content { flex-grow: 1; font-family: var(--airbnb-font); }
-.toast-title { color: #000; font-size: 14px; font-weight: 600; line-height: 1.2; }
-.toast-subtitle { color: rgba(0, 0, 0, 0.6); font-size: 11px; margin-top: 2px; }
-
-.close-btn {
-    background: none;
-    border: none;
-    color: #333; /* Darkened for better contrast on glass */
-    font-size: 22px;
-    cursor: pointer;
-    opacity: 0.5;
-    padding: 0;
-    line-height: 1;
-    margin-left: 4px;
-}
-.close-btn:hover { opacity: 1; }
-
-.timer-border {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    height: 4px;
-    width: 100%;
-    background: var(--accent-color);
-    transform-origin: left;
+.status-icon svg { 
+    width: 16px; 
+    height: 16px; 
+    color: white; 
+    stroke: white; 
 }

@@ -1,34 +1,197 @@
 /* Navbar.css */
+
+/* 1. Main Container */
 .navbar-container {
     position: fixed;
     top: 20px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
-    gap: 8px;
-    padding: 8px;
+    align-items: center;
+    justify-content: space-between;
+    width: 85%; 
+    padding: 8px 24px;
     background: transparent;
     border-radius: 999px;
     z-index: 1000;
 }
 
+/* 2. Layout Sections */
+.nav-left-section {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.nav-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.nav-logo img {
+    width: 32px;
+    height: 32px;
+    display: block;
+}
+
+/* 3. Navigation Links */
 .nav-item {
     padding: 10px 18px;
     font-size: 14px;
     font-weight: 500;
-    color: #1d1d1f; /* Apple text color */
+    color: #d4d4d4;
     cursor: pointer;
     user-select: none;
-    z-index: 2; /* Text must sit ON TOP of the glass */
+    z-index: 2;
     position: relative;
     transition: color 200ms ease;
 }
 
-/* Optional: Slight color shift on hover/active for better contrast */
-.nav-item:hover {
-    color: #000;
+.nav-item.active {
+    color: #c4c4c4;
 }
 
+/* 4. Liquid Glass Search Bar (Black Glass) */
+.search-container {
+    position: relative;
+    flex: 0 1 300px;
+    height: 38px;
+    min-width: 40%;
+    display: flex;
+    align-items: center;
+    padding: 0 8px 0 16px;
+    border-radius: 999px;
+    isolation: isolate;
+    transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.search-container::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: 999px;
+    /* Uses dynamic tint but allows for the black glass feel */
+    background-color: rgba(var(--tint-color), 0.6); 
+    box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.2);
+    transition: background-color 0.3s ease;
+}
+
+.search-container::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+    border-radius: 999px;
+    backdrop-filter: blur(var(--frost-blur, 12px));
+    -webkit-backdrop-filter: blur(var(--frost-blur, 12px));
+    filter: url(#navbar-glass-distortion);
+}
+
+/* Update the search container expansion */
+.search-container {
+    transition: flex 0.4s cubic-bezier(0.25, 1, 0.5, 1), transform 0.3s ease;
+}
+
+.search-container.focused {
+    flex: 0 1 450px; /* Expands when clicked */
+    transform: scale(1.02);
+}
+
+.search-container.focused::before {
+    background-color: rgba(var(--tint-color), 0.8); /* Becomes more solid */
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Ensure search icon is visible and styled */
+.search-icon-btn {
+    color: rgba(0, 0, 0, 0.4);
+    margin-right: 8px;
+    display: flex;
+    align-items: center;
+}
+
+.nav-search::placeholder {
+    color: rgba(0, 0, 0, 0.3);
+}
+
+.nav-search {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    font-size: 14px;
+    color: #000; /* Inherits dynamic text color */
+    z-index: 2;
+}
+
+.search-icon-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px;
+    color: rgba(0, 0, 0, 0.6);
+    transition: color 0.2s ease, transform 0.2s ease;
+    z-index: 2;
+}
+
+.search-icon-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+.search-icon-btn:hover{
+    color: #000;
+    transform: scale(1.1);
+}
+
+/* 5. Liquid Glass Action Icons */
+.icon-item {
+    position: relative;
+    padding: 15px;
+    display: flex;
+    height: 32px;
+    width: 32px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 100%;
+    isolation: isolate;
+    cursor: pointer;
+}
+
+.icon-item::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: 999px;
+    box-shadow: inset 0 0 var(--shadow-blur, 20px) var(--shadow-spread, -5px) var(--shadow-color);
+    background-color: rgba(var(--tint-color), var(--tint-opacity));
+}
+
+.icon-item::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    border-radius: 999px;
+    backdrop-filter: blur(var(--frost-blur, 2px));
+    -webkit-backdrop-filter: blur(var(--frost-blur, 2px));
+    filter: url(#navbar-glass-distortion);
+}
+
+.icon-item img {
+    width: 20px;
+    height: 20px;
+    position: relative;
+    z-index: 2;
+}
+
+/* 6. Animated Glass Indicator */
 .glass-indicator {
     position: absolute;
     top: 50%;
@@ -36,34 +199,91 @@
     height: 38px;
     transform: translateY(-50%);
     pointer-events: none;
-    border-radius: 999px; /* Keep pill shape for navbar */
+    border-radius: 999px;
     isolation: isolate;
-    
-    /* NEW: The outer shadow from apple.css */
-    box-shadow: 0px 6px var(--outer-shadow-blur, 10px) rgba(0, 0, 0, 0.2);
-    
-    transition: left 150ms ease, width 150ms ease;
+    box-shadow: 0px 6px var(--outer-shadow-blur, 10px) rgba(0, 0, 0, 0.15);
+    z-index: 1;
 }
 
-/* Glass layer 1: Inner shadow and tint */
 .glass-indicator::before {
     content: '';
     position: absolute;
     inset: 0;
-    z-index: 0; /* Changed to match apple.css relative stacking */
+    z-index: 1;
     border-radius: 999px;
-    box-shadow: inset 0 0 var(--shadow-blur, 20px) var(--shadow-spread, -5px) var(--shadow-color, rgba(255, 255, 255, 0.7));
-    background-color: rgba(var(--tint-color, '255, 255, 255'), var(--tint-opacity, 0.4));
+    box-shadow: inset 0 0 var(--shadow-blur, 20px) var(--shadow-spread, -5px) var(--shadow-color);
+    background-color: rgba(var(--tint-color), var(--tint-opacity));
 }
 
-/* Glass layer 2: Background blur and distortion */
 .glass-indicator::after {
     content: '';
     position: absolute;
     inset: 0;
-    z-index: -1; /* Changed to match apple.css relative stacking */
+    z-index: 0;
     border-radius: 999px;
     backdrop-filter: blur(var(--frost-blur, 2px));
     -webkit-backdrop-filter: blur(var(--frost-blur, 2px));
     filter: url(#navbar-glass-distortion);
+}
+
+/* 7. Dropdown Styling */
+.glass-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 15px); /* Spacing below the icon */
+    right: 0;
+    min-width: 220px;
+    padding: 12px;
+    border-radius: 24px;
+    isolation: isolate;
+    z-index: 2000;
+    animation: dropdownFadeIn 0.25s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.glass-dropdown-menu::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: 24px;
+    background-color: rgba(var(--tint-color), 0.7); 
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2), 
+                inset 0 0 var(--shadow-blur) var(--shadow-spread) var(--shadow-color);
+}
+
+.glass-dropdown-menu::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+    border-radius: 24px;
+    backdrop-filter: blur(var(--frost-blur, 1px));
+    -webkit-backdrop-filter: blur(var(--frost-blur, 1px));
+    filter: url(#navbar-glass-distortion);
+}
+
+.dropdown-header {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: rgba(0, 0, 0, 0.5);
+    padding: 8px 12px;
+    letter-spacing: 0.5px;
+}
+
+.dropdown-item {
+    padding: 10px 12px;
+    border-radius: 12px;
+    font-size: 14px;
+    color: #1d1d1f;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.dropdown-item:hover {
+    background: rgba(107, 107, 107,0.7);
+}
+
+@keyframes dropdownFadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
 }

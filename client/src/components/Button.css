@@ -1,0 +1,41 @@
+.apple-btn {
+    border: none;
+    padding: 14px 28px;
+    border-radius: 999px;
+    color: white;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    transform: scale(1);
+    
+    /* Smooth transitions for regular state */
+    transition: 
+        transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
+        box-shadow 180ms ease,
+        filter 180ms ease;
+    
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.apple-btn:focus {
+    outline: none;
+}
+
+.apple-btn:hover {
+    filter: brightness(1.1);
+}
+
+/* Press down: Faster transition for immediate feedback */
+.apple-btn.pressed {
+    transform: scale(0.92);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+    transition-duration: 80ms;
+    filter: brightness(0.9);
+}
+
+/* Release pop: The bouncy over-scale effect */
+.apple-btn.released {
+    transform: scale(1.08);
+}

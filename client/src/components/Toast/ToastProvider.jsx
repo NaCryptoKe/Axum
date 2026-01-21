@@ -1,10 +1,7 @@
-import React, { createContext, useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import React, { createContext, useState, useCallback, useEffect, useRef, useMemo, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
-// Change this line:
-import { useBackgroundCanvas, calculateComplement } from '../Navbar/useGlass'; 
 import './Toast.css';
 
-// ... (DEFAULT_THEME remains the same) ...
 const DEFAULT_THEME = {
     limit: 5,
     defaultDuration: 4000,
@@ -60,10 +57,9 @@ export const ToastContext = createContext(null);
 const Toast = ({ toast, removeToast, globalConfig }) => {
     const { id, type, title, subtitle, duration, icon, color } = toast;
     const [isExiting, setIsExiting] = useState(false);
-    const [dynamicTintColor, setDynamicTintColor] = useState("255, 255, 255"); // State for tint
-    const toastRef = useRef(null); // Ref for the toast element
+    const [dynamicTintColor, setDynamicTintColor] = useState("255, 255, 255"); 
+    const toastRef = useRef(null);
 
-    // Merge global type config with specific toast overrides
     const typeConfig = globalConfig.types[type] || globalConfig.types.info;
     const finalDuration = duration || globalConfig.defaultDuration;
     const finalColor = color || typeConfig.color;
@@ -72,19 +68,6 @@ const Toast = ({ toast, removeToast, globalConfig }) => {
 
     const removeRef = useRef(null);
     const borderTimerRef = useRef(null);
-
-    // Sample color when the toast appears
-    useLayoutEffect(() => {
-        if (toastRef.current) {
-            const rect = toastRef.current.getBoundingClientRect();
-            const centerX = rect.left + rect.width / 2;
-            const centerY = rect.top + rect.height / 2;
-            
-            sampleColorAt(centerX, centerY).then(({ r, g, b }) => {
-                setDynamicTintColor(calculateComplement(r, g, b));
-            });
-        }
-    }, []); // Run only once when the toast mounts
 
     const handleRemove = useCallback(() => {
         setIsExiting(true);
@@ -116,21 +99,21 @@ const Toast = ({ toast, removeToast, globalConfig }) => {
             className={`toast-notification ${isExiting ? 'exit' : ''}`}
             style={{ 
                 '--accent-color': finalColor,
-                '--local-tint-color': dynamicTintColor // Set the local CSS variable
+                '--local-tint-color': dynamicTintColor 
             }}
             role="alert"
         >
             <div className="status-icon">
                 {typeof finalIcon === 'string' ? (
                      <svg
-                     viewBox="0 0 24 24"
-                     fill="none"
-                     stroke="currentColor"
-                     strokeWidth="3"
-                     strokeLinecap="round"
-                     strokeLinejoin="round"
-                     dangerouslySetInnerHTML={{ __html: finalIcon }}
-                 />
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        dangerouslySetInnerHTML={{ __html: finalIcon }}
+                    />
                 ) : (
                     finalIcon
                 )}
@@ -145,18 +128,14 @@ const Toast = ({ toast, removeToast, globalConfig }) => {
     );
 };
 
-// ... (ToastProvider remains the same) ...
 export const ToastProvider = ({ 
     children, 
     theme = {}, 
-    position = 'bottom-right' // top-right, top-left, bottom-left, bottom-right
+    position = 'bottom-right' 
 }) => {
     const [toasts, setToasts] = useState([]);
     const filterRef = useRef(null);
 
-    const { sampleColorAt, isCanvasReady } = useBackgroundCanvas();
-    
-    // Merge custom theme with defaults
     const config = useMemo(() => {
         return {
             ...DEFAULT_THEME,
@@ -167,10 +146,10 @@ export const ToastProvider = ({
     }, [theme]);
 
     useEffect(() => {
-        // Apply Glass effects to root
         const root = document.documentElement;
-        root.style.setProperty('--frost-blur', config.glass.blur + 'px');
-        root.style.setProperty('--tint-opacity', config.glass.opacity);
+        // Scoping these variables to ensure they don't break the Navbar glass
+        root.style.setProperty('--toast-frost-blur', config.glass.blur + 'px');
+        root.style.setProperty('--toast-tint-opacity', config.glass.opacity);
 
         if (filterRef.current) {
             const turbulence = filterRef.current.querySelector('feTurbulence');
@@ -180,22 +159,15 @@ export const ToastProvider = ({
         }
     }, [config.glass]);
 
-    /**
-     * @param {string} title - Main message
-     * @param {object} options - { type, subtitle, duration, icon, color }
-     */
     const addToast = useCallback((title, options = {}) => {
         setToasts(currentToasts => {
             const type = options.type || 'info';
-            
             const newToast = { 
                 id: Date.now().toString(36) + Math.random().toString(36).substr(2),
                 title,
-                ...options, // spreads subtitle, duration, icon overrides
+                ...options, 
                 type
             };
-
-            // Limit logic: Remove oldest if limit reached
             let updatedToasts = [newToast, ...currentToasts];
             if (updatedToasts.length > config.limit) {
                 updatedToasts = updatedToasts.slice(0, config.limit);
@@ -225,10 +197,9 @@ export const ToastProvider = ({
                             />
                         ))}
                     </div>
-                    {/* SVG Filter for Glass Effect */}
                     <svg width="0" height="0" style={{ position: 'absolute', pointerEvents: 'none' }} ref={filterRef}>
                         <defs>
-                            <filter id="glass-distortion">
+                            <filter id="toast-glass-distortion">
                                 <feTurbulence type="fractalNoise" baseFrequency="0.008" numOctaves="2" seed="92" result="noise" />
                                 <feGaussianBlur in="noise" stdDeviation="2" result="blurred" />
                                 <feDisplacementMap in="SourceGraphic" in2="blurred" scale="77" xChannelSelector="R" yChannelSelector="G" />

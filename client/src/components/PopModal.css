@@ -1,0 +1,93 @@
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    background: rgba(0, 0, 0, 0);
+    pointer-events: none;
+    transition: background 0.5s ease;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(0px);
+}
+
+/* Background fades in/out */
+.modal-overlay.active {
+    background: rgba(0, 0, 0, 0.85);
+    pointer-events: auto;
+    backdrop-filter: blur(15px);
+}
+
+.modal-overlay.closing {
+    background: rgba(0, 0, 0, 0);
+    backdrop-filter: blur(0px);
+}
+
+/* Base Modal Style (The Card Size) */
+.modal-pop-content {
+    position: absolute;
+    background: #181818;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+    /* Standard iOS-style spring curve */
+    transition: all 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);
+    color: white;
+}
+
+/* Expanded State */
+.modal-overlay.active .modal-pop-content {
+    width: 850px;
+    height: 85vh;
+    /* This overrides the inline styles from originRect */
+    top: 7.5vh !important; 
+    left: calc(50% - 425px) !important;
+    border-radius: 20px;
+}
+
+/* Revert/Shrink State */
+.modal-overlay.closing .modal-pop-content {
+    /* Transitions back to the rectStyle provided in JSX */
+    border-radius: 4px; 
+}
+
+/* Content inside the modal */
+.modal-body-content {
+    padding: 40px;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.modal-overlay.active .modal-body-content {
+    opacity: 1;
+    transform: translateY(0);
+    transition-delay: 0.3s; /* Delay text so it appears after expand */
+}
+
+/* Hide text immediately on close so it doesn't look messy while shrinking */
+.modal-overlay.closing .modal-body-content {
+    opacity: 0;
+    transition-delay: 0s;
+}
+
+.modal-hero-img {
+    width: 100%;
+    aspect-ratio: 16/9;
+    object-fit: cover;
+}
+
+.modal-close-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(0,0,0,0.5);
+    border: none;
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 20px;
+    z-index: 2;
+}
