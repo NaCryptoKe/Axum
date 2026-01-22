@@ -93,9 +93,6 @@ const Home = () => {
                         items={continuePlaying} 
                         onOpenModal={handleOpenModal}
                     />
-                    
-                    {/* Extra spacing at the bottom */}
-                    <div style={{ height: '200px' }} />
                 </div>
             </main>
 

@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import Button from './Button';
 import './LoginModal.css';
+import { useToast } from './Toast/useToast';
+import api from '../api/api';
 
 const LoginModal = ({ isOpen, onClose, onRegisterClick }) => {
     const [status, setStatus] = useState('closed'); 
     const [identifier, setIdentifier] = useState('');
     const [password, setPassword] = useState('');
+    const { addToast } = useToast();
 
     useEffect(() => {
         if (isOpen) {
@@ -27,6 +30,22 @@ const LoginModal = ({ isOpen, onClose, onRegisterClick }) => {
         onClose(); // Just tell the parent to close; useEffect handles the animation
     };
 
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!isFormValid) return;
+        try {
+            const response = await api.post('/auth/login', { identifier, password });
+            localStorage.setItem('token', response.data.data.token);
+            addToast("Login Successful", { type: 'success', subtitle: "Welcome back!" });
+            onClose();
+            setTimeout(() => {
+                window.location.reload(); // Refresh to update logged-in state
+            }, 1500);
+        } catch (error) {
+            addToast("Login Failed", { type: 'error', subtitle: error.response?.data?.message || "Invalid credentials." });
+        }
+    };
+
     if (status === 'closed') return null;
 
     const isFormValid = identifier.length > 0 && password.length > 0;
@@ -42,7 +61,7 @@ const LoginModal = ({ isOpen, onClose, onRegisterClick }) => {
                 </div>
 
                 <div className="login-content-wrapper">
-                    <form className="login-form" onSubmit={(e) => e.preventDefault()}>
+                    <form className="login-form" onSubmit={handleSubmit}>
                         <div className="input-group">
                             <label>Email or Username</label>
                             <input type="text" placeholder="Enter your identifier" value={identifier} onChange={(e) => setIdentifier(e.target.value)} />
@@ -57,9 +76,9 @@ const LoginModal = ({ isOpen, onClose, onRegisterClick }) => {
                         </div>
 
                         <Button 
+                            type="submit"
                             color={isFormValid ? "#0071e3" : "rgba(255, 255, 255, 0.1)"} 
                             className={`login-submit-btn ${!isFormValid ? 'disabled' : ''}`}
-                            onClick={() => isFormValid && console.log("Logging in...")}
                         >
                             Sign In
                         </Button>

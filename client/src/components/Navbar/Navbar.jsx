@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useGlassEffect } from './useGlass';
 import LoginModal from '../LoginModal';
 import RegisterModal from '../RegisterModal';
@@ -44,12 +45,23 @@ const Navbar = () => {
     const [openDropdownId, setOpenDropdownId] = useState(null);
     const [showLogin, setShowLogin] = useState(false);
     const [showRegister, setShowRegister] = useState(false);
+    const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('token'));
+    const navigate = useNavigate();
 
     const filterRef = useRef(null);
     const indicatorRef = useRef(null);
     const itemsRef = useRef([]);
 
     useGlassEffect(filterRef, { tintOpacity: 0.04, distortionStrength: 77 });
+
+    useEffect(() => {
+        const currentPath = window.location.pathname.replace('/', '').toLowerCase();
+        const activeLink = currentPath === '' ? 'home' : currentPath;
+        const newIndex = NAV_LINKS.findIndex(link => link.toLowerCase() === activeLink);
+        if (newIndex !== -1) {
+            setActiveIndex(newIndex);
+        }
+    }, [isLoggedIn]);
 
     // --- ELASTIC INDICATOR ANIMATION ---
     useEffect(() => {
@@ -80,7 +92,14 @@ const Navbar = () => {
     }, [activeIndex, prevIndex]);
 
     const handleActionClick = (id) => {
-        if (id === 'user') { setShowLogin(true); setOpenDropdownId(null); } 
+        if (id === 'user') {
+            if (isLoggedIn) {
+                navigate('/profile');
+            } else {
+                setShowLogin(true);
+            }
+            setOpenDropdownId(null); 
+        } 
         else { setOpenDropdownId(openDropdownId === id ? null : id); }
     };
 
