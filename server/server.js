@@ -6,6 +6,8 @@ const passport = require('passport');
 // Imported for side-effect: loads the Google OAuth2 strategy for Passport.
 require('./controllers/authController');
 
+app.set('trust proxy', 1);
+
 // --- Route Imports ---
 const authRoutes = require('./routes/authRouter');
 const passwordResetRoutes = require('./routes/passwordResetRouter');
