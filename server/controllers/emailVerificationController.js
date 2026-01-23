@@ -39,7 +39,7 @@ const generateOtp = async (req, res) => {
 
         return res.status(201).json({ 
             status: "success", 
-            data: { expiresAt: expires_at.toISOString() },
+            data: { expiresAt: expires_at.toISOString(), otp: otp },
             meta: {
                 timestamp: new Date().toISOString(),
                 requestId: req.id
