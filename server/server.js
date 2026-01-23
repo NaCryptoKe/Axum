@@ -3,10 +3,10 @@ const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const passport = require('passport');
+require('dotenv').config(); // Ensure env vars are loaded
+
 // Imported for side-effect: loads the Google OAuth2 strategy for Passport.
 require('./controllers/authController');
-
-app.set('trust proxy', 1);
 
 // --- Route Imports ---
 const authRoutes = require('./routes/authRouter');
@@ -24,37 +24,46 @@ const notificationRoute = require('./routes/notificationRoute');
 const analyticsRoute = require('./routes/analyticsRoute');
 
 // --- Middleware Imports ---
+// Ensure these files actually export a function (req, res, next)
 const log = require('./middlewares/logRoute');
 const updateLastSeen = require('./middlewares/updateLastSeenMiddleware');
-
-// --- Response Handler Imports ---
 const { successResponse } = require('./utils/responseHandler');
 
 // --- Express App Initialization ---
 const app = express();
 
+// --- PRODUCTION SETTINGS (Must be after app init) ---
+// This fixes the "X-Forwarded-For" and Rate Limit errors on Railway
+app.set('trust proxy', 1);
+
 // --- Core Middlewares ---
-// Enable Cross-Origin Resource Sharing for requests from the frontend client.
 app.use(cors({
-    origin: 'http://localhost:5173',
-    credentials: true, // Allow cookies to be sent from the client.
+    // Allow both your Localhost AND your Deployed Frontend
+    origin: [
+        'http://localhost:5173',           // For local development
+        process.env.FRONTEND_URL           // For production (e.g., https://axumarcade.com)
+    ],
+    credentials: true, // Allow cookies/headers to be sent
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // Parse incoming requests with JSON payloads.
 app.use(express.json());
-// Parse cookies from incoming requests. This must be placed before any routes that need access to cookies.
+
+// Parse cookies (Must be before routes)
 app.use(cookieParser());
-// Log incoming requests to the console.
+
+// Custom Logging
 app.use(log);
-// Update the 'last_seen' timestamp for the user on each request.
+
+// Update 'last_seen' (Ensure this middleware handles errors gracefully)
 app.use(updateLastSeen);
 
 // --- Authentication Middleware ---
-// Initialize Passport to handle authentication strategies.
 app.use(passport.initialize());
 
 // --- API Routes ---
-// Mount the different API route handlers on their respective paths.
 app.use('/api/auth', authRoutes);
 app.use('/api/password-reset', passwordResetRoutes);
 app.use('/api/users', userRoute);
@@ -70,11 +79,15 @@ app.use('/api/notifications', notificationRoute);
 app.use('/api/analytics', analyticsRoute);
 
 // --- Root Endpoint ---
-// A simple health check endpoint to confirm the server is running.
 app.get('/health', (req, res) => {
-    return successResponse(res, 'Welcome to the server!');
+    return successResponse(res, 'Server is healthy and running!');
 });
 
 // --- Server Startup ---
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+// Listen on 0.0.0.0 to ensure Railway/Docker can map the port correctly
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on port ${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+});
