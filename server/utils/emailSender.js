@@ -4,12 +4,23 @@ require('dotenv').config();
 
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
-    port: 587,
-    secure: false,
+    port: 465, // Use Port 465 (SSL) instead of 587 (STARTTLS)
+    secure: true, // Must be true for port 465
     auth: {
         user: process.env.MAIL_USER,
         pass: process.env.MAIL_PASS
-    }
+    },
+    // --- CRITICAL FIXES FOR PRODUCTION ---
+    tls: {
+        // Do not fail on invalid certs (common in some container envs)
+        rejectUnauthorized: false 
+    },
+    // Force the transporter to use IPv4. 
+    // This fixes the "hanging" issue if your container doesn't support IPv6.
+    family: 4, 
+    // Add logging so you can see the handshake details in your Railway logs
+    logger: true, 
+    debug: true 
 });
 
 // Helper for the "Glass" Card Style derived from your CSS
