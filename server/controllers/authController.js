@@ -71,7 +71,7 @@ const login = async (req, res) => {
         if (!user.email_verified) {
             const expires_at = new Date(Date.now() + 5 * 60 * 1000); // 5 min expiry
             const { otp } = await createEmailVerification(user.id, expires_at);
-            await sendOtpEmail(user.id, otp);
+            //await sendOtpEmail(user.id, otp);
             console.log(otp)
 
             return res.status(403).json({ 
