@@ -34,8 +34,7 @@ const generateOtp = async (req, res) => {
         const expires_at = new Date(Date.now() + 5 * 60 * 1000); // 5 min expiry
         const { otp } = await createEmailVerification(user_id, expires_at);
 
-        //await sendOtpEmail(user_id, otp); // Pass user's ID
-        console.log(otp); // For testing purposes, should be removed in production
+        await sendOtpEmail(user_id, otp);
 
         return res.status(201).json({ 
             status: "success", 
