@@ -105,15 +105,35 @@ const getUserById = async (id) => {
 
     return result.rows[0];
 }
-const getUserByUsername = async (username) => {
-    const userChecked = await pool.query(
-        `SELECT id, username, email, display_name, role, avatar_url, bio, email_verified, is_deleted, created_at
-         FROM core.users
-         WHERE username = $1 AND is_deleted = false`,
-        [username]
+const getUserByUsername = async (username, viewerId) => {
+    const { rows } = await pool.query(
+        `SELECT 
+            u.id, 
+            u.username, 
+            u.email, 
+            u.firstname, 
+            u.lastname, 
+            u.display_name AS "displayName", 
+            u.email_verified, 
+            u.role, 
+            u.avatar_url AS "profilePicture", 
+            u.bio, 
+            u.created_at AS "createdAt",
+            u.is_deleted,
+            -- Check if viewer follows this user
+            EXISTS (
+                SELECT 1 FROM social.follows 
+                WHERE follower_id = $1 AND following_id = u.id
+            ) AS "isFollowing",
+            -- Count people following this user
+            (SELECT COUNT(*) FROM social.follows WHERE following_id = u.id) AS "followerCount",
+            -- Count people this user follows
+            (SELECT COUNT(*) FROM social.follows WHERE follower_id = u.id) AS "followingCount"
+         FROM core.users u
+         WHERE u.username = $2`,
+        [viewerId, username]
     );
-
-    return userChecked.rows[0];
+    return rows[0];
 };
 
 

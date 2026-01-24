@@ -34,11 +34,12 @@ const generateOtp = async (req, res) => {
         const expires_at = new Date(Date.now() + 5 * 60 * 1000); // 5 min expiry
         const { otp } = await createEmailVerification(user_id, expires_at);
 
-        await sendOtpEmail(user_id, otp);
+        //await sendOtpEmail(user_id, otp);
+        console.log(otp);
 
         return res.status(201).json({ 
             status: "success", 
-            data: { expiresAt: expires_at.toISOString(), otp: otp },
+            data: { expiresAt: expires_at.toISOString() },
             meta: {
                 timestamp: new Date().toISOString(),
                 requestId: req.id

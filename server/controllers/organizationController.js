@@ -22,12 +22,14 @@ const createOrganization = async (req, res) => {
     const { user } = req;
     if (!user?.valid) {
         return res.status(401).json({
-            success: false,
+            status: "error",
             message: "Not authorized",
-            data: null,
             error: {
                 code: "UNAUTHORIZED",
                 details: "You must be logged in to create a new organization"
+            },
+            meta: {
+                timestamp: new Date().toISOString()
             }
         });
     }
@@ -35,12 +37,14 @@ const createOrganization = async (req, res) => {
     const { name } = req.body;
     if (!name || typeof name !== "string" || name.trim().length === 0) {
         return res.status(400).json({
-            success: false,
+            status: "error",
             message: "Invalid organization name",
-            data: null,
             error: {
                 code: "INVALID_INPUT",
                 details: "Organization name is required and must be a non-empty string"
+            },
+            meta: {
+                timestamp: new Date().toISOString()
             }
         });
     }
@@ -53,31 +57,37 @@ const createOrganization = async (req, res) => {
         });
         await addMember({ org_id: organization.id, user_id: user.id, role: 'owner' });
         return res.status(201).json({
-            success: true,
+            status: "success",
             message: "Organization created successfully",
             data: organization,
-            error: null
+            meta: {
+                timestamp: new Date().toISOString()
+            }
         });
     } catch (error) {
         console.error("Error creating organization:", error);
         if (error.code === "23505") { // unique_violation
             return res.status(409).json({
-                success: false,
+                status: "error",
                 message: "Organization name already exists",
-                data: null,
                 error: {
                     code: "DUPLICATE_NAME",
                     details: "The provided name is already in use by another organization"
+                },
+                meta: {
+                    timestamp: new Date().toISOString()
                 }
             });
         }
         return res.status(500).json({
-            success: false,
+            status: "error",
             message: "Internal server error",
-            data: null,
             error: {
                 code: "INTERNAL_ERROR",
                 details: error.message
+            },
+            meta: {
+                timestamp: new Date().toISOString()
             }
         });
     }
@@ -86,10 +96,12 @@ const createOrganization = async (req, res) => {
 // ==== Health Check ====
 const healthCheck = (req, res) => {
     return res.status(200).json({
-        success: true,
+        status: true,
         message: 'Organization router running',
         data: null,
-        error: null,
+        meta: {
+            timestamp: new Date().toISOString()
+        }
     });
 };
 
@@ -99,12 +111,14 @@ const registerOrganization = async (req, res) => {
 
     if (!user?.valid) {
         return res.status(401).json({
-            success: false,
+            status: "error",
             message: "Not authorized",
-            data: null,
             error: {
                 code: "UNAUTHORIZED",
                 details: "You must be logged in to create a new organization"
+            },
+            meta: {
+                timestamp: new Date().toISOString()
             }
         });
     }
@@ -113,24 +127,28 @@ const registerOrganization = async (req, res) => {
 
     if (!name || typeof name !== "string" || name.trim().length === 0) {
         return res.status(400).json({
-            success: false,
+            status: "error",
             message: "Invalid organization name",
-            data: null,
             error: {
                 code: "INVALID_INPUT",
                 details: "Organization name is required and must be a non-empty string"
+            },
+            meta: {
+                timestamp: new Date().toISOString()
             }
         });
     }
 
     if (!slug || slug.trim().length === 0) {
         return res.status(400).json({
-            success: false,
+            status: "error",
             message: "Invalid organization name",
-            data: null,
             error: {
                 code: "INVALID_INPUT",
                 details: "Organization name is required and must be a non-empty string"
+            },
+            meta: {
+                timestamp: new Date().toISOString()
             }
         });
     }
@@ -148,33 +166,39 @@ const registerOrganization = async (req, res) => {
         const role = 'owner';
         addMember({ org_id, user_id, role });
         return res.status(201).json({
-            success: true,
+            status: "success",
             message: "Organization created successfully",
             data: { organization },
-            error: null
+            meta: {
+                timestamp: new Date().toISOString()
+            }
         });
     } catch (error) {
         console.error("Error creating organization:", error);
 
         if (error.code === "23505") {
             return res.status(409).json({
-                success: false,
+                status: "error",
                 message: "Organization slug already exists",
-                data: null,
                 error: {
                     code: "DUPLICATE_SLUG",
                     details: "The provided slug is already in use by another organization"
+                },
+                meta: {
+                    timestamp: new Date().toISOString()
                 }
             });
         }
 
         return res.status(500).json({
-            success: false,
+            status: "error",
             message: "Internal server error",
-            data: null,
             error: {
                 code: "INTERNAL_ERROR",
                 details: error.message
+            },
+            meta: {
+                timestamp: new Date().toISOString()
             }
         });
     }
@@ -195,44 +219,52 @@ const editOrganization = async (req, res) => {
 
         if (!updatedOrganization) {
             return res.status(404).json({
-                success: false,
+                status: "error",
                 message: "Organization not found or not owned by user",
-                data: null,
                 error: {
                     code: "NOT_FOUND",
                     details: "No organization found for the provided ID and user"
+                },
+                meta: {
+                    timestamp: new Date().toISOString()
                 }
             });
         }
 
         return res.status(200).json({
-            success: true,
+            status: "success",
             message: "Organization updated successfully",
             data: { organization: updatedOrganization },
-            error: null
+            meta: {
+                timestamp: new Date().toISOString()
+            }
         });
     } catch (err) {
         console.error("Error updating organization:", err);
 
         if (err.code === "23505") {
             return res.status(409).json({
-                success: false,
+                status: "error",
                 message: "Slug already in use",
-                data: null,
                 error: {
                     code: "DUPLICATE_SLUG",
                     details: "Another organization already uses this slug"
+                },
+                meta: {
+                    timestamp: new Date().toISOString()
                 }
             });
         }
 
         return res.status(500).json({
-            success: false,
+            status: "error",
             message: "Internal server error",
-            data: null,
             error: {
                 code: "INTERNAL_ERROR",
                 details: err.message
+            },
+            meta: {
+                timestamp: new Date().toISOString()
             }
         });
     }
@@ -247,31 +279,37 @@ const deleteOrganization = async (req, res) => {
 
         if (!deletedOrganization) {
             return res.status(404).json({
-                success: false,
+                status: "error",
                 message: "Organization not found or not owned by you",
-                data: null,
                 error: {
                     code: "NOT_FOUND",
                     details: "No organization found for the provided ID and user"
+                },
+                meta: {
+                    timestamp: new Date().toISOString()
                 }
             });
         }
 
         return res.status(200).json({
-            success: true,
+            status: "success",
             message: "Organization deleted successfully",
             data: { organization: deletedOrganization },
-            error: null
+            meta: {
+                timestamp: new Date().toISOString()
+            }
         });
     } catch (error) {
         console.error("Error deleting organization:", error);
         return res.status(500).json({
-            success: false,
+            status: "error",
             message: "Internal server error",
-            data: null,
             error: {
                 code: "INTERNAL_ERROR",
                 details: error.message
+            },
+            meta: {
+                timestamp: new Date().toISOString()
             }
         });
     }
@@ -285,20 +323,24 @@ const verifyOrganizationController = async (req, res) => {
         const verifiedOrganization = await verifyOrganization(organization.id, user.id);
 
         return res.status(200).json({
-            success: true,
+            status: "success",
             message: "Organization verified successfully",
             data: { organization: verifiedOrganization },
-            error: null
+            meta: {
+                timestamp: new Date().toISOString()
+            }
         });
     } catch (error) {
         console.error("Error verifying organization:", error);
         return res.status(500).json({
-            success: false,
+            status: "error",
             message: "Internal server error",
-            data: null,
             error: {
                 code: "INTERNAL_ERROR",
                 details: error.message
+            },
+            meta: {
+                timestamp: new Date().toISOString()
             }
         });
     }
@@ -314,12 +356,14 @@ const getOrganizationBySlugController = async (req, res) => {
 
         if (!org) {
             return res.status(404).json({
-                success: false,
+                status: "error",
                 message: "Organization not found",
-                data: null,
                 error: {
                     code: "NOT_FOUND",
                     details: "No organization exists with the provided slug"
+                },
+                meta: {
+                    timestamp: new Date().toISOString()
                 }
             });
         }
@@ -342,21 +386,25 @@ const getOrganizationBySlugController = async (req, res) => {
             };
 
         return res.status(200).json({
-            success: true,
+            status: "success",
             message: "Organization retrieved successfully",
             data: { organization: responseData },
-            error: null
+            meta: {
+                timestamp: new Date().toISOString()
+            }
         });
 
     } catch (error) {
         console.error("Error fetching organization by slug:", error);
         return res.status(500).json({
-            success: false,
+            status: "error",
             message: "Internal server error",
-            data: null,
             error: {
                 code: "INTERNAL_ERROR",
                 details: error.message
+            },
+            meta: {
+                timestamp: new Date().toISOString()
             }
         });
     }
@@ -369,47 +417,57 @@ const joinOrganizationController = async (req, res) => {
 
     if (!user?.valid) {
         return res.status(401).json({
-            success: false,
+            status: "error",
             message: "Not authorized",
-            data: null,
-            error: { code: "UNAUTHORIZED", details: "Login required" }
+            error: { code: "UNAUTHORIZED", details: "Login required" },
+            meta: {
+                timestamp: new Date().toISOString()
+            }
         });
     }
     const org = await getOrganizationBySlug(slug);
     if (!org) {
         return res.status(404).json({
-            success: false,
+            status: "error",
             message: "Organization not found",
-            data: null,
-            error: { code: "NOT_FOUND", details: "No organization found" }
+            error: { code: "NOT_FOUND", details: "No organization found" },
+            meta: {
+                timestamp: new Date().toISOString()
+            }
         });
     }
 
     const existingMember = await getMember(org.id, user.id);
     if (existingMember) {
         return res.status(409).json({
-            success: false,
+            status: "error",
             message: "You are already a member of this organization.",
-            data: null,
-            error: { code: "CONFLICT", details: "User is already a member" }
+            error: { code: "CONFLICT", details: "User is already a member" },
+            meta: {
+                timestamp: new Date().toISOString()
+            }
         });
     }
 
     try {
         const member = await addMember({ org_id: org.id, user_id: user.id });
         return res.status(201).json({
-            success: true,
+            status: "success",
             message: "Successfully joined the organization",
             data: { member },
-            error: null
+            meta: {
+                timestamp: new Date().toISOString()
+            }
         });
     } catch (err) {
         console.error(err);
         return res.status(500).json({
-            success: false,
+            status: "error",
             message: "Internal server error",
-            data: null,
-            error: { code: "INTERNAL_ERROR", details: err.message }
+            error: { code: "INTERNAL_ERROR", details: err.message },
+            meta: {
+                timestamp: new Date().toISOString()
+            }
         });
     }
 };
@@ -422,36 +480,46 @@ const addMemberByAdminController = async (req, res) => {
     const targetUser = await getUserByUsername(username);
     if (!targetUser) {
         return res.status(404).json({
-            success: false,
+            status: "error",
             message: "User to add not found.",
-            error: "NOT_FOUND"
+            error: { code: "NOT_FOUND", details: "User to add not found." },
+            meta: {
+                timestamp: new Date().toISOString()
+            }
         });
     }
 
     const existingMember = await getMember(organization.id, targetUser.id);
     if (existingMember) {
         return res.status(409).json({
-            success: false,
+            status: "error",
             message: "User is already a member of this organization.",
-            error: "CONFLICT"
+            error: { code: "CONFLICT", details: "User is already a member of this organization." },
+            meta: {
+                timestamp: new Date().toISOString()
+            }
         });
     }
 
     try {
         const member = await addMember({ org_id: organization.id, user_id: targetUser.id, role: role || 'member' });
         return res.status(201).json({
-            success: true,
+            status: "success",
             message: "Member added successfully",
             data: { member },
-            error: null
+            meta: {
+                timestamp: new Date().toISOString()
+            }
         });
     } catch (err) {
         console.error(err);
         return res.status(500).json({
-            success: false,
+            status: "error",
             message: "Internal server error",
-            data: null,
-            error: { code: "INTERNAL_ERROR", details: err.message }
+            error: { code: "INTERNAL_ERROR", details: err.message },
+            meta: {
+                timestamp: new Date().toISOString()
+            }
         });
     }
 };
@@ -465,10 +533,12 @@ const updateMemberRoleController = async (req, res) => {
     // Step 1: Check if logged in (redundant with middleware, but good for safety)
     if (!user?.valid) {
         return res.status(401).json({
-            success: false,
+            status: "error",
             message: "Not authorized",
-            data: null,
-            error: { code: "UNAUTHORIZED", details: "Login required" }
+            error: { code: "UNAUTHORIZED", details: "Login required" },
+            meta: {
+                timestamp: new Date().toISOString()
+            }
         });
     }
 
@@ -478,10 +548,12 @@ const updateMemberRoleController = async (req, res) => {
 
     if (!targetUser || !org) {
         return res.status(404).json({
-            success: false,
+            status: "error",
             message: "User or organization not found",
-            data: null,
-            error: { code: "NOT_FOUND", details: "Invalid username or organization slug" }
+            error: { code: "NOT_FOUND", details: "Invalid username or organization slug" },
+            meta: {
+                timestamp: new Date().toISOString()
+            }
         });
     }
 
@@ -492,10 +564,12 @@ const updateMemberRoleController = async (req, res) => {
     const currentUserMember = await getMember(org_id, user.id);
     if (!currentUserMember) {
         return res.status(403).json({
-            success: false,
+            status: "error",
             message: "Forbidden",
-            data: null,
-            error: { code: "FORBIDDEN", details: "You are not a member of this organization" }
+            error: { code: "FORBIDDEN", details: "You are not a member of this organization" },
+            meta: {
+                timestamp: new Date().toISOString()
+            }
         });
     }
 
@@ -503,10 +577,12 @@ const updateMemberRoleController = async (req, res) => {
     const targetMember = await getMember(org_id, target_user_id);
     if (!targetMember) {
         return res.status(404).json({
-            success: false,
+            status: "error",
             message: "Member not found",
-            data: null,
-            error: { code: "NOT_FOUND", details: "Target user is not a member of this org" }
+            error: { code: "NOT_FOUND", details: "Target user is not a member of this org" },
+            meta: {
+                timestamp: new Date().toISOString()
+            }
         });
     }
 
@@ -516,10 +592,12 @@ const updateMemberRoleController = async (req, res) => {
     // Step 5: Prevent self-promotion to owner
     if (target_user_id === user.id && role === 'owner') {
         return res.status(403).json({
-            success: false,
+            status: "error",
             message: "Forbidden",
-            data: null,
-            error: { code: "FORBIDDEN", details: "You cannot promote yourself to owner" }
+            error: { code: "FORBIDDEN", details: "You cannot promote yourself to owner" },
+            meta: {
+                timestamp: new Date().toISOString()
+            }
         });
     }
 
@@ -528,35 +606,43 @@ const updateMemberRoleController = async (req, res) => {
         if (actorRole === 'owner') {
             if (targetRole === 'owner') {
                 return res.status(403).json({
-                    success: false,
+                    status: "error",
                     message: "Forbidden",
-                    data: null,
-                    error: { code: "FORBIDDEN", details: "Owners cannot manage other owners" }
+                    error: { code: "FORBIDDEN", details: "Owners cannot manage other owners" },
+                    meta: {
+                        timestamp: new Date().toISOString()
+                    }
                 });
             }
         } else if (actorRole === 'admin') {
             if (['owner', 'admin'].includes(targetRole)) {
                 return res.status(403).json({
-                    success: false,
+                    status: "error",
                     message: "Forbidden",
-                    data: null,
-                    error: { code: "FORBIDDEN", details: "Admins cannot manage owners or other admins" }
+                    error: { code: "FORBIDDEN", details: "Admins cannot manage owners or other admins" },
+                    meta: {
+                        timestamp: new Date().toISOString()
+                    }
                 });
             }
             if (role === 'owner') {
                 return res.status(403).json({
-                    success: false,
+                    status: "error",
                     message: "Forbidden",
-                    data: null,
-                    error: { code: "FORBIDDEN", details: "Admins cannot promote anyone to owner" }
+                    error: { code: "FORBIDDEN", details: "Admins cannot promote anyone to owner" },
+                    meta: {
+                        timestamp: new Date().toISOString()
+                    }
                 });
             }
         } else {
             return res.status(403).json({
-                success: false,
+                status: "error",
                 message: "Forbidden",
-                data: null,
-                error: { code: "FORBIDDEN", details: "Only admins or owners can manage member roles" }
+                error: { code: "FORBIDDEN", details: "Only admins or owners can manage member roles" },
+                meta: {
+                    timestamp: new Date().toISOString()
+                }
             });
         }
     }
@@ -565,10 +651,12 @@ const updateMemberRoleController = async (req, res) => {
     const validRoles = ['member','moderator','developer','finance','admin','owner'];
     if (!validRoles.includes(role)) {
         return res.status(400).json({
-            success: false,
+            status: "error",
             message: "Invalid role",
-            data: null,
-            error: { code: "INVALID_ROLE", details: "Role must be one of " + validRoles.join(", ") }
+            error: { code: "INVALID_ROLE", details: "Role must be one of " + validRoles.join(", ") },
+            meta: {
+                timestamp: new Date().toISOString()
+            }
         });
     }
 
@@ -576,18 +664,22 @@ const updateMemberRoleController = async (req, res) => {
     try {
         const updatedMember = await updateMemberRole(org_id, target_user_id, role);
         return res.status(200).json({
-            success: true,
+            status: "success",
             message: "Member role updated successfully",
             data: { member: updatedMember },
-            error: null
+            meta: {
+                timestamp: new Date().toISOString()
+            }
         });
     } catch (err) {
         console.error(err);
         return res.status(500).json({
-            success: false,
+            status: "error",
             message: "Internal server error",
-            data: null,
-            error: { code: "INTERNAL_ERROR", details: err.message }
+            error: { code: "INTERNAL_ERROR", details: err.message },
+            meta: {
+                timestamp: new Date().toISOString()
+            }
         });
     }
 };
@@ -601,7 +693,14 @@ const removeMemberController = async (req, res) => {
     const org = await getOrganizationBySlug(slug);
 
     if (!targetUser || !org) {
-        return res.status(404).json({ notFound: "User or organization not found" });
+        return res.status(404).json({
+            status: "error",
+            message: "User or organization not found",
+            error: { code: "NOT_FOUND", details: "User or organization not found" },
+            meta: {
+                timestamp: new Date().toISOString()
+            }
+        });
     }
 
     const org_id = org.id;
@@ -611,7 +710,14 @@ const removeMemberController = async (req, res) => {
     const targetMember = await getMember(org_id, target_user_id);
 
     if (!targetMember) {
-        return res.status(404).json({ notFound: "Target user is not a member" });
+        return res.status(404).json({
+            status: "error",
+            message: "Target user is not a member",
+            error: { code: "NOT_FOUND", details: "Target user is not a member" },
+            meta: {
+                timestamp: new Date().toISOString()
+            }
+        });
     }
 
     const actorRole = currentUserMember ? currentUserMember.role : null;
@@ -621,33 +727,87 @@ const removeMemberController = async (req, res) => {
     if (target_user_id === user.id) {
         if (targetRole === 'owner') {
             return res.status(403).json({
-                forbidden: "Owner cannot leave the organization. Please transfer ownership first."
+                status: "error",
+                message: "Forbidden",
+                error: { code: "FORBIDDEN", details: "Owner cannot leave the organization. Please transfer ownership first." },
+                meta: {
+                    timestamp: new Date().toISOString()
+                }
             });
         }
         try {
             await removeMember(org_id, user.id);
-            return res.status(200).json({ success: "Successfully left the organization" });
+            return res.status(200).json({
+                status: "success",
+                message: "Successfully left the organization",
+                data: null,
+                meta: {
+                    timestamp: new Date().toISOString()
+                }
+            });
         } catch (err) {
-            return res.status(500).json({ error: "Internal server error" });
+            return res.status(500).json({
+                status: "error",
+                message: "Internal server error",
+                error: { code: "INTERNAL_ERROR", details: err.message },
+                meta: {
+                    timestamp: new Date().toISOString()
+                }
+            });
         }
     }
 
     // Case 2: User is removing another member (requires privileges)
     if (!['owner', 'admin'].includes(actorRole)) {
-        return res.status(403).json({ forbidden: "You do not have permission to remove members" });
+        return res.status(403).json({
+            status: "error",
+            message: "Forbidden",
+            error: { code: "FORBIDDEN", details: "You do not have permission to remove members" },
+            meta: {
+                timestamp: new Date().toISOString()
+            }
+        });
     }
     if (actorRole === 'admin' && ['owner', 'admin'].includes(targetRole)) {
-        return res.status(403).json({ forbidden: "Admins cannot remove other admins or owners" });
+        return res.status(403).json({
+            status: "error",
+            message: "Forbidden",
+            error: { code: "FORBIDDEN", details: "Admins cannot remove other admins or owners" },
+            meta: {
+                timestamp: new Date().toISOString()
+            }
+        });
     }
     if (actorRole === 'owner' && targetRole === 'owner') {
-        return res.status(403).json({ forbidden: "Owners cannot remove other owners" });
+        return res.status(403).json({
+            status: "error",
+            message: "Forbidden",
+            error: { code: "FORBIDDEN", details: "Owners cannot remove other owners" },
+            meta: {
+                timestamp: new Date().toISOString()
+            }
+        });
     }
 
     try {
         await removeMember(org_id, target_user_id);
-        return res.status(200).json({ success: "Member removed successfully" });
+        return res.status(200).json({
+            status: "success",
+            message: "Member removed successfully",
+            data: null,
+            meta: {
+                timestamp: new Date().toISOString()
+            }
+        });
     } catch (err) {
-        return res.status(500).json({ error: "Internal server error" });
+        return res.status(500).json({
+            status: "error",
+            message: "Internal server error",
+            error: { code: "INTERNAL_ERROR", details: err.message },
+            meta: {
+                timestamp: new Date().toISOString()
+            }
+        });
     }
 };
 
@@ -661,19 +821,23 @@ const getMemberController = async (req, res) => {
 
     if (!org) {
         return res.status(404).json({
-            success: false,
+            status: "error",
             message: "Organization not found",
-            data: null,
-            error: { code: "NOT_FOUND", details: "No organization found" }
+            error: { code: "NOT_FOUND", details: "No organization found" },
+            meta: {
+                timestamp: new Date().toISOString()
+            }
         });
     }
 
     if (!user) {
         return res.status(404).json({
-            success: false,
+            status: "error",
             message: "User not found",
-            data: null,
-            error: { code: "NOT_FOUND", details: "No user found" }
+            error: { code: "NOT_FOUND", details: "No user found" },
+            meta: {
+                timestamp: new Date().toISOString()
+            }
         });
     }
 
@@ -681,26 +845,32 @@ const getMemberController = async (req, res) => {
         const member = await getMember(org.id, user.id);
         if (!member) {
             return res.status(404).json({
-                success: false,
+                status: "error",
                 message: "Member not found",
-                data: null,
-                error: { code: "NOT_FOUND", details: "No member found" }
+                error: { code: "NOT_FOUND", details: "No member found" },
+                meta: {
+                    timestamp: new Date().toISOString()
+                }
             });
         }
 
         return res.status(200).json({
-            success: true,
+            status: "success",
             message: "Member retrieved",
             data: { member },
-            error: null
+            meta: {
+                timestamp: new Date().toISOString()
+            }
         });
     } catch (err) {
         console.error(err);
         return res.status(500).json({
-            success: false,
+            status: "error",
             message: "Internal server error",
-            data: null,
-            error: { code: "INTERNAL_ERROR", details: err.message }
+            error: { code: "INTERNAL_ERROR", details: err.message },
+            meta: {
+                timestamp: new Date().toISOString()
+            }
         });
     }
 };
@@ -711,46 +881,58 @@ const getAllMembersController = async (req, res) => {
     const { slug } = req.params;
     if (!user?.valid) {
         return res.status(401).json({
-            success: false,
+            status: "error",
             message: "Not authorized",
-            data: null,
-            error: { code: "UNAUTHORIZED", details: "Login required" }
+            error: { code: "UNAUTHORIZED", details: "Login required" },
+            meta: {
+                timestamp: new Date().toISOString()
+            }
         });
     }
 
     const org = await getOrganizationBySlug(slug);
     if (!org) {
         return res.status(404).json({
-            success: false,
+            status: "error",
             message: "Organization not found",
-            error: 'NOT_FOUND'
+            error: { code: "NOT_FOUND", details: "No organization found with that slug." },
+            meta: {
+                timestamp: new Date().toISOString()
+            }
         });
     }
 
     const member = await getMember(org.id, user.id);
     if (!member) {
          return res.status(403).json({
-            success: false,
+            status: "error",
             message: 'You must be a member to view the member list.',
-            error: 'FORBIDDEN'
+            error: { code: "FORBIDDEN", details: "You are not a member of this organization." },
+            meta: {
+                timestamp: new Date().toISOString()
+            }
         });
     }
 
     try {
         const members = await getAllMembers(org.id);
         return res.status(200).json({
-            success: true,
+            status: "success",
             message: "Members retrieved",
             data: { members },
-            error: null
+            meta: {
+                timestamp: new Date().toISOString()
+            }
         });
     } catch (err) {
         console.error(err);
         return res.status(500).json({
-            success: false,
+            status: "error",
             message: "Internal server error",
-            data: null,
-            error: { code: "INTERNAL_ERROR", details: err.message }
+            error: { code: "INTERNAL_ERROR", details: err.message },
+            meta: {
+                timestamp: new Date().toISOString()
+            }
         });
     }
 };
@@ -760,20 +942,24 @@ const getUserOrganizationsControl = async (req, res) => {
         try {
             const organizations = await getUserOrganizations(userId);
             return res.status(200).json({
-                success: true,
+                status: "success",
                 message: "Organizations retrieved successfully",
                 data: organizations,
-                error: null
+                meta: {
+                    timestamp: new Date().toISOString()
+                }
             });
         } catch (error) {
             console.error("Error fetching user organizations:", error);
             return res.status(500).json({
-                success: false,
+                status: "error",
                 message: "Internal server error",
-                data: null,
                 error: {
                     code: "INTERNAL_ERROR",
                     details: error.message
+                },
+                meta: {
+                    timestamp: new Date().toISOString()
                 }
             });
         }

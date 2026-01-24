@@ -2353,5 +2353,198 @@ Updates a specific game version. Only authorized Admin/Owner can perform this.
 * **Error Responses**:
   401 Not logged in, 400 Missing version ID, 403 Not authorized, 404 Version not found, 500 Server error
 
+---
+
+### Get Popular Games
+
+**Purpose**:
+Retrieves a list of games sorted by popularity.
+
+**Authentication Required**: No
+
+**Request**:
+
+*   **Method**: `GET`
+*   **URL**: `/games/popular`
+*   **Headers**: None
+*   **Body**: None
+
+**Response**:
+
+1.  **Success (200 OK)**
+    ```json
+    {
+        "status": "success",
+        "message": "Popular games retrieved",
+        "data": [
+            {
+                "id": "uuid",
+                "title": "string",
+                "slug": "string",
+                "cover_image_url": "string",
+                "popularity_score": "number"
+                // ... other game fields
+            }
+        ],
+        "meta": {
+            "timestamp": "ISO 8601 date string"
+        }
+    }
+    ```
+2.  **Server Error** (500 Internal Server Error)
+    ```json
+    {
+        "status": "error",
+        "message": "Server Error",
+        "error": { "code": 500, "details": "Error message" }
+    }
+    ```
 
 ---
+
+### Get New Games
+
+**Purpose**:
+Retrieves a list of the most recently uploaded games.
+
+**Authentication Required**: No
+
+**Request**:
+
+*   **Method**: `GET`
+*   **URL**: `/games/new`
+*   **Headers**: None
+*   **Body**: None
+
+**Response**:
+
+1.  **Success (200 OK)**
+    ```json
+    {
+        "status": "success",
+        "message": "New games retrieved",
+        "data": [
+            {
+                "id": "uuid",
+                "title": "string",
+                "slug": "string",
+                "cover_image_url": "string",
+                "release_date": "ISO 8601 date string"
+                // ... other game fields
+            }
+        ],
+        "meta": {
+            "timestamp": "ISO 8601 date string"
+        }
+    }
+    ```
+2.  **Server Error** (500 Internal Server Error)
+    ```json
+    {
+        "status": "error",
+        "message": "Server Error",
+        "error": { "code": 500, "details": "Error message" }
+    }
+    ```
+
+---
+
+### Get Top-Rated Games
+
+**Purpose**:
+Retrieves a list of games sorted by their average rating.
+
+**Authentication Required**: No
+
+**Request**:
+
+*   **Method**: `GET`
+*   **URL**: `/games/top-rated`
+*   **Headers**: None
+*   **Body**: None
+
+**Response**:
+
+1.  **Success (200 OK)**
+    ```json
+    {
+        "status": "success",
+        "message": "Top-rated games retrieved",
+        "data": [
+            {
+                "id": "uuid",
+                "title": "string",
+                "slug": "string",
+                "cover_image_url": "string",
+                "average_rating": "number"
+                // ... other game fields
+            }
+        ],
+        "meta": {
+            "timestamp": "ISO 8601 date string"
+        }
+    }
+    ```
+2.  **Server Error** (500 Internal Server Error)
+    ```json
+    {
+        "status": "error",
+        "message": "Server Error",
+        "error": { "code": 500, "details": "Error message" }
+    }
+    ```
+
+---
+
+### Get Games by Tag
+
+**Purpose**:
+Retrieves a list of games associated with a specific tag.
+
+**Authentication Required**: No
+
+**Request**:
+
+*   **Method**: `GET`
+*   **URL**: `/games/tag/:tag_id`
+*   **Headers**: None
+*   **URL Parameter**: `:tag_id` (The ID of the tag)
+*   **Body**: None
+
+**Response**:
+
+1.  **Success (200 OK)**
+    ```json
+    {
+        "status": "success",
+        "message": "Games with tag [tag_id] retrieved",
+        "data": [
+            {
+                "id": "uuid",
+                "title": "string",
+                "slug": "string",
+                "cover_image_url": "string"
+                // ... other game fields
+            }
+        ],
+        "meta": {
+            "timestamp": "ISO 8601 date string"
+        }
+    }
+    ```
+2.  **Client Error** (404 Not Found)
+    ```json
+    {
+        "status": "error",
+        "message": "Tag not found",
+        "error": { "code": 404, "details": "No tag found with the provided ID." }
+    }
+    ```
+3.  **Server Error** (500 Internal Server Error)
+    ```json
+    {
+        "status": "error",
+        "message": "Server Error",
+        "error": { "code": 500, "details": "Error message" }
+    }
+    ```

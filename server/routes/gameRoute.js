@@ -20,7 +20,12 @@ const {
     createGameReview,
     getGameReviews,
     updateGameReview,
-    softDeleteGameReview
+    softDeleteGameReview,
+    getPopularGames,
+    getNewGames,
+    getTopRatedGames,
+    getGamesByTag,
+    getPlayerLibrary
 } = require('../controllers/gameController');
 
 const { successResponse } = require('../utils/responseHandler');
@@ -34,6 +39,8 @@ router.get('/health', (req, res) => {
 
 // Middleware for all subsequent routes
 router.use(authenticateMiddleware);
+
+router.get('/library', getPlayerLibrary)
 
 // --- Game Version Routes ---
 router.post('/versions', isVerifiedMiddleware, createGameVersion);
@@ -72,5 +79,9 @@ router.put('/:id', isVerifiedMiddleware, updateGame);
 router.get('/org/:org_slug', getOrganizationGames);
 router.get('/:org_slug/:game_slug', getGame);
 router.delete('/:id', isVerifiedMiddleware, deleteGame);
+router.get('/popular', getPopularGames);
+router.get('/new', getNewGames);
+router.get('/top-rated', getTopRatedGames);
+router.get('/tag/:tag_id', getGamesByTag);
 
 module.exports = router;

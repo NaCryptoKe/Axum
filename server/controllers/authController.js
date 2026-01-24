@@ -78,7 +78,7 @@ const login = async (req, res) => {
                 status: "error", 
                 message: "Email not verified", 
                 error: { code: "EMAIL_NOT_VERIFIED", details: "Please verify your email address. An OTP has been sent." },
-                data: { userId: user.id, emailVerified: false }, 
+                data: { userId: user.id, email: user.email }, 
             });
         }
 
@@ -195,7 +195,8 @@ const register = async (req, res) => {
         // Generate and send OTP immediately after successful registration
         const expires_at = new Date(Date.now() + 5 * 60 * 1000); // 5 min expiry
         const { otp } = await createEmailVerification(newUser.id, expires_at);
-        await sendOtpEmail(newUser.id, otp);
+        //await sendOtpEmail(newUser.id, otp);
+        console.log(otp);
 
         return res.status(201).json({
             status: "success",

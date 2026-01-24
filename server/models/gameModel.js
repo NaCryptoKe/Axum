@@ -32,6 +32,25 @@ const createGame = async ({
     return rows[0];
 };
 
+const getLibraryByUserId = async (userId) => {
+    const { rows } = await pool.query(
+        `SELECT 
+            g.id, 
+            g.title, 
+            g.slug, 
+            g.cover_image_url AS "coverImage",
+            l.acquired_at AS "acquiredAt",
+            l.playtime_seconds AS "playtime",
+            l.last_played_at AS "lastPlayed"
+         FROM player_data.libraries l
+         JOIN game_catalog.games g ON l.game_id = g.id
+         WHERE l.user_id = $1
+         ORDER BY l.last_played_at DESC NULLS LAST`,
+        [userId]
+    );
+    return rows;
+};
+
 const getGameById = async (id) => {
     const { rows } = await pool.query(
         'SELECT * FROM game_catalog.games WHERE id = $1 AND is_deleted = false',
@@ -254,6 +273,75 @@ const softDeleteGameReview = async (id) => {
     return rows[0];
 };
 
+// Get Popular: Sorted by review_count as a proxy for engagement
+const getPopular = async (limit = 10) => {
+    const query = `
+        SELECT 
+            g.id, g.title, g.slug, g.cover_image_url, g.review_count,
+            o.slug AS "organizationSlug",
+            (CAST(g.rating_sum AS FLOAT) / NULLIF(g.review_count, 0)) AS "avgRating"
+        FROM game_catalog.games g
+        JOIN core.organizations o ON g.org_id = o.id
+        WHERE g.status = 'published' 
+          AND g.is_deleted = false
+        ORDER BY g.review_count DESC
+        LIMIT $1`;
+    const { rows } = await pool.query(query, [limit]);
+    return rows;
+};
+
+// Get New: Sorted by the release_date timestamp
+const getNew = async (limit = 10) => {
+    const query = `
+        SELECT 
+            g.id, g.title, g.slug, g.cover_image_url, g.release_date,
+            o.slug AS "organizationSlug"
+        FROM game_catalog.games g
+        JOIN core.organizations o ON g.org_id = o.id
+        WHERE g.status = 'published' 
+          AND g.is_deleted = false
+        ORDER BY g.release_date DESC NULLS LAST
+        LIMIT $1`;
+    const { rows } = await pool.query(query, [limit]);
+    return rows;
+};
+
+// Get Top Rated: Calculated using rating_sum divided by review_count
+const getTopRated = async (limit = 10) => {
+    const query = `
+        SELECT 
+            g.id, g.title, g.slug, g.cover_image_url,
+            o.slug AS "organizationSlug",
+            (CAST(g.rating_sum AS FLOAT) / NULLIF(g.review_count, 0)) AS "avgRating"
+        FROM game_catalog.games g
+        JOIN core.organizations o ON g.org_id = o.id
+        WHERE g.status = 'published' 
+          AND g.is_deleted = false 
+          AND g.review_count > 0
+        ORDER BY "avgRating" DESC
+        LIMIT $1`;
+    const { rows } = await pool.query(query, [limit]);
+    return rows;
+};
+
+// Get By Tag: Joining the junction table game_catalog.game_tags
+const getByTag = async (tagId, limit = 20) => {
+    const query = `
+        SELECT 
+            g.id, g.title, g.slug, g.cover_image_url,
+            o.slug AS "organizationSlug"
+        FROM game_catalog.games g
+        JOIN core.organizations o ON g.org_id = o.id
+        JOIN game_catalog.game_tags gt ON g.id = gt.game_id
+        WHERE gt.tag_id = $1 
+          AND g.status = 'published' 
+          AND g.is_deleted = false
+        ORDER BY g.created_at DESC
+        LIMIT $2`;
+    const { rows } = await pool.query(query, [tagId, limit]);
+    return rows;
+};
+
 module.exports = {
     createGame,
     getGameById,
@@ -268,6 +356,7 @@ module.exports = {
     createGameAsset,
     getAssetsByVersion,
     deleteGameAsset,
+    getLibraryByUserId,
     createTag,
     getAllTags,
     getTagsByGame,
@@ -278,5 +367,9 @@ module.exports = {
     getReviewById,
     getReviewByUserAndGame,
     updateGameReview,
-    softDeleteGameReview
+    softDeleteGameReview,
+    getPopular,
+    getNew,
+    getTopRated,
+    getByTag
 };

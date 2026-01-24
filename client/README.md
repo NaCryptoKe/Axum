@@ -1,16 +1,29 @@
-# React + Vite
+Since you have the core "Auth" loop and basic profile viewing working, the next logical steps involve moving from a **system that recognizes users** to a **system where users actually interact**.
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Here is a 3-stage plan to evolve your application:
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Stage 1: Security & Account Recovery (The "Must-Haves")
 
-## React Compiler
+Before adding big features, you need to handle the scenarios where things go wrong for the user.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+* **Forgot/Reset Password:** Implement the flow where a user can request a password reset link via email.
+* **Password Change:** A section inside the Profile/Settings page where an authenticated user can update their current password.
+* **Account Deletion:** A "Danger Zone" in settings to allow users to remove their data.
 
-## Expanding the ESLint configuration
+## Stage 2: Social & Connectivity (The "Core Loop")
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Right now, profiles are static. You need to make them dynamic so users have a reason to visit other pages.
+
+* **Follow/Unfollow System:** Allow users to follow each other. This creates a "Relationship" in your database.
+* **Public vs. Private Profiles:** Settings to toggle if anyone can see a profile or just followers.
+* **Global Search/Discovery:** A page to find users based on their interests, location, or display name.
+
+## Stage 3: Content & Engagement (The "Actual App")
+
+This is where you decide what your app *actually* is (a blog, a tool, a forum, etc.).
+
+* **The "Feed" or "Dashboard":** A central page that shows content or activity from the people a user follows.
+* **Post Creation:** Allow users to post text, images, or links to their profile.
+* **Real-time Notifications:** Alerts for when someone follows them, likes their post, or when their OTP is about to expire.

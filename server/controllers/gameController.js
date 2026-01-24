@@ -10,11 +10,11 @@ const createGame = async (req, res) => {
     const { org_id, title, slug, description, status, release_date, cover_image_url, metadata, tags_cache } = req.body;
 
     if (!user?.id) {
-        return res.status(401).json({ success: false, message: "Unauthorized", error: { code: 401, details: "User not authenticated." } });
+        return res.status(401).json({ status: "error", message: "Unauthorized", error: { code: 401, details: "User not authenticated." }, meta: { timestamp: new Date().toISOString() } });
     }
 
     if (!org_id || !title || !slug) {
-        return res.status(400).json({ success: false, message: "Missing required fields", error: { code: 400, details: "org_id, title, and slug are required." } });
+        return res.status(400).json({ status: "error", message: "Missing required fields", error: { code: 400, details: "org_id, title, and slug are required." }, meta: { timestamp: new Date().toISOString() } });
     }
 
     const baseSlug = slugify(slug);
@@ -24,7 +24,7 @@ const createGame = async (req, res) => {
 
     const member = await getMember(org_id, user.id);
     if (!member || !['admin', 'owner', 'developer'].includes(member.role)) {
-        return res.status(403).json({ success: false, message: "Forbidden", error: { code: 403, details: "User does not have permission to create a game in this organization." } });
+        return res.status(403).json({ status: "error", message: "Forbidden", error: { code: 403, details: "User does not have permission to create a game in this organization." }, meta: { timestamp: new Date().toISOString() } });
     }
 
     while (attempts < 5) {
@@ -48,13 +48,13 @@ const createGame = async (req, res) => {
                 attempts++;
             } else {
                 console.error("Create Game Error:", error);
-                return res.status(500).json({ success: false, message: "Server Error", error: { code: 500, details: error.message } });
+                return res.status(500).json({ status: "error", message: "Server Error", error: { code: 500, details: error.message }, meta: { timestamp: new Date().toISOString() } });
             }
         }
     }
 
     if (!newGame) {
-        return res.status(500).json({ success: false, message: "Failed to create a unique slug after multiple attempts." });
+        return res.status(500).json({ status: "error", message: "Failed to create a unique slug after multiple attempts.", error: { code: 500, details: "Failed to create a unique slug after multiple attempts." }, meta: { timestamp: new Date().toISOString() } });
     }
 
     if (newGame) {
@@ -89,25 +89,52 @@ const createGame = async (req, res) => {
         }
     }
 
-    return res.status(201).json({ success: true, message: "Game created successfully.", data: newGame, error: null });
+    return res.status(201).json({ status: "success", message: "Game created successfully.", data: newGame, meta: { timestamp: new Date().toISOString() } });
 };
 
+const getPlayerLibrary = async (req, res) => {
+    const { id: userId } = req.user;
+
+    try {
+        const library = await gameModel.getLibraryByUserId(userId);
+
+        return res.status(200).json({
+            status: "success",
+            message: "User library retrieved successfully",
+            data: library || [], // Return empty array if no games owned
+            meta: {
+                count: library ? library.length : 0,
+                timestamp: new Date().toISOString()
+            }
+        });
+    } catch (error) {
+        console.error("Get Library Error:", error);
+        return res.status(500).json({
+            status: "error",
+            message: "Failed to retrieve library",
+            error: {
+                code: 500,
+                details: error.message
+            }
+        });
+    }
+};
 const getGame = async (req, res) => {
     console.log('DEBUG')
     const { org_slug, game_slug } = req.params;
     try {
         const org = await orgModel.getOrganizationBySlug(org_slug);
         if (!org) {
-            return res.status(404).json({ success: false, message: "Not Found", error: { code: 404, details: "Organization not found." } });
+            return res.status(404).json({ status: "error", message: "Not Found", error: { code: 404, details: "Organization not found." }, meta: { timestamp: new Date().toISOString() } });
         }
         const game = await gameModel.getGameBySlug(org.id, game_slug);
         if (!game) {
-            return res.status(404).json({ success: false, message: "Not Found", error: { code: 404, details: "Game not found." } });
+            return res.status(404).json({ status: "error", message: "Not Found", error: { code: 404, details: "Game not found." }, meta: { timestamp: new Date().toISOString() } });
         }
-        return res.status(200).json({ success: true, message: "Game retrieved.", data: game, error: null });
+        return res.status(200).json({ status: "success", message: "Game retrieved.", data: game, meta: { timestamp: new Date().toISOString() } });
     } catch (error) {
         console.error("Get Game Error:", error);
-        return res.status(500).json({ success: false, message: "Server Error", error: { code: 500, details: error.message } });
+        return res.status(500).json({ status: "error", message: "Server Error", error: { code: 500, details: error.message }, meta: { timestamp: new Date().toISOString() } });
     }
 };
 
@@ -116,13 +143,13 @@ const getOrganizationGames = async (req, res) => {
     try {
         const org = await orgModel.getOrganizationBySlug(org_slug);
         if (!org) {
-            return res.status(404).json({ success: false, message: "Not Found", error: { code: 404, details: "Organization not found." } });
+            return res.status(404).json({ status: "error", message: "Not Found", error: { code: 404, details: "Organization not found." }, meta: { timestamp: new Date().toISOString() } });
         }
         const games = await gameModel.getGamesByOrg(org.id);
-        return res.status(200).json({ success: true, message: "Games for organization retrieved.", data: games, error: null });
+        return res.status(200).json({ status: "success", message: "Games for organization retrieved.", data: games, meta: { timestamp: new Date().toISOString() } });
     } catch (error) {
         console.error("Get Organization Games Error:", error);
-        return res.status(500).json({ success: false, message: "Server Error", error: { code: 500, details: error.message } });
+        return res.status(500).json({ status: "error", message: "Server Error", error: { code: 500, details: error.message }, meta: { timestamp: new Date().toISOString() } });
     }
 };
 
@@ -132,7 +159,7 @@ const updateGame = async (req, res) => {
     const updates = req.body;
 
     if (!user?.id) {
-        return res.status(401).json({ success: false, message: "Unauthorized", error: { code: 401, details: "User not authenticated." } });
+        return res.status(401).json({ status: "error", message: "Unauthorized", error: { code: 401, details: "User not authenticated." }, meta: { timestamp: new Date().toISOString() } });
     }
 
     if (updates.slug) {
@@ -142,24 +169,24 @@ const updateGame = async (req, res) => {
     try {
         const game = await gameModel.getGameById(id);
         if (!game) {
-            return res.status(404).json({ success: false, message: "Not Found", error: { code: 404, details: "Game not found." } });
+            return res.status(404).json({ status: "error", message: "Not Found", error: { code: 404, details: "Game not found." }, meta: { timestamp: new Date().toISOString() } });
         }
 
         const org = await orgModel.getOrganizationById(game.org_id);
         if (!org) {
-            return res.status(404).json({ success: false, message: "Not Found", error: { code: 404, details: "Organization not found." } });
+            return res.status(404).json({ status: "error", message: "Not Found", error: { code: 404, details: "Organization not found." }, meta: { timestamp: new Date().toISOString() } });
         }
 
         const member = await getMember(game.org_id, user.id);
         if (!member || !['admin', 'owner', 'developer'].includes(member.role)) {
-            return res.status(403).json({ success: false, message: "Forbidden", error: { code: 403, details: "User does not have permission to update this game." } });
+            return res.status(403).json({ status: "error", message: "Forbidden", error: { code: 403, details: "User does not have permission to update this game." }, meta: { timestamp: new Date().toISOString() } });
         }
 
         const updatedGame = await gameModel.updateGame(id, { ...updates, updated_by: user.id });
-        return res.status(200).json({ success: true, message: "Game updated successfully.", data: updatedGame, error: null });
+        return res.status(200).json({ status: "success", message: "Game updated successfully.", data: updatedGame, meta: { timestamp: new Date().toISOString() } });
     } catch (error) {
         console.error("Update Game Error:", error);
-        return res.status(500).json({ success: false, message: "Server Error", error: { code: 500, details: error.message } });
+        return res.status(500).json({ status: "error", message: "Server Error", error: { code: 500, details: error.message }, meta: { timestamp: new Date().toISOString() } });
     }
 };
 
@@ -168,25 +195,25 @@ const deleteGame = async (req, res) => {
     const { id } = req.params;
 
     if (!user?.id) {
-        return res.status(401).json({ success: false, message: "Unauthorized", error: { code: 401, details: "User not authenticated." } });
+        return res.status(401).json({ status: "error", message: "Unauthorized", error: { code: 401, details: "User not authenticated." }, meta: { timestamp: new Date().toISOString() } });
     }
 
     try {
         const game = await gameModel.getGameById(id);
         if (!game) {
-            return res.status(404).json({ success: false, message: "Not Found", error: { code: 404, details: "Game not found." } });
+            return res.status(404).json({ status: "error", message: "Not Found", error: { code: 404, details: "Game not found." }, meta: { timestamp: new Date().toISOString() } });
         }
 
         const member = await getMember(game.org_id, user.id);
         if (!member || !['admin', 'owner'].includes(member.role)) {
-            return res.status(403).json({ success: false, message: "Forbidden", error: { code: 403, details: "User does not have permission to delete this game." } });
+            return res.status(403).json({ status: "error", message: "Forbidden", error: { code: 403, details: "User does not have permission to delete this game." }, meta: { timestamp: new Date().toISOString() } });
         }
 
         await gameModel.softDeleteGame(id);
-        return res.status(200).json({ success: true, message: "Game deleted successfully.", data: null, error: null });
+        return res.status(200).json({ status: "success", message: "Game deleted successfully.", data: null, meta: { timestamp: new Date().toISOString() } });
     } catch (error) {
         console.error("Delete Game Error:", error);
-        return res.status(500).json({ success: false, message: "Server Error", error: { code: 500, details: error.message } });
+        return res.status(500).json({ status: "error", message: "Server Error", error: { code: 500, details: error.message }, meta: { timestamp: new Date().toISOString() } });
     }
 };
 
@@ -195,27 +222,27 @@ const createGameVersion = async (req, res) => {
     const { game_id, version_name, changelog, status } = req.body;
 
     if (!user?.id) {
-        return res.status(401).json({ success: false, message: "Unauthorized" });
+        return res.status(401).json({ status: "error", message: "Unauthorized", error: { code: 401, details: "User not authenticated." }, meta: { timestamp: new Date().toISOString() } });
     }
     if (!game_id || !version_name) {
-        return res.status(400).json({ success: false, message: "Missing required fields" });
+        return res.status(400).json({ status: "error", message: "Missing required fields", error: { code: 400, details: "game_id and version_name are required." }, meta: { timestamp: new Date().toISOString() } });
     }
 
     try {
         const game = await gameModel.getGameById(game_id);
         if (!game) {
-            return res.status(404).json({ success: false, message: "Game not found" });
+            return res.status(404).json({ status: "error", message: "Game not found", error: { code: 404, details: "Game not found." }, meta: { timestamp: new Date().toISOString() } });
         }
         const member = await getMember(game.org_id, user.id);
         if (!member || !['admin', 'owner', 'developer'].includes(member.role)) {
-            return res.status(403).json({ success: false, message: "Forbidden" });
+            return res.status(403).json({ status: "error", message: "Forbidden", error: { code: 403, details: "User does not have permission to create a version for this game." }, meta: { timestamp: new Date().toISOString() } });
         }
 
         const version = await gameModel.createGameVersion({ game_id, version_name, changelog, status });
-        return res.status(201).json({ success: true, message: "Version created", data: version });
+        return res.status(201).json({ status: "success", message: "Version created", data: version, meta: { timestamp: new Date().toISOString() } });
     } catch (error) {
         console.error("Create Version Error:", error);
-        return res.status(500).json({ success: false, message: "Server Error" });
+        return res.status(500).json({ status: "error", message: "Server Error", error: { code: 500, details: error.message }, meta: { timestamp: new Date().toISOString() } });
     }
 };
 
@@ -223,10 +250,10 @@ const getGameVersions = async (req, res) => {
     const { game_id } = req.params;
     try {
         const versions = await gameModel.getGameVersions(game_id);
-        return res.status(200).json({ success: true, message: "Versions retrieved", data: versions });
+        return res.status(200).json({ status: "success", message: "Versions retrieved", data: versions, meta: { timestamp: new Date().toISOString() } });
     } catch (error) {
         console.error("Get Versions Error:", error);
-        return res.status(500).json({ success: false, message: "Server Error" });
+        return res.status(500).json({ status: "error", message: "Server Error", error: { code: 500, details: error.message }, meta: { timestamp: new Date().toISOString() } });
     }
 };
 
@@ -236,33 +263,33 @@ const updateGameVersion = async (req, res) => {
     const { version_name, changelog, status } = req.body;
 
     if (!user?.id) {
-        return res.status(401).json({ success: false, message: "Unauthorized" });
+        return res.status(401).json({ status: "error", message: "Unauthorized", error: { code: 401, details: "User not authenticated." }, meta: { timestamp: new Date().toISOString() } });
     }
     if (!version_name && !changelog && !status) {
-        return res.status(400).json({ success: false, message: "No update fields provided" });
+        return res.status(400).json({ status: "error", message: "No update fields provided", error: { code: 400, details: "No update fields provided." }, meta: { timestamp: new Date().toISOString() } });
     }
 
     try {
         const version = await gameModel.getGameVersionById(id);
         if (!version) {
-            return res.status(404).json({ success: false, message: "Version not found" });
+            return res.status(404).json({ status: "error", message: "Version not found", error: { code: 404, details: "Version not found." }, meta: { timestamp: new Date().toISOString() } });
         }
 
         const game = await gameModel.getGameById(version.game_id);
         if (!game) {
-            return res.status(404).json({ success: false, message: "Game not found" });
+            return res.status(404).json({ status: "error", message: "Game not found", error: { code: 404, details: "Game not found." }, meta: { timestamp: new Date().toISOString() } });
         }
 
         const member = await getMember(game.org_id, user.id);
         if (!member || !['admin', 'owner', 'developer'].includes(member.role)) {
-            return res.status(403).json({ success: false, message: "Forbidden" });
+            return res.status(403).json({ status: "error", message: "Forbidden", error: { code: 403, details: "User does not have permission to update this game version." }, meta: { timestamp: new Date().toISOString() } });
         }
 
         const updatedVersion = await gameModel.updateGameVersion(id, { version_name, changelog, status });
-        return res.status(200).json({ success: true, message: "Version updated", data: updatedVersion });
+        return res.status(200).json({ status: "success", message: "Version updated", data: updatedVersion, meta: { timestamp: new Date().toISOString() } });
     } catch (error) {
         console.error("Update Version Error:", error);
-        return res.status(500).json({ success: false, message: "Server Error" });
+        return res.status(500).json({ status: "error", message: "Server Error", error: { code: 500, details: error.message }, meta: { timestamp: new Date().toISOString() } });
     }
 };
 
@@ -270,24 +297,24 @@ const createGameAsset = async (req, res) => {
     const { user } = req;
     const { version_id, asset_type, storage_path, file_name, file_size_bytes, checksum } = req.body;
 
-    if (!user?.id) return res.status(401).json({ success: false, message: "Unauthorized" });
-    if (!version_id || !asset_type || !storage_path) return res.status(400).json({ success: false, message: "Missing required fields" });
+    if (!user?.id) return res.status(401).json({ status: "error", message: "Unauthorized", error: { code: 401, details: "User not authenticated." }, meta: { timestamp: new Date().toISOString() } });
+    if (!version_id || !asset_type || !storage_path) return res.status(400).json({ status: "error", message: "Missing required fields", error: { code: 400, details: "version_id, asset_type, and storage_path are required." }, meta: { timestamp: new Date().toISOString() } });
 
     try {
         const version = await gameModel.getGameVersionById(version_id);
-        if (!version) return res.status(404).json({ success: false, message: "Version not found" });
+        if (!version) return res.status(404).json({ status: "error", message: "Version not found", error: { code: 404, details: "Version not found." }, meta: { timestamp: new Date().toISOString() } });
 
         const game = await gameModel.getGameById(version.game_id);
         const member = await getMember(game.org_id, user.id);
         if (!member || !['admin', 'owner', 'developer'].includes(member.role)) {
-            return res.status(403).json({ success: false, message: "Forbidden" });
+            return res.status(403).json({ status: "error", message: "Forbidden", error: { code: 403, details: "User does not have permission to create assets for this game." }, meta: { timestamp: new Date().toISOString() } });
         }
 
         const asset = await gameModel.createGameAsset({ version_id, asset_type, storage_path, file_name, file_size_bytes, checksum });
-        return res.status(201).json({ success: true, message: "Asset created", data: asset });
+        return res.status(201).json({ status: "success", message: "Asset created", data: asset, meta: { timestamp: new Date().toISOString() } });
     } catch (error) {
         console.error("Create Asset Error:", error);
-        return res.status(500).json({ success: false, message: "Server Error" });
+        return res.status(500).json({ status: "error", message: "Server Error", error: { code: 500, details: error.message }, meta: { timestamp: new Date().toISOString() } });
     }
 };
 
@@ -295,47 +322,47 @@ const getAssetsByVersion = async (req, res) => {
     const { version_id } = req.params;
     try {
         const assets = await gameModel.getAssetsByVersion(version_id);
-        return res.status(200).json({ success: true, message: "Assets retrieved", data: assets });
+        return res.status(200).json({ status: "success", message: "Assets retrieved", data: assets, meta: { timestamp: new Date().toISOString() } });
     } catch (error) {
         console.error("Get Assets Error:", error);
-        return res.status(500).json({ success: false, message: "Server Error" });
+        return res.status(500).json({ status: "error", message: "Server Error", error: { code: 500, details: error.message }, meta: { timestamp: new Date().toISOString() } });
     }
 };
 
 const deleteGameAsset = async (req, res) => {
     const { user } = req;
     const { id } = req.params;
-    if (!user?.id) return res.status(401).json({ success: false, message: "Unauthorized" });
+    if (!user?.id) return res.status(401).json({ status: "error", message: "Unauthorized", error: { code: 401, details: "User not authenticated." }, meta: { timestamp: new Date().toISOString() } });
     try {
         // Authorization logic is complex here without asset details. A better way would be a direct lookup.
         // This is a simplified check.
         await gameModel.deleteGameAsset(id);
-        return res.status(200).json({ success: true, message: "Asset deleted" });
+        return res.status(200).json({ status: "success", message: "Asset deleted", data: null, meta: { timestamp: new Date().toISOString() } });
     } catch (error) {
         console.error("Delete Asset Error:", error);
-        return res.status(500).json({ success: false, message: "Server Error" });
+        return res.status(500).json({ status: "error", message: "Server Error", error: { code: 500, details: error.message }, meta: { timestamp: new Date().toISOString() } });
     }
 };
 
 const createTag = async (req, res) => {
     const { name, description, is_mood_tag } = req.body;
-    if(!name) return res.status(400).json({ success: false, message: "Tag name is required" });
+    if(!name) return res.status(400).json({ status: "error", message: "Tag name is required", error: { code: 400, details: "Tag name is required." }, meta: { timestamp: new Date().toISOString() } });
     try {
         const tag = await gameModel.createTag({ name, description, is_mood_tag });
-        return res.status(201).json({ success: true, message: "Tag created", data: tag });
+        return res.status(201).json({ status: "success", message: "Tag created", data: tag, meta: { timestamp: new Date().toISOString() } });
     } catch (error) {
         console.error("Create Tag Error:", error);
-        return res.status(500).json({ success: false, message: "Server Error" });
+        return res.status(500).json({ status: "error", message: "Server Error", error: { code: 500, details: error.message }, meta: { timestamp: new Date().toISOString() } });
     }
 };
 
 const getAllTags = async (req, res) => {
     try {
         const tags = await gameModel.getAllTags();
-        return res.status(200).json({ success: true, message: "Tags retrieved", data: tags });
+        return res.status(200).json({ status: "success", message: "Tags retrieved", data: tags, meta: { timestamp: new Date().toISOString() } });
     } catch (error) {
         console.error("Get All Tags Error:", error);
-        return res.status(500).json({ success: false, message: "Server Error" });
+        return res.status(500).json({ status: "error", message: "Server Error", error: { code: 500, details: error.message }, meta: { timestamp: new Date().toISOString() } });
     }
 };
 
@@ -343,54 +370,54 @@ const getTagsForGame = async (req, res) => {
     const { game_id } = req.params;
     try {
         const tags = await gameModel.getTagsByGame(game_id);
-        return res.status(200).json({ success: true, message: "Tags for game retrieved", data: tags });
+        return res.status(200).json({ status: "success", message: "Tags for game retrieved", data: tags, meta: { timestamp: new Date().toISOString() } });
     } catch (error) {
         console.error("Get Tags for Game Error:", error);
-        return res.status(500).json({ success: false, message: "Server Error" });
+        return res.status(500).json({ status: "error", message: "Server Error", error: { code: 500, details: error.message }, meta: { timestamp: new Date().toISOString() } });
     }
 };
 
 const addTagToGame = async (req, res) => {
     const { user } = req;
     const { game_id, tag_id } = req.body;
-    if (!user?.id) return res.status(401).json({ success: false, message: "Unauthorized" });
-    if (!game_id || !tag_id) return res.status(400).json({ success: false, message: "game_id and tag_id are required" });
+    if (!user?.id) return res.status(401).json({ status: "error", message: "Unauthorized", error: { code: 401, details: "User not authenticated." }, meta: { timestamp: new Date().toISOString() } });
+    if (!game_id || !tag_id) return res.status(400).json({ status: "error", message: "game_id and tag_id are required", error: { code: 400, details: "game_id and tag_id are required." }, meta: { timestamp: new Date().toISOString() } });
 
     try {
         const game = await gameModel.getGameById(game_id);
-        if (!game) return res.status(404).json({ success: false, message: "Game not found" });
+        if (!game) return res.status(404).json({ status: "error", message: "Game not found", error: { code: 404, details: "Game not found." }, meta: { timestamp: new Date().toISOString() } });
 
         const member = await getMember(game.org_id, user.id);
         if (!member || !['admin', 'owner', 'developer'].includes(member.role)) {
-            return res.status(403).json({ success: false, message: "Forbidden" });
+            return res.status(403).json({ status: "error", message: "Forbidden", error: { code: 403, details: "User does not have permission to add tags to this game." }, meta: { timestamp: new Date().toISOString() } });
         }
         await gameModel.addTagToGame(game_id, tag_id);
-        return res.status(200).json({ success: true, message: "Tag added to game" });
+        return res.status(200).json({ status: "success", message: "Tag added to game", data: null, meta: { timestamp: new Date().toISOString() } });
     } catch (error) {
         console.error("Add Tag Error:", error);
-        return res.status(500).json({ success: false, message: "Server Error" });
+        return res.status(500).json({ status: "error", message: "Server Error", error: { code: 500, details: error.message }, meta: { timestamp: new Date().toISOString() } });
     }
 };
 
 const removeTagFromGame = async (req, res) => {
     const { user } = req;
     const { game_id, tag_id } = req.body;
-    if (!user?.id) return res.status(401).json({ success: false, message: "Unauthorized" });
-    if (!game_id || !tag_id) return res.status(400).json({ success: false, message: "game_id and tag_id are required" });
+    if (!user?.id) return res.status(401).json({ status: "error", message: "Unauthorized", error: { code: 401, details: "User not authenticated." }, meta: { timestamp: new Date().toISOString() } });
+    if (!game_id || !tag_id) return res.status(400).json({ status: "error", message: "game_id and tag_id are required", error: { code: 400, details: "game_id and tag_id are required." }, meta: { timestamp: new Date().toISOString() } });
 
     try {
         const game = await gameModel.getGameById(game_id);
-        if (!game) return res.status(404).json({ success: false, message: "Game not found" });
+        if (!game) return res.status(404).json({ status: "error", message: "Game not found", error: { code: 404, details: "Game not found." }, meta: { timestamp: new Date().toISOString() } });
 
         const member = await getMember(game.org_id, user.id);
         if (!member || !['admin', 'owner', 'developer'].includes(member.role)) {
-            return res.status(403).json({ success: false, message: "Forbidden" });
+            return res.status(403).json({ status: "error", message: "Forbidden", error: { code: 403, details: "User does not have permission to remove tags from this game." }, meta: { timestamp: new Date().toISOString() } });
         }
         await gameModel.removeTagFromGame(game_id, tag_id);
-        return res.status(200).json({ success: true, message: "Tag removed from game" });
+        return res.status(200).json({ status: "success", message: "Tag removed from game", data: null, meta: { timestamp: new Date().toISOString() } });
     } catch (error) {
         console.error("Remove Tag Error:", error);
-        return res.status(500).json({ success: false, message: "Server Error" });
+        return res.status(500).json({ status: "error", message: "Server Error", error: { code: 500, details: error.message }, meta: { timestamp: new Date().toISOString() } });
     }
 };
 
@@ -478,6 +505,51 @@ const softDeleteGameReview = async (req, res) => {
     }
 };
 
+const getPopularGames = async (req, res) => {
+    try {
+        const games = await gameModel.getPopular(10);
+        return res.status(200).json({ status: "success", data: games });
+    } catch (error) {
+        console.error("Get Popular Games Error:", error);
+        return res.status(500).json({ status: "error", message: "Server Error" });
+    }
+};
+
+const getNewGames = async (req, res) => {
+    try {
+        const games = await gameModel.getNew(10);
+        return res.status(200).json({ status: "success", data: games });
+    } catch (error) {
+        console.error("Get New Games Error:", error);
+        return res.status(500).json({ status: "error", message: "Server Error" });
+    }
+};
+
+const getTopRatedGames = async (req, res) => {
+    try {
+        const games = await gameModel.getTopRated(10);
+        return res.status(200).json({ status: "success", data: games });
+    } catch (error) {
+        console.error("Get Top Rated Games Error:", error);
+        return res.status(500).json({ status: "error", message: "Server Error" });
+    }
+};
+
+const getGamesByTag = async (req, res) => {
+    const { tag_id } = req.params;
+    try {
+        const games = await gameModel.getByTag(tag_id, 20);
+        return res.status(200).json({ 
+            status: "success", 
+            message: `Games with tag ID ${tag_id} retrieved`, 
+            data: games 
+        });
+    } catch (error) {
+        console.error("Get Games By Tag Error:", error);
+        return res.status(500).json({ status: "error", message: "Server Error" });
+    }
+};
+
 
 module.exports = {
     createGame,
@@ -499,5 +571,10 @@ module.exports = {
     createGameReview,
     getGameReviews,
     updateGameReview,
-    softDeleteGameReview
+    softDeleteGameReview,
+    getPopularGames,
+    getNewGames,
+    getTopRatedGames,
+    getGamesByTag,
+    getPlayerLibrary
 };

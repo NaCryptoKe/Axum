@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { verifyOtp, generateOtp } from "../auth/authService"; // You'll need these
 import { useAuth } from "../auth/AuthContext";
@@ -17,9 +17,11 @@ export default function VerifyOtpPage() {
     const [otp, setOtp] = useState("");
     const [error, setError] = useState(null);
 
-    if (!userId) {
-        return <div>Invalid session. Please register again.</div>;
-    }
+    useEffect(() => {
+        if (!userId) {
+            navigate("/register"); // Redirect to register if userId is not available
+        }
+    }, [userId, navigate]);
 
     const handleVerify = async (e) => {
         e.preventDefault();
@@ -46,6 +48,10 @@ export default function VerifyOtpPage() {
             setError("An unexpected error occurred while resending OTP.");
         }
     };
+
+    if (!userId) {
+        return null; // Don't render anything while redirecting
+    }
 
     return (
         <div className="auth-container">

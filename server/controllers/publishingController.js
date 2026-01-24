@@ -7,28 +7,28 @@ const { getMember } = require('../models/organizationMemberModel');
 // --- Categories ---
 const createCategory = async (req, res) => {
     const { name } = req.body;
-    if (!name) return res.status(400).json({ success: false, message: "Category name is required" });
+    if (!name) return res.status(400).json({ status: "error", message: "Category name is required", error: { code: 400, details: "Category name is required" }, meta: { timestamp: new Date().toISOString() } });
 
     try {
         const slug = slugify(name);
         const category = await publishingModel.createCategory({ name, slug });
-        return res.status(201).json({ success: true, message: "Category created", data: category });
+        return res.status(201).json({ status: "success", message: "Category created", data: category, meta: { timestamp: new Date().toISOString() } });
     } catch (error) {
         console.error("Create Category Error:", error);
         if (error.code === '23505') { // Unique violation
-            return res.status(409).json({ success: false, message: "Category with this name or slug already exists." });
+            return res.status(409).json({ status: "error", message: "Category with this name or slug already exists.", error: { code: 409, details: "Category with this name or slug already exists." }, meta: { timestamp: new Date().toISOString() } });
         }
-        return res.status(500).json({ success: false, message: "Server Error" });
+        return res.status(500).json({ status: "error", message: "Server Error", error: { code: 500, details: error.message }, meta: { timestamp: new Date().toISOString() } });
     }
 };
 
 const getAllCategories = async (req, res) => {
     try {
         const categories = await publishingModel.getAllCategories();
-        return res.status(200).json({ success: true, message: "Categories retrieved", data: categories });
+        return res.status(200).json({ status: "success", message: "Categories retrieved", data: categories, meta: { timestamp: new Date().toISOString() } });
     } catch (error) {
         console.error("Get All Categories Error:", error);
-        return res.status(500).json({ success: false, message: "Server Error" });
+        return res.status(500).json({ status: "error", message: "Server Error", error: { code: 500, details: error.message }, meta: { timestamp: new Date().toISOString() } });
     }
 };
 
@@ -37,27 +37,27 @@ const createArticle = async (req, res) => {
     const { user } = req;
     const { org_id, game_id, title, summary, body, cover_image_url, category_id, is_published, published_at, is_pinned } = req.body;
 
-    if (!user?.id) return res.status(401).json({ success: false, message: "Unauthorized" });
-    if (!org_id || !title || !body) return res.status(400).json({ success: false, message: "Organization ID, title, and body are required." });
+    if (!user?.id) return res.status(401).json({ status: "error", message: "Unauthorized", error: { code: 401, details: "User not authenticated." }, meta: { timestamp: new Date().toISOString() } });
+    if (!org_id || !title || !body) return res.status(400).json({ status: "error", message: "Organization ID, title, and body are required.", error: { code: 400, details: "Organization ID, title, and body are required." }, meta: { timestamp: new Date().toISOString() } });
 
     try {
         const organization = await orgModel.getOrganizationById(org_id);
-        if (!organization) return res.status(404).json({ success: false, message: "Organization not found." });
+        if (!organization) return res.status(404).json({ status: "error", message: "Organization not found.", error: { code: 404, details: "Organization not found." }, meta: { timestamp: new Date().toISOString() } });
 
         const member = await getMember(org_id, user.id);
         if (!member || !['admin', 'owner', 'developer'].includes(member.role)) {
-            return res.status(403).json({ success: false, message: "Forbidden: Not authorized to publish for this organization." });
+            return res.status(403).json({ status: "error", message: "Forbidden: Not authorized to publish for this organization.", error: { code: 403, details: "Forbidden: Not authorized to publish for this organization." }, meta: { timestamp: new Date().toISOString() } });
         }
 
         if (game_id) {
             const game = await gameModel.getGameById(game_id);
-            if (!game) return res.status(404).json({ success: false, message: "Game not found." });
-            if (game.org_id !== org_id) return res.status(400).json({ success: false, message: "Game does not belong to the specified organization." });
+            if (!game) return res.status(404).json({ status: "error", message: "Game not found.", error: { code: 404, details: "Game not found." }, meta: { timestamp: new Date().toISOString() } });
+            if (game.org_id !== org_id) return res.status(400).json({ status: "error", message: "Game does not belong to the specified organization.", error: { code: 400, details: "Game does not belong to the specified organization." }, meta: { timestamp: new Date().toISOString() } });
         }
 
         if (category_id) {
             const category = await publishingModel.getCategoryById(category_id); // Assuming this function exists in model
-            if (!category) return res.status(404).json({ success: false, message: "Category not found." });
+            if (!category) return res.status(404).json({ status: "error", message: "Category not found.", error: { code: 404, details: "Category not found." }, meta: { timestamp: new Date().toISOString() } });
         }
         
         const slug = slugify(title); // Or generate a unique slug if needed
@@ -78,13 +78,13 @@ const createArticle = async (req, res) => {
 
         // TODO: Trigger notifications if article is published and linked to a game
         
-        return res.status(201).json({ success: true, message: "Article created successfully.", data: article });
+        return res.status(201).json({ status: "success", message: "Article created successfully.", data: article, meta: { timestamp: new Date().toISOString() } });
     } catch (error) {
         console.error("Create Article Error:", error);
         if (error.code === '23505') { // Unique constraint violation
-            return res.status(409).json({ success: false, message: "An article with this slug already exists for this organization." });
+            return res.status(409).json({ status: "error", message: "An article with this slug already exists for this organization.", error: { code: 409, details: "An article with this slug already exists for this organization." }, meta: { timestamp: new Date().toISOString() } });
         }
-        return res.status(500).json({ success: false, message: "Server Error" });
+        return res.status(500).json({ status: "error", message: "Server Error", error: { code: 500, details: error.message }, meta: { timestamp: new Date().toISOString() } });
     }
 };
 
@@ -92,11 +92,11 @@ const getArticle = async (req, res) => {
     const { id } = req.params;
     try {
         const article = await publishingModel.getArticleById(id);
-        if (!article) return res.status(404).json({ success: false, message: "Article not found." });
-        return res.status(200).json({ success: true, message: "Article retrieved.", data: article });
+        if (!article) return res.status(404).json({ status: "error", message: "Article not found.", error: { code: 404, details: "Article not found." }, meta: { timestamp: new Date().toISOString() } });
+        return res.status(200).json({ status: "success", message: "Article retrieved.", data: article, meta: { timestamp: new Date().toISOString() } });
     } catch (error) {
         console.error("Get Article Error:", error);
-        return res.status(500).json({ success: false, message: "Server Error" });
+        return res.status(500).json({ status: "error", message: "Server Error", error: { code: 500, details: error.message }, meta: { timestamp: new Date().toISOString() } });
     }
 };
 
@@ -104,10 +104,10 @@ const getArticlesByOrganization = async (req, res) => {
     const { org_id } = req.params; // Assuming org_id can be passed as param
     try {
         const articles = await publishingModel.getArticlesByOrg(org_id);
-        return res.status(200).json({ success: true, message: "Articles retrieved for organization.", data: articles });
+        return res.status(200).json({ status: "success", message: "Articles retrieved for organization.", data: articles, meta: { timestamp: new Date().toISOString() } });
     } catch (error) {
         console.error("Get Articles By Organization Error:", error);
-        return res.status(500).json({ success: false, message: "Server Error" });
+        return res.status(500).json({ status: "error", message: "Server Error", error: { code: 500, details: error.message }, meta: { timestamp: new Date().toISOString() } });
     }
 };
 
@@ -116,30 +116,30 @@ const updateArticle = async (req, res) => {
     const { id } = req.params;
     const updates = req.body;
 
-    if (!user?.id) return res.status(401).json({ success: false, message: "Unauthorized" });
+    if (!user?.id) return res.status(401).json({ status: "error", message: "Unauthorized", error: { code: 401, details: "User not authenticated." }, meta: { timestamp: new Date().toISOString() } });
 
     try {
         const existingArticle = await publishingModel.getArticleById(id);
-        if (!existingArticle) return res.status(404).json({ success: false, message: "Article not found." });
+        if (!existingArticle) return res.status(404).json({ status: "error", message: "Article not found.", error: { code: 404, details: "Article not found." }, meta: { timestamp: new Date().toISOString() } });
 
         const organization = await orgModel.getOrganizationById(existingArticle.org_id);
-        if (!organization) return res.status(404).json({ success: false, message: "Organization not found for article." });
+        if (!organization) return res.status(404).json({ status: "error", message: "Organization not found for article.", error: { code: 404, details: "Organization not found for article." }, meta: { timestamp: new Date().toISOString() } });
 
         const member = await getMember(existingArticle.org_id, user.id);
         if (!member || !['admin', 'owner', 'developer'].includes(member.role)) {
-            return res.status(403).json({ success: false, message: "Forbidden: Not authorized to update this article." });
+            return res.status(403).json({ status: "error", message: "Forbidden: Not authorized to update this article.", error: { code: 403, details: "Forbidden: Not authorized to update this article." }, meta: { timestamp: new Date().toISOString() } });
         }
 
         if (updates.title) updates.slug = slugify(updates.title);
 
         const updatedArticle = await publishingModel.updateArticle(id, updates);
-        return res.status(200).json({ success: true, message: "Article updated successfully.", data: updatedArticle });
+        return res.status(200).json({ status: "success", message: "Article updated successfully.", data: updatedArticle, meta: { timestamp: new Date().toISOString() } });
     } catch (error) {
         console.error("Update Article Error:", error);
         if (error.code === '23505') { // Unique constraint violation
-            return res.status(409).json({ success: false, message: "An article with this slug already exists for this organization." });
+            return res.status(409).json({ status: "error", message: "An article with this slug already exists for this organization.", error: { code: 409, details: "An article with this slug already exists for this organization." }, meta: { timestamp: new Date().toISOString() } });
         }
-        return res.status(500).json({ success: false, message: "Server Error" });
+        return res.status(500).json({ status: "error", message: "Server Error", error: { code: 500, details: error.message }, meta: { timestamp: new Date().toISOString() } });
     }
 };
 
@@ -147,27 +147,27 @@ const deleteArticle = async (req, res) => {
     const { user } = req;
     const { id } = req.params;
 
-    if (!user?.id) return res.status(401).json({ success: false, message: "Unauthorized" });
+    if (!user?.id) return res.status(401).json({ status: "error", message: "Unauthorized", error: { code: 401, details: "User not authenticated." }, meta: { timestamp: new Date().toISOString() } });
 
     try {
         const existingArticle = await publishingModel.getArticleById(id);
-        if (!existingArticle) return res.status(404).json({ success: false, message: "Article not found." });
+        if (!existingArticle) return res.status(404).json({ status: "error", message: "Article not found.", error: { code: 404, details: "Article not found." }, meta: { timestamp: new Date().toISOString() } });
 
         const organization = await orgModel.getOrganizationById(existingArticle.org_id);
-        if (!organization) return res.status(404).json({ success: false, message: "Organization not found for article." });
+        if (!organization) return res.status(404).json({ status: "error", message: "Organization not found for article.", error: { code: 404, details: "Organization not found for article." }, meta: { timestamp: new Date().toISOString() } });
 
         const member = await getMember(existingArticle.org_id, user.id);
         if (!member || !['admin', 'owner', 'developer'].includes(member.role)) {
-            return res.status(403).json({ success: false, message: "Forbidden: Not authorized to delete this article." });
+            return res.status(403).json({ status: "error", message: "Forbidden: Not authorized to delete this article.", error: { code: 403, details: "Forbidden: Not authorized to delete this article." }, meta: { timestamp: new Date().toISOString() } });
         }
 
         const rowCount = await publishingModel.deleteArticle(id);
-        if (rowCount === 0) return res.status(404).json({ success: false, message: "Article not found or already deleted." });
+        if (rowCount === 0) return res.status(404).json({ status: "error", message: "Article not found or already deleted.", error: { code: 404, details: "Article not found or already deleted." }, meta: { timestamp: new Date().toISOString() } });
 
-        return res.status(200).json({ success: true, message: "Article deleted successfully." });
+        return res.status(200).json({ status: "success", message: "Article deleted successfully.", data: null, meta: { timestamp: new Date().toISOString() } });
     } catch (error) {
         console.error("Delete Article Error:", error);
-        return res.status(500).json({ success: false, message: "Server Error" });
+        return res.status(500).json({ status: "error", message: "Server Error", error: { code: 500, details: error.message }, meta: { timestamp: new Date().toISOString() } });
     }
 };
 

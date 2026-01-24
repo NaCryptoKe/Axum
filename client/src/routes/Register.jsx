@@ -30,6 +30,8 @@ export default function RegisterPage() {
 
         const response = await register(formData);
 
+        console.log("Full API Response:", response);
+
         if (response.status === "error") {
             const mainMessage = response.message || "Registration failed";
             console.error("Toast Error:", mainMessage);

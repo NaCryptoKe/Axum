@@ -17,24 +17,25 @@ require('dotenv').config();
 // ==== FINISHED ====
 const getUserProfile = async (req, res) => {
     const { username } = req.params;
-    const { valid, username_cookie } = req.user;
+    // Extract the viewer's ID from req.user (populated by your auth middleware)
+    const { id: viewerId, valid, username_cookie, role } = req.user;
 
     try {
-        const user = await getUserByUsername(username);
+        // Pass viewerId to the model to check if they are following this user
+        const user = await getUserByUsername(username, viewerId);
 
         if (!user) return res.status(404).json({
-            success: false,
+            status: "error",
             message: 'User not found',
-            data: null,
             error: {
                 code: 404,
                 details: `User by the name of ${username} does not exist`,
             }
         });
+
         if (user.is_deleted) return res.status(404).json({
-            success: false,
+            status: "error",
             message: 'Deactivated user',
-            data: null,
             error: {
                 code: 404,
                 details: `User by the name of ${username} has deactivated their account`,
@@ -43,67 +44,62 @@ const getUserProfile = async (req, res) => {
 
         const online = await isUserOnline(user.id);
 
-        if ((valid && username_cookie === username) || req.user.role === 'admin') {
+        // Common data for both views
+        const publicData = {
+            id: user.id,
+            username: user.username,
+            firstname: user.firstname,
+            lastname: user.lastname,
+            displayName: user.displayName, // Alias used in SQL
+            role: user.role,
+            profilePicture: user.profilePicture, // Alias used in SQL
+            bio: user.bio,
+            createdAt: user.createdAt, // Alias used in SQL
+            isOnline: online,
+            isFollowing: user.isFollowing, // <-- This is the new logic
+            followerCount: parseInt(user.followerCount) || 0,
+            followingCount: parseInt(user.followingCount) || 0
+        };
+
+        // If it's the owner or an admin, add sensitive data
+        if ((valid && username_cookie === username) || role === 'admin') {
             return res.status(200).json({
-                success: true,
+                status: "success",
                 message: 'User data',
                 data: {
-                    id: user.id,
-                    username: user.username,
+                    ...publicData,
                     email: user.email,
-                    firstname: user.firstname,
-                    lastname: user.lastname,
-                    displayName: user.display_name,
                     email_verified: user.email_verified,
-                    role: user.role,
-                    profilePicture: user.avatar_url,
-                    bio: user.bio,
-                    createdAt: user.created_at,
-                    isOnline: online
                 },
-                error: null
+                meta: { timestamp: new Date().toISOString() }
             });
         }
 
+        // Return standard public view
         return res.status(200).json({
-            success: true,
+            status: "success",
             message: 'User data',
-            data: {
-                id: user.id,
-                username: user.username,
-                firstname: user.firstname,
-                lastname: user.lastname,
-                displayName: user.display_name,
-                role: user.role,
-                profilePicture: user.avatar_url,
-                bio: user.bio,
-                createdAt: user.created_at,
-                isOnline: online,
-            },
-            error: null
+            data: publicData,
+            meta: { timestamp: new Date().toISOString() }
         });
+
     } catch (error) {
+        console.error("Profile Fetch Error:", error);
         return res.status(500).json({
-            success: false,
+            status: "error",
             message: 'Server Error',
-            data: null,
-            error: {
-                code: 500,
-                details: `Server Error`,
-            }
-        })
+            error: { code: 500, details: `Internal Server Error` }
+        });
     }
 };
-
 const onlineStatus = async (req, res) => {
     try {
         const { username } = req.params;
         const user = await getUserByUsername(username);
 
         if (!user) return res.status(404).json({
-            success: false,
+            status: "error",
             message: 'User not found',
-            data: null,
             error: {
                 code: 404,
                 details: `User by the name of ${username} does not exist`,
@@ -114,19 +110,21 @@ const onlineStatus = async (req, res) => {
         const lastSeenAt = await lastSeen(user.id);
 
         return res.status(200).json({
-            success: true,
+            status: "success",
             message: 'User online status',
             data: {
                 username: username,
                 online: online ? 'Online' : 'Offline',
                 last_seen_at: lastSeenAt,
+            },
+            meta: {
+                timestamp: new Date().toISOString(),
             }
         })
     } catch (error) {
         return res.status(500).json({
-            success: false,
+            status: "error",
             message: 'Server Error',
-            data: null,
             error: {
                 code: 500,
                 details: `Server Error`,
@@ -136,17 +134,17 @@ const onlineStatus = async (req, res) => {
 };
 
 const updateProfile = async (req, res) => {
+    console.log("HELLo")
     const { user } = req;
     const { username } = req.params;
 
     const isOwner = username === user.username_cookie;
     const isAdmin = user.role === 'admin';
-
+    
     if (!user?.valid || (!isOwner && !isAdmin)) {
         return res.status(401).json({
-            success: false,
+            status: "error",
             message: "Not authorized",
-            data: null,
             error: {
                 code: 401,
                 details: "You must be logged in and can only edit your own account or be an Admin."
@@ -160,15 +158,15 @@ const updateProfile = async (req, res) => {
 
     try {
         let targetUser;
+        console.log (targetUser)
         if (isOwner) {
             targetUser = { id: user.id };
         } else if (isAdmin) {
             targetUser = await getUserByUsername(username);
             if (!targetUser) {
                 return res.status(404).json({
-                    success: false,
+                    status: "error",
                     message: 'User not found',
-                    data: null,
                     error: {
                         code: 404,
                         details: `User by the name of ${username} does not exist`,
@@ -179,9 +177,8 @@ const updateProfile = async (req, res) => {
 
         if (!newUsername || !email || !bio || !display_name) {
             return res.status(400).json({
-                success: false,
+                status: "error",
                 message: "Bad Request",
-                data: null,
                 error: {
                     code: 400,
                     details: 'Missing Credentials'
@@ -198,9 +195,8 @@ const updateProfile = async (req, res) => {
 
         if (unprocessableErrors.length > 0)
             return res.status(422).json({
-                success: false,
+                status: "error",
                 message: "Unprocessable inputs",
-                data: null,
                 error: {
                     code: 422,
                     details: unprocessableErrors
@@ -217,9 +213,8 @@ const updateProfile = async (req, res) => {
 
         if (!updatedUser)
             return res.status(400).json({
-                success: false,
+                status: "error",
                 message: 'User not updated',
-                data: null,
                 error: {
                     code: 400,
                     details: 'User account not updated'
@@ -247,20 +242,21 @@ const updateProfile = async (req, res) => {
         }
 
         return res.status(200).json({
-            success: true,
+            status: "success",
             message: "Successfully updated user",
             data: {
                 id: targetUser.id,
                 username: cleanedUsername,
             },
-            error: null
+            meta: {
+                timestamp: new Date().toISOString(),
+            }
         });
     } catch (error) {
         console.error("Register error:", error);
         return res.status(500).json({
-            success: false,
+            status: "error",
             message: 'Server error',
-            data: null,
             error: {
                 code: 500,
                 details: error.message
@@ -279,9 +275,8 @@ const updateProfilePicture = async (req, res) => {
 
     if (!user?.valid || (!isOwner && !isAdmin)) {
         return res.status(401).json({
-            success: false,
+            status: "error",
             message: "Not authorized",
-            data: null,
             error: {
                 code: 401,
                 details: "You must be logged in and can only edit your own account or be an Admin."
@@ -297,9 +292,8 @@ const updateProfilePicture = async (req, res) => {
             targetUser = await getUserByUsername(username);
             if (!targetUser) {
                 return res.status(404).json({
-                    success: false,
+                    status: "error",
                     message: 'User not found',
-                    data: null,
                     error: {
                         code: 404,
                         details: `User by the name of ${username} does not exist`,
@@ -310,9 +304,8 @@ const updateProfilePicture = async (req, res) => {
 
         if (!avatar_url)
             return res.status(400).json({
-                success: false,
+                status: "error",
                 message: "Missing Credential",
-                data: null,
                 error: {
                     code: 400,
                     details: 'Missing avatar url',
@@ -323,9 +316,8 @@ const updateProfilePicture = async (req, res) => {
 
         if (!result)
             return res.status(400).json({
-                success: false,
+                status: "error",
                 message: 'User avtar not updated',
-                data: null,
                 error: {
                     code: 400,
                     details: 'User account avatar not updated'
@@ -333,19 +325,20 @@ const updateProfilePicture = async (req, res) => {
             });
 
         return res.status(200).json({
-            success: true,
+            status: "success",
             message: 'Successfully updated user avatar',
             data: {
                 avatar_url: result.avatar_url,
             },
-            error: null
+            meta: {
+                timestamp: new Date().toISOString(),
+            }
         });
     } catch (error) {
         console.error("Register error:", error);
         return res.status(500).json({
-            success: false,
+            status: "error",
             message: 'Server error',
-            data: null,
             error: {
                 code: 500,
                 details: error.message
@@ -365,6 +358,9 @@ const allUsers = async (req, res) => {
             error: {
                 code: "UNAUTHORIZED",
                 details: "You must be an admin or a moderator"
+            },
+            meta: {
+                timestamp: new Date().toISOString()
             }
         });
     }
@@ -377,6 +373,9 @@ const allUsers = async (req, res) => {
                 error: {
                     code: "NOT_FOUND",
                     details: `No users found`,
+                },
+                meta: {
+                    timestamp: new Date().toISOString()
                 }
             });
         
@@ -421,6 +420,9 @@ const allUsers = async (req, res) => {
             error: {
                 code: "INTERNAL_ERROR",
                 details: error.message
+            },
+            meta: {
+                timestamp: new Date().toISOString()
             }
         });
     }
@@ -440,6 +442,9 @@ const softDelete = async (req, res) => {
             error: {
                 code: "UNAUTHORIZED",
                 details: "You must be logged in and can only delete your own account or be an Admin/Moderator."
+            },
+            meta: {
+                timestamp: new Date().toISOString()
             }
         });
     }
@@ -451,6 +456,9 @@ const softDelete = async (req, res) => {
             error: {
                 code: "BAD_REQUEST",
                 details: `Username wasn't provided`,
+            },
+            meta: {
+                timestamp: new Date().toISOString()
             }
         });
         const result = await softDeleteUser(username);
@@ -461,6 +469,9 @@ const softDelete = async (req, res) => {
             error: {
                 code: "NOT_FOUND",
                 details: `User by the name of ${username} does not exist`,
+            },
+            meta: {
+                timestamp: new Date().toISOString()
             }
         });
 
@@ -482,6 +493,9 @@ const softDelete = async (req, res) => {
             error: {
                 code: "INTERNAL_ERROR",
                 details: `Server Error`,
+            },
+            meta: {
+                timestamp: new Date().toISOString()
             }
         });
     }
@@ -498,6 +512,9 @@ const allActiveUsers = async (req, res) => {
                 error: {
                     code: "NOT_FOUND",
                     details: 'There are currently no active users.'
+                },
+                meta: {
+                    timestamp: new Date().toISOString()
                 }
             });
         }
@@ -536,6 +553,9 @@ const allActiveUsers = async (req, res) => {
             error: {
                 code: "INTERNAL_ERROR",
                 details: error.message,
+            },
+            meta: {
+                timestamp: new Date().toISOString()
             }
         });
     }
@@ -549,27 +569,36 @@ const changeUserRole = async (req, res) => {
     // 1. Admin check
     if (actor?.role !== 'admin') {
         return res.status(403).json({
-            success: false,
+            status: "error",
             message: "Forbidden",
-            error: { code: 403, details: "Only administrators can change user roles." }
+            error: { code: 403, details: "Only administrators can change user roles." },
+            meta: {
+                timestamp: new Date().toISOString()
+            }
         });
     }
 
     // 2. Input validation
     if (!username || !newRole) {
         return res.status(400).json({
-            success: false,
+            status: "error",
             message: "Bad Request",
-            error: { code: 400, details: "Username and new role are required." }
+            error: { code: 400, details: "Username and new role are required." },
+            meta: {
+                timestamp: new Date().toISOString()
+            }
         });
     }
     
     const VALID_ROLES = ['player', 'creator', 'moderator', 'admin'];
     if (!VALID_ROLES.includes(newRole)) {
         return res.status(422).json({
-            success: false,
+            status: "error",
             message: "Invalid Role",
-            error: { code: 422, details: `Role must be one of: ${VALID_ROLES.join(', ')}` }
+            error: { code: 422, details: `Role must be one of: ${VALID_ROLES.join(', ')}` },
+            meta: {
+                timestamp: new Date().toISOString()
+            }
         });
     }
 
@@ -577,25 +606,34 @@ const changeUserRole = async (req, res) => {
         const targetUser = await getUserByUsername(username);
         if (!targetUser) {
             return res.status(404).json({
-                success: false,
+                status: "error",
                 message: "User not found",
-                error: { code: 404, details: `User '${username}' not found.` }
+                error: { code: 404, details: `User '${username}' not found.` },
+                meta: {
+                    timestamp: new Date().toISOString()
+                }
             });
         }
 
         // 3. Authorization rules
         if (targetUser.id === actor.id) {
             return res.status(403).json({
-                success: false,
+                status: "error",
                 message: "Forbidden",
-                error: { code: 403, details: "Administrators cannot change their own role." }
+                error: { code: 403, details: "Administrators cannot change their own role." },
+                meta: {
+                    timestamp: new Date().toISOString()
+                }
             });
         }
         if (targetUser.role === 'admin') {
              return res.status(403).json({
-                success: false,
+                status: "error",
                 message: "Forbidden",
-                error: { code: 403, details: "Administrators cannot change the role of other administrators." }
+                error: { code: 403, details: "Administrators cannot change the role of other administrators." },
+                meta: {
+                    timestamp: new Date().toISOString()
+                }
             });
         }
 
@@ -603,18 +641,23 @@ const changeUserRole = async (req, res) => {
         const updatedUser = await updateUserRole({ id: targetUser.id, role: newRole });
 
         return res.status(200).json({
-            success: true,
+            status: "success",
             message: `User ${updatedUser.username}'s role updated to ${updatedUser.role}.`,
             data: updatedUser,
-            error: null
+            meta: {
+                timestamp: new Date().toISOString()
+            }
         });
 
     } catch (error) {
         console.error("Change user role error:", error);
         return res.status(500).json({
-            success: false,
+            status: "error",
             message: 'Server error',
-            error: { code: 500, details: error.message }
+            error: { code: 500, details: error.message },
+            meta: {
+                timestamp: new Date().toISOString()
+            }
         });
     }
 };
@@ -625,9 +668,12 @@ const permanentDeleteUserController = async (req, res) => {
 
     if (actor?.role !== 'admin') {
         return res.status(403).json({
-            success: false,
+            status: "error",
             message: "Forbidden",
-            error: { code: 403, details: "Only administrators can permanently delete users." }
+            error: { code: 403, details: "Only administrators can permanently delete users." },
+            meta: {
+                timestamp: new Date().toISOString()
+            }
         });
     }
 
@@ -635,17 +681,23 @@ const permanentDeleteUserController = async (req, res) => {
         const targetUser = await getUserByUsername(username);
         if (!targetUser) {
             return res.status(404).json({
-                success: false,
+                status: "error",
                 message: "User not found",
-                error: { code: 404, details: `User '${username}' not found.` }
+                error: { code: 404, details: `User '${username}' not found.` },
+                meta: {
+                    timestamp: new Date().toISOString()
+                }
             });
         }
         
         if (targetUser.id === actor.id) {
              return res.status(403).json({
-                success: false,
+                status: "error",
                 message: "Forbidden",
-                error: { code: 403, details: "Administrators cannot delete their own account this way." }
+                error: { code: 403, details: "Administrators cannot delete their own account this way." },
+                meta: {
+                    timestamp: new Date().toISOString()
+                }
             });
         }
 
@@ -653,17 +705,22 @@ const permanentDeleteUserController = async (req, res) => {
 
         if (deletedCount === 0) {
             return res.status(404).json({
-                success: false,
+                status: "error",
                 message: "User not found or already deleted.",
-                error: { code: 404 }
+                error: { code: 404 },
+                meta: {
+                    timestamp: new Date().toISOString()
+                }
             });
         }
 
         return res.status(200).json({
-            success: true,
+            status: "success",
             message: `User '${username}' has been permanently deleted.`,
             data: null,
-            error: null
+            meta: {
+                timestamp: new Date().toISOString()
+            }
         });
 
     } catch (error) {
@@ -671,19 +728,25 @@ const permanentDeleteUserController = async (req, res) => {
         // Check for foreign key violation
         if (error.code === '23503') {
             return res.status(409).json({
-                success: false,
+                status: "error",
                 message: "Conflict: User cannot be deleted.",
                 error: {
                     code: 409,
                     details: "This user cannot be deleted because they are referenced by other records (e.g., they own an organization or have made financial transactions)."
+                },
+                meta: {
+                    timestamp: new Date().toISOString()
                 }
             });
         }
 
         return res.status(500).json({
-            success: false,
+            status: "error",
             message: 'Server error',
-            error: { code: 500, details: error.message }
+            error: { code: 500, details: error.message },
+            meta: {
+                timestamp: new Date().toISOString()
+            }
         });
     }
 };
@@ -694,9 +757,12 @@ const undeleteUserController = async (req, res) => {
 
     if (actor?.role !== 'admin') {
         return res.status(403).json({
-            success: false,
+            status: "error",
             message: "Forbidden",
-            error: { code: 403, details: "Only administrators can undelete user accounts." }
+            error: { code: 403, details: "Only administrators can undelete user accounts." },
+            meta: {
+                timestamp: new Date().toISOString()
+            }
         });
     }
 
@@ -705,17 +771,23 @@ const undeleteUserController = async (req, res) => {
 
         if (!targetUser) {
             return res.status(404).json({
-                success: false,
+                status: "error",
                 message: "User not found.",
-                error: { code: 404, details: `User '${username}' not found.` }
+                error: { code: 404, details: `User '${username}' not found.` },
+                meta: {
+                    timestamp: new Date().toISOString()
+                }
             });
         }
 
         if (!targetUser.is_deleted) {
             return res.status(400).json({
-                success: false,
+                status: "error",
                 message: "User is not soft-deleted.",
-                error: { code: 400, details: `User '${username}' is not currently soft-deleted.` }
+                error: { code: 400, details: `User '${username}' is not currently soft-deleted.` },
+                meta: {
+                    timestamp: new Date().toISOString()
+                }
             });
         }
         
@@ -723,29 +795,37 @@ const undeleteUserController = async (req, res) => {
 
         if (!result) {
             return res.status(400).json({
-                success: false,
+                status: "error",
                 message: "User account could not be undeleted.",
-                error: { code: 400, details: `An error occurred while attempting to undelete user '${username}'.` }
+                error: { code: 400, details: `An error occurred while attempting to undelete user '${username}'.` },
+                meta: {
+                    timestamp: new Date().toISOString()
+                }
             });
         }
 
         return res.status(200).json({
-            success: true,
+            status: "success",
             message: `User '${username}' has been successfully undeleted.`,
             data: {
                 username: result.username,
                 is_deleted: result.is_deleted,
                 deleted_at: result.deleted_at
             },
-            error: null
+            meta: {
+                timestamp: new Date().toISOString()
+            }
         });
 
     } catch (error) {
         console.error("Undelete user error:", error);
         return res.status(500).json({
-            success: false,
+            status: "error",
             message: 'Server error',
-            error: { code: 500, details: error.message }
+            error: { code: 500, details: error.message },
+            meta: {
+                timestamp: new Date().toISOString()
+            }
         });
     }
 };

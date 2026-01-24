@@ -32,7 +32,9 @@ const generatePasswordResetToken = async (req, res) => {
             });
         }
 
-        const user = await findByIdentifier(identifier);
+        const cleanIdentifier = identifier.trim().toLowerCase();
+        const user = await findByIdentifier(cleanIdentifier);
+        console.log(user)
         
         if (!user) {
             await randomDelay();
@@ -109,11 +111,12 @@ const generatePasswordResetToken = async (req, res) => {
 const resetPassword = async (req, res) => {
     try {
         const { token } = req.params;
-        console.log(token);
-        const { password } = req.body;
+        const { newPassword } = req.body;
         const unprocessableErrors = [];
+        console.log(token)
+        console.log(newPassword)
 
-        if (!token || !password) {
+        if (!token || !newPassword) {
             return res.status(400).json({
                 success: false,
                 message: 'Missing Credentials',
@@ -140,15 +143,15 @@ const resetPassword = async (req, res) => {
             });
         }
 
-        if (password.length < 8) unprocessableErrors.push ('Password length should be at least 8 characters.');
+        if (newPassword.length < 8) unprocessableErrors.push ('Password length should be at least 8 characters.');
 
-        if (!/[A-Z]/.test(password)) unprocessableErrors.push ('Password should contain a capital letter.');
+        if (!/[A-Z]/.test(newPassword)) unprocessableErrors.push ('Password should contain a capital letter.');
 
-        if (!/[a-z]/.test(password)) unprocessableErrors.push('Password should contain a small letter.');
+        if (!/[a-z]/.test(newPassword)) unprocessableErrors.push('Password should contain a small letter.');
 
-        if (!/[^a-zA-Z0-9]/.test(password)) unprocessableErrors.push ('Password should contain a special character.');
+        if (!/[^a-zA-Z0-9]/.test(newPassword)) unprocessableErrors.push ('Password should contain a special character.');
 
-        if (!/\d/.test(password)) unprocessableErrors.push ('Password should contain a number.');
+        if (!/\d/.test(newPassword)) unprocessableErrors.push ('Password should contain a number.');
 
         if (unprocessableErrors.length > 0)
             return res.status(422).json({
@@ -163,7 +166,7 @@ const resetPassword = async (req, res) => {
 
         const user_id = tokenResult.reset.user_id;
 
-        const hashedPassword = await argon2.hash(password, ARGON2_OPTS);
+        const hashedPassword = await argon2.hash(newPassword, ARGON2_OPTS);
 
         await updatePassword(user_id, hashedPassword);
 
