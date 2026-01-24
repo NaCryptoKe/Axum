@@ -7,7 +7,7 @@ import { Button } from "../components/Button";
 
 export default function VerifyOtpPage() {
     const navigate = useNavigate();
-    const { state: authState, dispatch } = useAuth();
+    const { state: authState, setState } = useAuth();
     
     // Get userId passed from Register page
     const { state: locationState } = useLocation();
@@ -26,7 +26,7 @@ export default function VerifyOtpPage() {
         const response = await verifyOtp({ user_id: userId, otp });
 
         if (response.status === "success") {
-            dispatch({ type: "LOGIN", payload: response.data.user });
+            setState({ status: "authenticated", user: response.data.user });
             navigate("/"); // Now they can go home
         } else {
             setError(response.message || "Invalid OTP");
