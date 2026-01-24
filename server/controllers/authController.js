@@ -192,8 +192,14 @@ const register = async (req, res) => {
         const hashedPassword = await argon2.hash(password, ARGON2_OPTS);
         const newUser = await createUser({ firstname, lastname, username, email, hashedPassword });
 
+        // Generate and send OTP immediately after successful registration
+        const expires_at = new Date(Date.now() + 5 * 60 * 1000); // 5 min expiry
+        const { otp } = await createEmailVerification(newUser.id, expires_at);
+        await sendOtpEmail(newUser.id, otp);
+
         return res.status(201).json({
             status: "success",
+            message: "Registration successful. OTP sent for email verification.",
             data: { id: newUser.id, username: newUser.username, email: newUser.email, firstname: newUser.firstname, lastname: newUser.lastname },
             meta: {
                 timestamp: new Date().toISOString(),
