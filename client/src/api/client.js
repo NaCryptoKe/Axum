@@ -1,4 +1,4 @@
-const API_BASE = "https://axumm.up.railway.app";
+const API_BASE = "https://axumm.up.railway.app/api";
 
 export async function apiRequest(path, options = {}) {
     const res = await fetch(`${API_BASE}${path}`, {
