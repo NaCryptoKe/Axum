@@ -10,8 +10,9 @@ export default function VerifyOtpPage() {
     const { state: authState, dispatch } = useAuth();
     
     // Get userId passed from Register page
-    const userId = location.state?.userId;
-    const email = location.state?.email;
+    const { state: locationState } = useLocation();
+    const userId = locationState?.userId;
+    const email = locationState?.email;
 
     const [otp, setOtp] = useState("");
     const [error, setError] = useState(null);
