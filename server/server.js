@@ -41,8 +41,7 @@ app.use(cors({
     // Allow both your Localhost AND your Deployed Frontend
     origin: [
         'http://localhost:5173',           // For local development
-        'https://axum-arcade.vercel.app',
-        process.env.FRONTEND_URL,           // For production (e.g., https://axumarcade.com)
+        'https://axum-arcade.vercel.app'
     ],
     credentials: true, // Allow cookies/headers to be sent
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
