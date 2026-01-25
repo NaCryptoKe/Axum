@@ -31,7 +31,7 @@ export function NavLinks({ authState }) {
     };
 
     return (
-        <ul>
+        <ul className="navbar-links">
             {/* UNIVERSAL LINKS */}
             <li><Link to="/">Home</Link></li>
             <li><Link to="/browse">Browse</Link></li>

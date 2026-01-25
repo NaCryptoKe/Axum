@@ -1,12 +1,13 @@
 import { NavLinks } from "./NavLinks";
 import { useAuth } from "../../auth/AuthContext";
+import './navbar.css';
 
 export function Navbar() {
     const { state } = useAuth();
 
     return (
-        <nav>
-            <div>
+        <nav className="navbar">
+            <div className="navbar-brand">
                 <span>Axum</span>
             </div>
 
