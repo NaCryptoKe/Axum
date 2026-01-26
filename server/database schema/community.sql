@@ -28,7 +28,8 @@ CREATE TABLE community.posts (
   is_deleted      BOOLEAN NOT NULL DEFAULT false,
   deleted_at      TIMESTAMPTZ,
   created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+  is_locked       BOOLEAN NOT NULL DEFAULT false
 );
 
 -- Nested comments on posts

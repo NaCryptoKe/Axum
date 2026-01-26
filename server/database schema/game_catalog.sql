@@ -16,27 +16,33 @@ CREATE TYPE game_catalog.asset_type AS ENUM (
 );
 
 -- Main game entity
-CREATE TABLE game_catalog.games (
-  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  org_id          UUID NOT NULL REFERENCES core.organizations(id) ON DELETE RESTRICT, -- Organization owns the game
-  title           TEXT NOT NULL,
-  slug            TEXT NOT NULL CHECK (slug ~ '^[a-z0-9-]+$'),
-  description     TEXT,
-  status          game_catalog.entity_status NOT NULL DEFAULT 'draft',
-  release_date    TIMESTAMPTZ,
-  cover_image_url TEXT,
-  metadata        JSONB,
-  tags_cache      TEXT[], -- Denormalized for fast filtering
-  review_count    INT NOT NULL DEFAULT 0,
-  rating_sum      BIGINT NOT NULL DEFAULT 0,
-  search_vector   TSVECTOR, -- For Full Text Search
-  is_deleted      BOOLEAN NOT NULL DEFAULT false, -- Soft delete
-  deleted_at      TIMESTAMPTZ,
-  created_by      UUID REFERENCES core.users(id) ON DELETE SET NULL,
-  updated_by      UUID REFERENCES core.users(id) ON DELETE SET NULL,
-  created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE (org_id, slug) -- Critical: Slug is unique per organization
+CREATE TABLE game_catalog.games(
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  org_id uuid NOT NULL,
+  title text NOT NULL,
+  slug text NOT NULL,
+  description text,
+  status entity_status NOT NULL DEFAULT 'draft'::entity_status,
+  release_date timestamp with time zone,
+  cover_image_url text,
+  metadata jsonb,
+  tags_cache text[],
+  review_count integer NOT NULL DEFAULT 0,
+  rating_sum bigint NOT NULL DEFAULT 0,
+  search_vector tsvector,
+  is_deleted boolean NOT NULL DEFAULT false,
+  deleted_at timestamp with time zone,
+  created_by uuid,
+  updated_by uuid,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  price double precision NOT NULL DEFAULT 0,
+  downloads bigint DEFAULT 0,
+  PRIMARY KEY(id),
+  CONSTRAINT games_org_id_fkey FOREIGN key(org_id) REFERENCES organizations(id),
+  CONSTRAINT games_created_by_fkey FOREIGN key(created_by) REFERENCES users(id),
+  CONSTRAINT games_updated_by_fkey FOREIGN key(updated_by) REFERENCES users(id),
+  CONSTRAINT games_slug_check CHECK ((slug ~ '^[a-z0-9-]+$'::text))
 );
 
 -- Game versions (for updates/releases)

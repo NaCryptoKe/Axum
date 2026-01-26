@@ -87,7 +87,8 @@ CREATE TABLE core.organizations (
     is_deleted              BOOLEAN NOT NULL DEFAULT false,
     deleted_at              TIMESTAMPTZ,
     created_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at              TIMESTAMPTZ NOT NULL DEFAULT now()
+    updated_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
+    contact_email           TEXT
 );
 
 -- Many-to-many relationship for org membership
