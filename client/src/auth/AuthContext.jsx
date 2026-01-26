@@ -17,6 +17,9 @@ export function AuthProvider({ children }) {
                     user: res.data,
                 });
             }
+        }).catch(error => {
+            console.error("Authentication check failed on startup:", error);
+            setState({ status: "unauthenticated" });
         });
     }, []);
 

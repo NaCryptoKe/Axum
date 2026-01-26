@@ -55,6 +55,13 @@ export async function getGameVersions(gameId) {
     return apiRequest(`/games/versions/${gameId}`);
 }
 
+export async function updateGameVersion(versionId, versionData) {
+    return apiRequest(`/games/versions/${versionId}`, {
+        method: "PUT",
+        body: JSON.stringify(versionData),
+    });
+}
+
 export async function createGameAsset(assetData) {
     return apiRequest("/games/assets", {
         method: "POST",
@@ -66,12 +73,36 @@ export async function getAssetsByVersion(versionId) {
     return apiRequest(`/games/assets/${versionId}`);
 }
 
+export async function deleteGameAsset(assetId) {
+    return apiRequest(`/games/assets/${assetId}`, {
+        method: "DELETE",
+    });
+}
+
+export async function createTag(tagData) {
+    return apiRequest("/games/tags", {
+        method: "POST",
+        body: JSON.stringify(tagData),
+    });
+}
+
 export async function getAllTags() {
     return apiRequest("/games/tags");
 }
 
+export async function getTagsForGame(gameId) {
+    return apiRequest(`/games/tags/${gameId}`);
+}
+
 export async function assignTagToGame(gameId, tagId) {
     return apiRequest("/games/tags/assign", {
+        method: "POST",
+        body: JSON.stringify({ game_id: gameId, tag_id: tagId }),
+    });
+}
+
+export async function removeTagFromGame(gameId, tagId) {
+    return apiRequest("/games/tags/unassign", {
         method: "POST",
         body: JSON.stringify({ game_id: gameId, tag_id: tagId }),
     });
@@ -86,6 +117,14 @@ export async function getPopularGames() {
 
 export async function getNewGames() {
     return apiRequest("/games/new");
+}
+
+export async function getTopRatedGames() {
+    return apiRequest("/games/top-rated");
+}
+
+export async function getGamesByTag(tagId) {
+    return apiRequest(`/games/tag/${tagId}`);
 }
 
 /**
@@ -107,6 +146,12 @@ export async function updateReview(reviewId, updateData) {
     return apiRequest(`/games/reviews/${reviewId}`, {
         method: "PUT",
         body: JSON.stringify(updateData),
+    });
+}
+
+export async function softDeleteGameReview(reviewId) {
+    return apiRequest(`/games/reviews/${reviewId}`, {
+        method: "DELETE",
     });
 }
 

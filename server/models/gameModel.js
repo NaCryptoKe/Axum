@@ -42,10 +42,10 @@ const getLibraryByUserId = async (userId) => {
             l.acquired_at AS "acquiredAt",
             l.playtime_seconds AS "playtime",
             l.last_played_at AS "lastPlayed"
-         FROM player_data.libraries l
-         JOIN game_catalog.games g ON l.game_id = g.id
-         WHERE l.user_id = $1
-         ORDER BY l.last_played_at DESC NULLS LAST`,
+        FROM player_data.libraries l
+        JOIN game_catalog.games g ON l.game_id = g.id
+        WHERE l.user_id = $1
+        ORDER BY l.last_played_at DESC NULLS LAST`,
         [userId]
     );
     return rows;
@@ -277,7 +277,7 @@ const softDeleteGameReview = async (id) => {
 const getPopular = async (limit = 10) => {
     const query = `
         SELECT 
-            g.id, g.title, g.slug, g.cover_image_url, g.review_count,
+            g.id, g.title, g.slug, g.cover_image_url, g.review_count, g.price,
             o.slug AS "organizationSlug",
             (CAST(g.rating_sum AS FLOAT) / NULLIF(g.review_count, 0)) AS "avgRating"
         FROM game_catalog.games g
@@ -294,8 +294,9 @@ const getPopular = async (limit = 10) => {
 const getNew = async (limit = 10) => {
     const query = `
         SELECT 
-            g.id, g.title, g.slug, g.cover_image_url, g.release_date,
-            o.slug AS "organizationSlug"
+            g.id, g.title, g.slug, g.cover_image_url, g.release_date, g.review_count, g.price,
+            o.slug AS "organizationSlug",
+            (CAST(g.rating_sum AS FLOAT) / NULLIF(g.review_count, 0)) AS "avgRating"
         FROM game_catalog.games g
         JOIN core.organizations o ON g.org_id = o.id
         WHERE g.status = 'published' 

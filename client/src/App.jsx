@@ -10,6 +10,7 @@ import VerifyOtpPage from "./routes/VerifyOTP";
 import ForgotPassword from "./routes/ForgotPassword";
 import ResetPasswordPage from "./routes/ResetPassword";
 import Home from "./routes/Home";
+import ApiTestPage from "./routes/ApiTestPage";
 
 export default function App() {
   return (
@@ -25,6 +26,7 @@ export default function App() {
             <Route path="/forgot-password" element={<ForgotPassword/>} />
             <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
             <Route path="/" element={<Home />} />
+            <Route path="/api-test" element={<ApiTestPage />} />
 
             {/* 404 - Page Not Found fallback */}
             <Route path="*" element={<div>404 - Page Not Found</div>} />
