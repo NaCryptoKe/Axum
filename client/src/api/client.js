@@ -1,4 +1,4 @@
-const API_BASE = "http://localhost:3000/api";
+const API_BASE = "https://axumm.up.railway.app/api";
 
 export async function apiRequest(path, options = {}) {
     const res = await fetch(`${API_BASE}${path}`, {
