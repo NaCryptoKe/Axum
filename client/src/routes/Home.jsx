@@ -81,7 +81,7 @@ export default function HomePage() {
 
     return (
         <div>
-            <img src="./image.jpg" alt="A description of the image" />
+            <img src="https://qrdohxvbcmznrejxijgg.supabase.co/storage/v1/object/public/Axum/uploads/1769508639322_nature-3082832.jpg" alt="A description of the image" style={{width: '100dvw', height: '100dvh'}} />
             
             <h1>Popular Game Goes Here</h1>
             <h3>It's details</h3>

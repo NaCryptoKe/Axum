@@ -19,17 +19,6 @@ export function NavLinks({ authState }) {
         console.log("Searching for:", search);
     };
 
-    const handleLogout = async () => {
-        try {
-            // This calls handleLogout in AuthContext.jsx
-            // which runs the API call AND updates the state automatically
-            await logout(); 
-            navigate("/");
-        } catch (error) {
-            console.error("Logout failed:", error);
-        }
-    };
-
     return (
         <ul className="navbar-links">
             {/* UNIVERSAL LINKS */}
@@ -64,6 +53,12 @@ export function NavLinks({ authState }) {
                 <>
                     <li><Link to="/messages">Message</Link></li>
                     <li><Link to="/notification">Notifications</Link></li>
+                    <li><Link to="/cart">Cart</Link></li>
+
+                    {/* ADMIN ONLY */}
+                    {authState.user.role === "admin" && (
+                        <li><Link to="/admin">Admin</Link></li>
+                    )}
                     
                     <li>
                         <Link to={`/@${authState.user?.username}`}>
@@ -72,17 +67,6 @@ export function NavLinks({ authState }) {
                             ) : authState.user.username}
                         </Link>
                     </li>
-
-                    <li>
-                        <Button variant="danger" onClick={handleLogout}>
-                            Logout
-                        </Button>
-                    </li>
-
-                    {/* ADMIN ONLY */}
-                    {authState.user.role === "admin" && (
-                        <li><Link to="/admin">Admin</Link></li>
-                    )}
                 </>
             )}
         </ul>

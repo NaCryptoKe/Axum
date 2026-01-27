@@ -11,6 +11,9 @@ import ForgotPassword from "./routes/ForgotPassword";
 import ResetPasswordPage from "./routes/ResetPassword";
 import Home from "./routes/Home";
 import ApiTestPage from "./routes/ApiTestPage";
+import CommunityPage from "./routes/CommunityPage";
+import CreateOrganization from "./routes/CreateOrganization";
+import OrganizationPage from "./routes/OrganizationPage";
 
 export default function App() {
   return (
@@ -26,6 +29,9 @@ export default function App() {
             <Route path="/forgot-password" element={<ForgotPassword/>} />
             <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
             <Route path="/" element={<Home />} />
+            <Route path="/community" element={<CommunityPage />} />
+            <Route path="/community/create" element={<CreateOrganization />} />
+            <Route path="/organizations/:slug" element={<OrganizationPage />} />
             <Route path="/api-test" element={<ApiTestPage />} />
 
             {/* 404 - Page Not Found fallback */}

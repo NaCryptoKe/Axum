@@ -4,8 +4,8 @@ const pool = require('../config/db');
 const addMember = async ({ org_id, user_id, role = 'member' }) => {
     const result = await pool.query(
         `INSERT INTO core.organization_members (org_id, user_id, role)
-         VALUES ($1, $2, $3)
-         RETURNING org_id, user_id, role, joined_at`,
+        VALUES ($1, $2, $3)
+        RETURNING org_id, user_id, role, joined_at`,
         [org_id, user_id, role]
     );
     return result.rows[0];
@@ -64,8 +64,8 @@ const getAllMembers = async (org_id) => {
 const removeMember = async (org_id, user_id) => {
     const result = await pool.query(
         `DELETE FROM core.organization_members
-         WHERE org_id = $1 AND user_id = $2
-         RETURNING org_id, user_id`,
+        WHERE org_id = $1 AND user_id = $2
+        RETURNING org_id, user_id`,
         [org_id, user_id]
     );
     return result.rows[0];

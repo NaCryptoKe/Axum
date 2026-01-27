@@ -51,19 +51,20 @@ const createOrganization = async ({
 
 // ==== Update Organization ====
 const updateOrganization = async (id, owner_id, updates) => {
-    const { name, slug, description, website_url } = updates;
+    const { name, slug, description, website_url, contact_email } = updates;
 
     const result = await pool.query(
         `UPDATE core.organizations
-         SET
-             name = COALESCE($1, name),
-             slug = $2,
-             description = COALESCE($3, description),
-             website_url = COALESCE($4, website_url),
-             updated_at = now()
-         WHERE id = $5 AND owner_id = $6 AND is_deleted = false
-             RETURNING id, owner_id, name, slug, description, website_url, is_verified_developer, created_at, updated_at;`,
-        [name, slug, description, website_url, id, owner_id]
+        SET
+            name = COALESCE($1, name),
+            slug = COALESCE($2, name),
+            description = COALESCE($3, description),
+            website_url = COALESCE($4, website_url),
+            contact_email = COALESCE($5, contact_email),
+            updated_at = now()
+        WHERE id = $6 AND owner_id = $7 AND is_deleted = false
+            RETURNING id, owner_id, name, slug, description, website_url, is_verified_developer, created_at, updated_at, contact_email;`,
+        [name, slug, description, website_url, contact_email, id, owner_id ]
     );
 
     return result.rows[0];
@@ -116,13 +117,24 @@ const getOrganizationById = async (id) => {
 // ==== Get Organization By Slug ====
 const getOrganizationBySlug = async (slug) => {
     const result = await pool.query(
-        `SELECT id, owner_id, name, slug, description, website_url, is_verified_developer, is_deleted, created_at, updated_at
+        `SELECT id, owner_id, name, slug, description, website_url, is_verified_developer, is_deleted, created_at, updated_at, contact_email
          FROM core.organizations
          WHERE slug = $1 AND is_deleted = false`,
         [slug]
     );
 
     return result.rows[0];
+};
+
+// ==== Get All Organizations ====
+const getAllOrganizations = async () => {
+    const result = await pool.query(
+        `SELECT id, owner_id, name, slug, description, website_url, is_verified_developer, created_at, updated_at
+         FROM core.organizations
+         WHERE is_deleted = false`
+    );
+
+    return result.rows;
 };
 
 // ==== Get User Organizations ====
@@ -146,5 +158,6 @@ module.exports = {
     getOrganizationById,
     verifyOrganization,
     getOrganizationBySlug,
-    getUserOrganizations
+    getUserOrganizations,
+    getAllOrganizations
 };

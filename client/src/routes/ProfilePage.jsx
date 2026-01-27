@@ -8,6 +8,7 @@ import {
     followUser, 
     unfollowUser 
 } from "../auth/authService";
+
 import { useAuth } from "../auth/AuthContext";
 import { Button } from "../components/Button";
 
@@ -310,8 +311,8 @@ export default function ProfilePage() {
                     >
                         {isFollowing ? "Unfollow" : "Follow"}
                     </Button>
-                )}            
-            </div>            
+                )}  
+            </div>
         </div>
     );
 }

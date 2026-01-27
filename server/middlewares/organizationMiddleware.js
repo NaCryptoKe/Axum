@@ -48,6 +48,4 @@ const checkRole = (allowedRoles) => {
   };
 };
 
-module.exports = {
-  checkRole,
-};
+module.exports = checkRole;

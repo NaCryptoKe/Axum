@@ -5,7 +5,8 @@ const {
     getOrganizationById,
     verifyOrganization,
     getOrganizationBySlug,
-    getUserOrganizations
+    getUserOrganizations,
+    getAllOrganizations
 } = require("../models/organizationModel");
 
 const {
@@ -20,6 +21,7 @@ const { getUserByUsername } = require("../models/userModel");
 
 const createOrganization = async (req, res) => {
     const { user } = req;
+    console.log(user);
     if (!user?.valid) {
         return res.status(401).json({
             status: "error",
@@ -79,6 +81,34 @@ const createOrganization = async (req, res) => {
                 }
             });
         }
+        return res.status(500).json({
+            status: "error",
+            message: "Internal server error",
+            error: {
+                code: "INTERNAL_ERROR",
+                details: error.message
+            },
+            meta: {
+                timestamp: new Date().toISOString()
+            }
+        });
+    }
+};
+
+// ==== Get all organizations ====
+const getAllOrganizationsController = async (req, res) => {
+    try {
+        const organizations = await getAllOrganizations();
+        return res.status(200).json({
+            status: "success",
+            message: "Organizations retrieved successfully",
+            data: { organizations },
+            meta: {
+                timestamp: new Date().toISOString()
+            }
+        });
+    } catch (error) {
+        console.error("Error fetching all organizations:", error);
         return res.status(500).json({
             status: "error",
             message: "Internal server error",
@@ -206,15 +236,19 @@ const registerOrganization = async (req, res) => {
 
 // ==== Update Organization ====
 const editOrganization = async (req, res) => {
-    const { organization, user } = req; // from checkRole middleware
-    const { name, slug, description, website_url } = req.body;
+    const { user } = req; // from checkRole middleware
+    const { org_id } = req.params;
+    console.log(user);
+    console.log(org_id);
+    const { name, slug, description, website_url, contact_email } = req.body;
 
     try {
-        const updatedOrganization = await updateOrganization(organization.id, user.id, {
+        const updatedOrganization = await updateOrganization(org_id, user.id, {
             name,
             slug,
             description,
-            website_url
+            website_url,
+            contact_email
         });
 
         if (!updatedOrganization) {
@@ -272,10 +306,11 @@ const editOrganization = async (req, res) => {
 
 // ==== Delete Organization ====
 const deleteOrganization = async (req, res) => {
-    const { organization, user } = req; // from checkRole middleware
+    const { user } = req; // from checkRole middleware
+    const { org_id } = req.params;
 
     try {
-        const deletedOrganization = await softDeleteOrganization(organization.id, user.id);
+        const deletedOrganization = await softDeleteOrganization(org_id, user.id);
 
         if (!deletedOrganization) {
             return res.status(404).json({
@@ -317,10 +352,11 @@ const deleteOrganization = async (req, res) => {
 
 // ==== Verify Organization ====
 const verifyOrganizationController = async (req, res) => {
-    const { organization, user } = req; // from checkRole middleware
+    const { user } = req; // from checkRole middleware
+    const {org_id} = req.params;
 
     try {
-        const verifiedOrganization = await verifyOrganization(organization.id, user.id);
+        const verifiedOrganization = await verifyOrganization(org_id, user.id);
 
         return res.status(200).json({
             status: "success",
@@ -349,6 +385,7 @@ const verifyOrganizationController = async (req, res) => {
 // ==== Get Organization Info By Slug ====
 const getOrganizationBySlugController = async (req, res) => {
     const { user } = req;
+    console.log(user)
     const { slug } = req.params;
 
     try {
@@ -471,6 +508,78 @@ const joinOrganizationController = async (req, res) => {
         });
     }
 };
+
+// ==== Leave Organization ====
+const leaveOrganizationController = async (req, res) => {
+    const { user } = req;
+    const { slug } = req.params;
+
+    // 1. Authentication Check
+    if (!user?.valid) {
+        return res.status(401).json({
+            status: "error",
+            message: "Not authorized",
+            error: { code: "UNAUTHORIZED", details: "Login required" },
+            meta: { timestamp: new Date().toISOString() }
+        });
+    }
+
+    // 2. Resolve Slug to ID
+    const org = await getOrganizationBySlug(slug);
+    if (!org) {
+        return res.status(404).json({
+            status: "error",
+            message: "Organization not found",
+            error: { code: "NOT_FOUND", details: "No organization found" },
+            meta: { timestamp: new Date().toISOString() }
+        });
+    }
+
+    // 3. Membership Verification (Inverse of Join)
+    const existingMember = await getMember(org.id, user.id);
+    if (!existingMember) {
+        return res.status(404).json({
+            status: "error",
+            message: "You are not a member of this organization.",
+            error: { code: "NOT_A_MEMBER", details: "User is not part of this org" },
+            meta: { timestamp: new Date().toISOString() }
+        });
+    }
+
+    // 4. Prevention: Don't let the owner leave without transferring ownership
+    if (org.owner_id === user.id) {
+        return res.status(403).json({
+            status: "error",
+            message: "Owners cannot leave their own organization. Transfer ownership or delete the org instead.",
+            error: { code: "FORBIDDEN", details: "Owner must stay" },
+            meta: { timestamp: new Date().toISOString() }
+        });
+    }
+
+    try {
+        // 5. Execution
+        const deletedMember = await removeMember(org.id, user.id);
+        
+        return res.status(200).json({
+            status: "success",
+            message: "Successfully left the organization",
+            data: { 
+                org_id: deletedMember.org_id,
+                user_id: deletedMember.user_id 
+            },
+            meta: { timestamp: new Date().toISOString() }
+        });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            status: "error",
+            message: "Internal server error",
+            error: { code: "INTERNAL_ERROR", details: err.message },
+            meta: { timestamp: new Date().toISOString() }
+        });
+    }
+};
+
 
 // ==== Add member by Admin ====
 const addMemberByAdminController = async (req, res) => {
@@ -902,18 +1011,6 @@ const getAllMembersController = async (req, res) => {
         });
     }
 
-    const member = await getMember(org.id, user.id);
-    if (!member) {
-         return res.status(403).json({
-            status: "error",
-            message: 'You must be a member to view the member list.',
-            error: { code: "FORBIDDEN", details: "You are not a member of this organization." },
-            meta: {
-                timestamp: new Date().toISOString()
-            }
-        });
-    }
-
     try {
         const members = await getAllMembers(org.id);
         return res.status(200).json({
@@ -979,5 +1076,7 @@ module.exports = {
     getMemberController,
     removeMemberController,
     createOrganization,
-    getUserOrganizationsControl
+    getUserOrganizationsControl,
+    leaveOrganizationController,
+    getAllOrganizationsController
 };
