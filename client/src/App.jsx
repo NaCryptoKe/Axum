@@ -1,44 +1,13 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "./auth/AuthContext";
-import { AppLayout } from "./layouts/AppLayout";
-import { ProtectedRoute } from "./routes/ProtectedRoute"
+import AppRoutes from './routes/AppRoutes';
+import Navbar from './components/navbar/Navbar';
 
-import LoginPage from "./routes/Login";
-import RegisterPage from "./routes/Register";
-import ProfilePage from "./routes/ProfilePage";
-import VerifyOtpPage from "./routes/VerifyOTP";
-import ForgotPassword from "./routes/ForgotPassword";
-import ResetPasswordPage from "./routes/ResetPassword";
-import Home from "./routes/Home";
-import ApiTestPage from "./routes/ApiTestPage";
-import CommunityPage from "./routes/CommunityPage";
-import CreateOrganization from "./routes/CreateOrganization";
-import OrganizationPage from "./routes/OrganizationPage";
-
-export default function App() {
+function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <AppLayout>
-          <Routes>
-            {/* PUBLIC ROUTES - Anyone can see these */}
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route path="/:username" element={<ProfilePage />} />
-            <Route path="/verify-otp" element={<VerifyOtpPage/>} />
-            <Route path="/forgot-password" element={<ForgotPassword/>} />
-            <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
-            <Route path="/" element={<Home />} />
-            <Route path="/community" element={<CommunityPage />} />
-            <Route path="/community/create" element={<CreateOrganization />} />
-            <Route path="/organizations/:slug" element={<OrganizationPage />} />
-            <Route path="/api-test" element={<ApiTestPage />} />
-
-            {/* 404 - Page Not Found fallback */}
-            <Route path="*" element={<div>404 - Page Not Found</div>} />
-          </Routes>
-        </AppLayout>
-      </BrowserRouter>
-    </AuthProvider>
+    <>
+      <Navbar />
+      <AppRoutes />
+    </>
   );
 }
+
+export default App;

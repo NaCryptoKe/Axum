@@ -9,6 +9,7 @@ export function Input({ label, name, type = "text", value, onChange, error }) {
                 value={value}
                 onChange={onChange}
             />
+            {error && <p className="error-message">{error}</p>}
         </div>
     );
 }

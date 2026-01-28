@@ -323,6 +323,7 @@ const getAllUsersSessions = async (req, res) => {
     if (!req.user?.valid) {
         return res.status(401).json({ status: "error", message: "Unauthorized", error: { code: "UNAUTHORIZED", details: "Unauthorized." } });
     }
+    console.log(req.user)
     try {
         const sessions = await getAllUsersSession(req.user.id);
         if (!sessions || sessions.length === 0) {
@@ -386,25 +387,51 @@ const deleteUserSession = async (req, res) => {
  * @param {object} res - Express response object.
  */
 const authenticate = (req, res) => {
+    // Check if middleware marked the user as valid
+    if (!req.user?.valid) {
+        console.log('Unauthorized access attempt');
+        return res.status(401).json({
+            status: "error",
+            message: "Unauthorized",
+            error: {
+                code: "UNAUTHORIZED",
+                details: "Unauthorized."
+            }
+        });
+    }
+
     try {
-        const token = req.cookies?.token || req.headers['authorization']?.split(' ')[1];
-        if (!token) {
-            return res.status(401).json({ status: "error", message: "Token not found", error: { code: "TOKEN_NOT_FOUND", details: "Token not found." } });
-        }
-        const decoded = jwt.verify(token, process.env.SECRET_STRING);
-        return res.json({ 
-            status: "success", 
-            data: decoded,
+        // req.user is already populated by the middleware
+        const { id, username, role, session_id_cookie: sessionId } = req.user;
+
+        return res.json({
+            status: "success",
+            data: {
+                id,
+                username,
+                role,
+                sessionId
+            },
             meta: {
                 timestamp: new Date().toISOString(),
                 requestId: req.id
             }
         });
     } catch (err) {
-        console.error('Token validation error:', err);
-        return res.status(401).json({ status: "error", message: 'Invalid token', error: { code: "INVALID_TOKEN", details: "Invalid or expired token." } });
+        console.error('Authenticate route error:', err);
+        return res.status(500).json({
+            status: "error",
+            message: 'Server error',
+            error: {
+                code: "INTERNAL_ERROR",
+                details: "An internal error occurred."
+            }
+        });
     }
 };
+
+module.exports = authenticate;
+
 
 /**
  * Logs out the user by deleting their session and clearing the auth cookie.
@@ -412,10 +439,17 @@ const authenticate = (req, res) => {
  * @param {object} res - Express response object.
  */
 const logout = async (req, res) => {
+    if (!req.user?.valid) {
+        console.log('FIRST')
+        return res.status(401).json({ status: "error", message: "Unauthorized", error: { code: "UNAUTHORIZED", details: "Unauthorized." } });
+    }
+
+    console.log('HELLO:', req.user.session_id_cookie);
     try {
-        const { sessionId } = req.user;
-        if (sessionId) {
-            await deleteSession(sessionId);
+        const { session_id_cookie } = req.user;
+        if (session_id_cookie) {
+            await deleteSession(session_id_cookie);
+            console.log("Deleted Session")
         }
         res.clearCookie('token', {
             httpOnly: true,

@@ -13,5 +13,3 @@ export async function apiRequest(path, options = {}) {
     const json = await res.json();
     return json;
 }
-
-// Connects to the backend

@@ -1,18 +1,46 @@
-import { NavLinks } from "./NavLinks";
-import { useAuth } from "../../auth/AuthContext";
-import './navbar.css';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
 
-export function Navbar() {
-    const { state } = useAuth();
+const Navbar = () => {
+    const { user, loading, logout } = useAuth();
+    const navigate = useNavigate();
+
+    if (loading) return null; // prevent flicker
 
     return (
         <nav className="navbar">
-            <div className="navbar-brand">
-                <span>Axum</span>
-            </div>
+            <li><Link to="/" className="logo">MyApp</Link></li>
+            <li><Link to="/browse" className="logo">Browse</Link></li>
+            <li><Link to="/community" className="logo">Community</Link></li>
 
-            {/* We pass the whole state here */}
-            <NavLinks authState={state} /> 
+            <li>{!user ? (
+                <>
+                    <Link to="/login">Login</Link>
+                </>
+            ) : (
+                <>
+                    <button onClick={() => navigate('/dashboard')}>
+                        Notification
+                    </button>
+                    <button onClick={() => navigate('/dashboard')}>
+                        Messages
+                    </button>
+                    <button onClick={() => navigate('/dashboard')}>
+                        Cart
+                    </button>
+                    <button onClick={() => navigate('/dashboard')}>
+                        Dashboard
+                    </button>
+                </>
+            )}</li>
+
+            <li>{user &&  user.role === 'admin' && (
+                <button onClick={() => navigate('/admin')}>
+                    Admin
+                </button>
+            )}</li>
         </nav>
     );
-}
+};
+
+export default Navbar;

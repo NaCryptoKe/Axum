@@ -1,3 +1,4 @@
+const { session } = require('passport');
 const pool = require('../config/db');
 const UAParser = require('ua-parser-js');
 
@@ -24,6 +25,17 @@ const createSession = async (user_id, user_agent, ip_address, expires_at) => {
     );
 
     return result.rows[0];
+};
+
+const getSessionById = async (session_id) => {
+    const result = await pool.query(
+        `SELECT *
+        FROM core.sessions
+        WHERE id = $1`,
+        [session_id]
+    );
+
+    return result.rows[0]; // return the session object or undefined if not found
 };
 
 const updateLastSeen = async (session_id) => {
@@ -66,4 +78,4 @@ const expireSession = async (session_id) => {
 };
 
 
-module.exports = { createSession, updateLastSeen, expireSession, getAllUsersSession, deleteSession };
+module.exports = { createSession, updateLastSeen, expireSession, getAllUsersSession, deleteSession, getSessionById };
