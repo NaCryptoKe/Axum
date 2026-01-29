@@ -8,6 +8,8 @@ import ResetPasswordPage from '../pages/auth/ResetPassword';
 import HomePage from '../pages/Home';
 import ProfilePage from '../pages/Profile';
 import EditProfilePage from '../pages/EditProfile';
+import CreateOrganizationPage from '../pages/CreateOrgPage';
+import OrganizationPage from '../pages/OrgPage';
 import ProtectedRoute from './ProtectedRoute';
 import { useAuth } from '../hooks/useAuth';
 
@@ -23,6 +25,8 @@ const AppRoutes = () => {
             <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
             <Route path="/:username" element={<ProfilePage />} />
             <Route path="/edit-profile/:username" element={<EditProfilePage />} />
+            <Route path="/org/register" element={<CreateOrganizationPage />} />
+            <Route path="/org/:slug" element={<OrganizationPage />} />
 
             <Route path="/" element={<HomePage />} />
 

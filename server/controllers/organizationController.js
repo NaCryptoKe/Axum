@@ -17,7 +17,7 @@ const {
     removeMember
 } = require("../models/organizationMemberModel");
 
-const { getUserByUsername } = require("../models/userModel");
+const { getUserByUsername, getUserById } = require("../models/userModel");
 
 const createOrganization = async (req, res) => {
     const { user } = req;
@@ -36,7 +36,7 @@ const createOrganization = async (req, res) => {
         });
     }
 
-    const { name } = req.body;
+    const { name, description, website_url } = req.body;
     if (!name || typeof name !== "string" || name.trim().length === 0) {
         return res.status(400).json({
             status: "error",
@@ -56,6 +56,8 @@ const createOrganization = async (req, res) => {
             owner_id: user.id,
             name,
             slug: name.toLowerCase().replace(/\s+/g, '-'),
+            description,
+            website_url
         });
         await addMember({ org_id: organization.id, user_id: user.id, role: 'owner' });
         return res.status(201).json({
@@ -1013,10 +1015,23 @@ const getAllMembersController = async (req, res) => {
 
     try {
         const members = await getAllMembers(org.id);
+
+        // Map through members to attach user details
+        const membersWithDetails = await Promise.all(
+            members.map(async (member) => {
+                const user = await getUserById(member.user_id);
+                return {
+                    ...member,
+                    username: user?.username || 'Unknown User',
+                    avatarUrl: user?.avatar_url || null
+                };
+            })
+        );
+
         return res.status(200).json({
             status: "success",
             message: "Members retrieved",
-            data: { members },
+            data: { members: membersWithDetails }, // Return the enriched array
             meta: {
                 timestamp: new Date().toISOString()
             }

@@ -9,8 +9,8 @@ CREATE TYPE core.user_role AS ENUM (
 );
 -- Organization Member Roles for permission scoping within an organization
 CREATE TYPE core.org_member_role AS ENUM (
-    'member',
-    'moderator',
+    'member', -- remove
+    'moderator', -- remove
     'developer',
     'finance',
     'admin',

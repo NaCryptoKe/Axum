@@ -76,8 +76,8 @@ router.use('/reviews', reviewRouter);
 // --- Game Routes ---
 router.post('/', isVerifiedMiddleware, createGame);
 router.put('/:id', isVerifiedMiddleware, updateGame);
-router.get('/org/:org_slug', getOrganizationGames);
-router.get('/:org_slug/:game_slug', getGame);
+router.get('/org/@:org_slug', getOrganizationGames);
+router.get('/@:org_slug/@:game_slug', getGame);
 router.delete('/:id', isVerifiedMiddleware, deleteGame);
 router.get('/popular', getPopularGames);
 router.get('/new', getNewGames);

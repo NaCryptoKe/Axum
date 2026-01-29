@@ -2,12 +2,12 @@ const pool = require('../config/db');
 
 // ==== Create Organization ====
 const createOrganization = async ({
-                                      owner_id,
-                                      name,
-                                      slug,
-                                      description = null,
-                                      website_url = null
-                                  }) => {
+        owner_id,
+        name,
+        slug,
+        description = null,
+        website_url = null
+    }) => {
     let generatedSlug = slug;
 
     try {
@@ -119,7 +119,7 @@ const getOrganizationBySlug = async (slug) => {
     const result = await pool.query(
         `SELECT id, owner_id, name, slug, description, website_url, is_verified_developer, is_deleted, created_at, updated_at, contact_email
          FROM core.organizations
-         WHERE slug = $1 AND is_deleted = false`,
+         WHERE slug = $1 AND is_deleted = false AND is_verified_developer = true`,
         [slug]
     );
 

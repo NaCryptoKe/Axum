@@ -8,7 +8,8 @@ const { healthCheck, getUserOrganizationsControl, createOrganization,
     joinOrganizationController,
     getAllMembersController,
     leaveOrganizationController,
-    getAllOrganizationsController
+    getAllOrganizationsController,
+    getMemberController
 } = require('../controllers/organizationController');
 const authenticateMiddleware = require('../middlewares/authenticateMiddleware');
 const checkRole = require('../middlewares/organizationMiddleware');
@@ -18,6 +19,7 @@ router.get('/health', healthCheck);
 router.get('/user/:userId', getUserOrganizationsControl);
 
 router.get ('/@:slug', authenticateMiddleware, getOrganizationBySlugController);
+router.get ('/@:slug/@:username', authenticateMiddleware, getMemberController);
 router.get ('/@:slug/members', authenticateMiddleware, getAllMembersController);
 router.post ('/@:slug/', authenticateMiddleware, joinOrganizationController);
 router.delete ('/@:slug/', authenticateMiddleware, leaveOrganizationController);

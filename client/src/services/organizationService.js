@@ -6,7 +6,10 @@ import { apiRequest } from "../api/client";
  */
 
 export async function createOrganization(data) {
-    return apiRequest("/organizations/", { method: "POST", body: JSON.stringify(data) });
+    return apiRequest("/organizations/", { 
+            method: "POST", 
+            body: JSON.stringify(data) 
+        });
 }
 
 export async function getAllOrganizations() {
@@ -14,11 +17,15 @@ export async function getAllOrganizations() {
 }
 
 export async function getOrganizationBySlug(slug) {
-    return apiRequest(`/organizations/@${slug}`);
+    return apiRequest(`/organizations/${slug}`);
 }
 
 export async function getOrgMembers(slug) {
-    return apiRequest(`/organizations/@${slug}/members`);
+    return apiRequest(`/organizations/${slug}/members`);
+}
+
+export async function getOrgMember(slug, username) {
+    return apiRequest(`/organizations/${slug}/@${username}`);
 }
 
 export async function joinOrganization(slug) {
