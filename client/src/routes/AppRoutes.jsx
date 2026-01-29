@@ -3,6 +3,11 @@ import LoginPage from '../pages/auth/Login';
 import SignupPage from '../pages/auth/Signup';
 import OtpVerificationPage from '../pages/auth/OtpVerificationPage';
 import DashboardPage from '../pages/Dashboard';
+import ForgotPasswordPage from '../pages/auth/ForgotPassword';
+import ResetPasswordPage from '../pages/auth/ResetPassword';
+import HomePage from '../pages/Home';
+import ProfilePage from '../pages/Profile';
+import EditProfilePage from '../pages/EditProfile';
 import ProtectedRoute from './ProtectedRoute';
 import { useAuth } from '../hooks/useAuth';
 
@@ -14,6 +19,12 @@ const AppRoutes = () => {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/verify-otp" element={<OtpVerificationPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+            <Route path="/:username" element={<ProfilePage />} />
+            <Route path="/edit-profile/:username" element={<EditProfilePage />} />
+
+            <Route path="/" element={<HomePage />} />
 
             <Route element={<ProtectedRoute />}>
                 <Route path="/dashboard" element={<DashboardPage />} />

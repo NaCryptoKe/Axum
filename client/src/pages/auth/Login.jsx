@@ -11,9 +11,16 @@ const LoginPage = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            console.log(identifier, password)
-            await login({ identifier, password });
-            navigate('/dashboard'); // Redirect after success
+            const response = await login({ identifier, password });
+            console.log('Login:' ,response.data.user.username)
+
+            if (response.status === 'success') {
+                navigate(`/@${response.data.user.username}`); // Redirect after success
+            } else {
+                if (response?.message === 'Email not verified') {
+                    navigate('/verify-otp', { state: { id: response.data.userId } });
+                }
+            }
         } catch {
             // Error is already handled by the hook's state
         }
@@ -44,6 +51,7 @@ const LoginPage = () => {
                 </button>
             </form>
             <p>Dont have an account?<Link to="/signup">Click Here</Link></p>
+            <p><Link to="/forgot-password">Forgot Password</Link></p>
         </div>
     );
 };

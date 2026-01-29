@@ -14,9 +14,7 @@ const DashboardPage = () => {
                 </>
             )}
 
-            <button onClick={logout}>
-                Logout
-            </button>
+            
         </>
     );
 } 

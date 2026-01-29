@@ -44,16 +44,17 @@ export async function terminateSession(sessionId) {
 //export const googleAuthUrl = `${process.env.NEXT_PUBLIC_API_URL}/auth/google`;
 
 // OTP Management
-export async function generateOtp(userId) {
+export async function generateOtp(data) {
     return apiRequest("/auth/generate-otp", { 
         method: "POST", 
-        body: JSON.stringify({ userId }) 
+        body: JSON.stringify( data ) 
     });
 }
 
-export async function verifyOtp(userId, otp) {
+export async function verifyOtp(credentials) {
+    console.log(credentials)
     return apiRequest("/auth/verify-otp", { 
         method: "POST", 
-        body: JSON.stringify({ userId, otp }) 
+        body: JSON.stringify( credentials ) 
     });
 }

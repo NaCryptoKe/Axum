@@ -317,8 +317,8 @@ const getTopRated = async (limit = 10) => {
         FROM game_catalog.games g
         JOIN core.organizations o ON g.org_id = o.id
         WHERE g.status = 'published' 
-          AND g.is_deleted = false 
-          AND g.review_count > 0
+        AND g.is_deleted = false 
+        AND g.review_count > 0
         ORDER BY "avgRating" DESC
         LIMIT $1`;
     const { rows } = await pool.query(query, [limit]);

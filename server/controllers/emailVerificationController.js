@@ -17,6 +17,7 @@ require('dotenv').config();
 const generateOtp = async (req, res) => {
     try {
         const { user_id } = req.body;
+        console.log(user_id)
 
         if (!user_id) {
             return res.status(400).json({ status: "error", message: 'Bad Request', error: { code: "BAD_REQUEST", details: 'user_id is required' } });

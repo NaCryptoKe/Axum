@@ -6,7 +6,7 @@ import { apiRequest } from "../api/client";
  */
 
 export async function getUserProfile(username) {
-    return apiRequest(`/users/@${username}`);
+    return apiRequest(`/users/${username}`);
 }
 
 export async function getActiveUsers() {

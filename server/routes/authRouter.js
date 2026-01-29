@@ -33,7 +33,7 @@ router.get("/google", google);
 router.get("/google/callback", googleCallback);
 
 // OTP (One-Time Password) Routes
-router.post('/generate-otp', rateLimiter, checkCooldown, generateOtp);
+router.post('/generate-otp',  generateOtp);
 router.post('/verify-otp', verifyOtp);
 
 router.use(authenticateMiddleware); // Middleware to authenticate all routes below this line

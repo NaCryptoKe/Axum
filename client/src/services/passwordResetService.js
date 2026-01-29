@@ -5,16 +5,16 @@ import { apiRequest } from "../api/client";
  * Base Route: /api/password-reset
  */
 
-export async function requestPasswordReset(email) {
+export async function requestPasswordReset(identifier) {
     return apiRequest("/password-reset/generate-password-reset", { 
         method: "POST", 
-        body: JSON.stringify({ email }) 
+        body: JSON.stringify({ identifier }) 
     });
 }
 
 export async function updatePassword(token, password) {
     return apiRequest(`/password-reset/update-password/${token}`, { 
         method: "POST", 
-        body: JSON.stringify({ password }) 
+        body: JSON.stringify({ newPassword: password }) 
     });
 }

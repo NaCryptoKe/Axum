@@ -1,6 +1,10 @@
 import { useContext, useState } from 'react';
 import { AuthContext } from '../context/AuthContext';
-import { login as loginService, register as registerService } from '../services/authService';
+import { login as loginService, 
+    register as registerService, 
+    generateOtp as generateOtpService,
+    verifyOtp as verifyOtpService
+} from '../services/authService';
 
 export const useAuth = () => {
     const context = useContext(AuthContext);
@@ -47,7 +51,6 @@ export const useAuth = () => {
                 
                 setError(errorMessage);
                 console.error("Login Error Profile:", response.message);
-                return response;
             }
 
             return response;
@@ -59,11 +62,46 @@ export const useAuth = () => {
         }
     };
 
+    const generateOtp = async (data) => {
+        try {
+            console.log(`Data`, data)
+            const response = await generateOtpService(data);
+
+            if (response?.status === 'error' ){
+                const errorMessage = response.message || "An error occurred during login";
+                
+                setError(errorMessage);
+            }
+            return response
+        } catch {
+            setError(err.message || "Registration failed");
+            throw err;
+        }
+    }
+
+    const verifyOtp = async (data) => {
+        try {
+            const response = await verifyOtpService(data);
+
+            if (response?.status === 'error' ){
+                const errorMessage = response.message || "An error occurred during login";
+                
+                setError(errorMessage);
+            }
+            return response
+        } catch {
+            setError(err.message || "Registration failed");
+            throw err;
+        }
+    }
+
     return {
         ...context, // user, logout, loading
         login,
         register,
         isSubmitting,
-        error
+        error,
+        verifyOtp,
+        generateOtp
     };
 };

@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { generateOtp, verifyOtp } from '../../services/authService';
-import { useAuth } from '../../hooks/useAuth'; // Assuming useAuth provides error/submitting states
+import { useAuth } from '../../hooks/useAuth';
 
-const OTP_RESEND_TIMER_SECONDS = 300; // 5 minutes
+const OTP_RESEND_TIMER_SECONDS = 0; // 5 minutes
 
 const OtpVerificationPage = () => {
     const [otp, setOtp] = useState('');
@@ -11,15 +10,16 @@ const OtpVerificationPage = () => {
     const [canResend, setCanResend] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [pageError, setPageError] = useState(null); // Separate error for this page
+    const { generateOtp, verifyOtp, setUser, error } = useAuth();
 
     const navigate = useNavigate();
     const location = useLocation();
-    const { setUser } = useAuth(); // To set user after successful OTP verification
 
     const userId = location.state?.id;
+    console.log(userId)
 
 
-    // Redirect if no email is provided (i.e., not coming from signup)
+    // Redirect if no id is provided (i.e., not coming from signup)
     useEffect(() => {
         if (!userId) {
             navigate('/signup', { replace: true });
@@ -47,15 +47,13 @@ const OtpVerificationPage = () => {
     };
 
     const handleResendOtp = async () => {
-        if (!canResend || !userEmail) return;
+        if (!canResend || !userId) return;
 
         setCanResend(false);
         setTimer(OTP_RESEND_TIMER_SECONDS);
         setPageError(null);
         try {
-            // Call the service to generate a new OTP
-            await generateOtp(userId);
-            alert('New OTP sent to your email!');
+            await generateOtp({user_id: userId});
         } catch (error) {
             setPageError(error.message || 'Failed to resend OTP.');
             setCanResend(true); // Allow resend again if failed
@@ -64,15 +62,21 @@ const OtpVerificationPage = () => {
 
     const handleSubmitOtp = async (e) => {
         e.preventDefault();
+
         if (!otp || !userId) {
-            setPageError('Please enter the OTP.');
+            console.log('Please enter the OTP.');
             return;
         }
 
         setIsSubmitting(true);
         setPageError(null);
         try {
-            const response = await verifyOtp(userEmail, otp);
+            console.log(`user id: ${userId}, otp ${otp}`)
+            const response = await verifyOtp({ 
+                user_id: userId, 
+                otp: otp 
+            })
+            console.log(response)
             if (response.status === "success") {
                 setUser(response.data.user); // Update global auth context
                 navigate('/dashboard', { replace: true });
@@ -90,9 +94,6 @@ const OtpVerificationPage = () => {
         <div className="otp-container">
             <form onSubmit={handleSubmitOtp}>
                 <h2>Verify Your Email</h2>
-                <p>An OTP has been sent to {userEmail}. Please enter it below.</p>
-                
-                {pageError && <p className="error-text">{pageError}</p>}
 
                 <input
                     type="text"

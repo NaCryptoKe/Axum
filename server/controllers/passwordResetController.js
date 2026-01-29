@@ -42,7 +42,7 @@ const generatePasswordResetToken = async (req, res) => {
             // A more secure approach is to always return a 200 OK response,
             // but for this implementation, we use randomDelay to mitigate timing attacks.
             return res.status(404).json({
-                success: false,
+                status: 'success',
                 message: 'User not found',
                 data: null,
                 error: {
@@ -61,7 +61,7 @@ const generatePasswordResetToken = async (req, res) => {
         if (!result) {
             await randomDelay();
             return res.status(502).json({
-                success: false,
+                status: 'error',
                 message: 'Bad Gateway',
                 data: null,
                 error: {
@@ -77,7 +77,7 @@ const generatePasswordResetToken = async (req, res) => {
         console.log(passwordResetLink);
 
         return res.status(201).json({
-            success: true,
+            status: 'success',
             message: 'Password reset link has been sent to the associated email address.',
             data: {
                 token: token,
@@ -90,7 +90,7 @@ const generatePasswordResetToken = async (req, res) => {
         console.error(error);
         await randomDelay();
         return res.status(500).json({
-            success: false,
+            status: 'error',
             message: 'Server error',
             data: null,
             error: {
@@ -118,7 +118,7 @@ const resetPassword = async (req, res) => {
 
         if (!token || !newPassword) {
             return res.status(400).json({
-                success: false,
+                status: 'success',
                 message: 'Missing Credentials',
                 data: null,
                 error: {
@@ -133,7 +133,7 @@ const resetPassword = async (req, res) => {
         if (!tokenResult.valid) {
             await randomDelay();
             return res.status(400).json({
-                success: false,
+                status: 'error',
                 message: 'Bad Request',
                 data: null,
                 error: {
@@ -155,7 +155,7 @@ const resetPassword = async (req, res) => {
 
         if (unprocessableErrors.length > 0)
             return res.status(422).json({
-                success: false,
+                status: 'error',
                 message: "Unprocessable inputs",
                 data: null,
                 error: {
@@ -174,7 +174,7 @@ const resetPassword = async (req, res) => {
         await invalidateToken(token);
 
         return res.status(200).json({
-            success: true,
+            status: 'success',
             message: 'Successfully validated token',
             data: {
                 detail: 'Successfully updated password',
@@ -185,7 +185,7 @@ const resetPassword = async (req, res) => {
         console.error(error);
         return res.status(500).json(
             {
-                success: false,
+                status: 'error',
                 message: 'Server error',
                 data: null,
                 error: {

@@ -1,9 +1,16 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { useUser } from '../../hooks/useUser';
+import React, { useEffect } from 'react';
 
 const Navbar = () => {
     const { user, loading, logout } = useAuth();
+    const { profile, fetchProfile } = useUser();
     const navigate = useNavigate();
+
+    useEffect(() => {
+        fetchProfile(`@${user?.username}`);
+    }, [user?.username, fetchProfile]);
 
     if (loading) return null; // prevent flicker
 
@@ -28,8 +35,12 @@ const Navbar = () => {
                     <button onClick={() => navigate('/dashboard')}>
                         Cart
                     </button>
-                    <button onClick={() => navigate('/dashboard')}>
-                        Dashboard
+                    <button onClick={() => navigate(`/@${user?.username}`)}>
+                        <img 
+                            src={profile?.profilePicture || '/default-avatar.png'} 
+                            alt="Avatar" 
+                            style={{ width: '32px', borderRadius: '50%' }}
+                        />
                     </button>
                 </>
             )}</li>
