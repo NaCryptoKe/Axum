@@ -14,7 +14,7 @@ const {
     updateMemberRole,
     getMember,
     getAllMembers,
-    removeMember
+    removeMember,
 } = require("../models/organizationMemberModel");
 
 const { getUserByUsername, getUserById } = require("../models/userModel");
@@ -1050,32 +1050,38 @@ const getAllMembersController = async (req, res) => {
 };
 
 const getUserOrganizationsControl = async (req, res) => {
-        const { userId } = req.params;
-        try {
-            const organizations = await getUserOrganizations(userId);
-            return res.status(200).json({
-                status: "success",
-                message: "Organizations retrieved successfully",
-                data: organizations,
-                meta: {
-                    timestamp: new Date().toISOString()
-                }
-            });
-        } catch (error) {
-            console.error("Error fetching user organizations:", error);
-            return res.status(500).json({
-                status: "error",
-                message: "Internal server error",
-                error: {
-                    code: "INTERNAL_ERROR",
-                    details: error.message
-                },
-                meta: {
-                    timestamp: new Date().toISOString()
-                }
-            });
-        }
+    const { username } = req.params;
+    const user = await getUserByUsername(username);
+    try {
+        const organizations = await getUserOrganizations(user.id);
+        const validOrganizations = organizations.filter(org => org.is_verified_developer);
+        const invalidOrganizations = organizations.filter(org => !org.is_verified_developer);
+        return res.status(200).json({
+            status: "success",
+            message: "Organizations retrieved successfully",
+            data: {
+                validOrganizations,
+                invalidOrganizations
+            },
+            meta: {
+                timestamp: new Date().toISOString()
+            }
+        });
+    } catch (error) {
+        console.error("Error fetching user organizations:", error);
+        return res.status(500).json({
+            status: "error",
+            message: "Internal server error",
+            error: {
+                code: "INTERNAL_ERROR",
+                details: error.message
+            },
+            meta: {
+                timestamp: new Date().toISOString()
+            }
+        });
     }
+}
 
 // ==== Exports ====
 module.exports = {

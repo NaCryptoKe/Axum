@@ -23,6 +23,7 @@ const createGame = async (req, res) => {
     let attempts = 0;
 
     const member = await getMember(org_id, user.id);
+    console.log(org_id)
     if (!member || !['admin', 'owner', 'developer'].includes(member.role)) {
         return res.status(403).json({ status: "error", message: "Forbidden", error: { code: 403, details: "User does not have permission to create a game in this organization." }, meta: { timestamp: new Date().toISOString() } });
     }

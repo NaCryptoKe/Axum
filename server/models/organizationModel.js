@@ -140,10 +140,10 @@ const getAllOrganizations = async () => {
 // ==== Get User Organizations ====
 const getUserOrganizations = async (userId) => {
     const result = await pool.query(
-        `SELECT o.id, o.name, o.slug
-         FROM core.organizations o
-         JOIN community.organization_members om ON o.id = om.org_id
-         WHERE om.user_id = $1 AND o.is_deleted = false`,
+        `SELECT o.name, o.slug, o.is_verified_developer
+        FROM core.organizations o
+        JOIN core.organization_members om ON o.id = om.org_id
+        WHERE om.user_id = $1 AND o.is_deleted = false`,
         [userId]
     );
     return result.rows;

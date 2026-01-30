@@ -830,8 +830,13 @@ const undeleteUserController = async (req, res) => {
     }
 };
 
+const getUserOrganization = async (req, res) => {
+
+}
+
 module.exports = {
     getUserProfile,
+    getUserOrganization,
     onlineStatus,
     updateProfile,
     allUsers,

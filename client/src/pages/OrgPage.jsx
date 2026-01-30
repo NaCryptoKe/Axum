@@ -67,7 +67,12 @@ const OrgPage = () => {
                 )}
                 {(isOwner || isAdmin || isDev) && (
                     <div className="org-actions">
-                        <button onClick={() => navigate(`/orgs/${slug}/edit`)} className="edit-org-button">
+                        <button 
+                            onClick={() => navigate(`/orgs/${slug}/upload-game`, { 
+                                state: { orgId: organization.id } 
+                            })} 
+                            className="edit-org-button"
+                        >
                             Upload Game
                         </button>
                     </div>

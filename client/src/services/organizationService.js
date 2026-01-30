@@ -47,3 +47,7 @@ export async function deleteOrganization(orgId) {
 export async function verifyOrganization(orgId) {
     return apiRequest(`/organizations/verify/${orgId}`, { method: "POST" });
 }
+
+export async function getAllOrganizationsOfUser(username) {
+    return apiRequest(`/organizations/@${username/orgs}`);
+}

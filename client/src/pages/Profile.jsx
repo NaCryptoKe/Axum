@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom'; // Import useNavigate
 import { useUser } from '../hooks/useUser';
 import { useAuth } from '../hooks/useAuth';
+import { useOrganizations } from '../hooks/useOrganizations';
 import React, { useEffect } from 'react';
 
 const ProfilePage = () => {
@@ -8,6 +9,12 @@ const ProfilePage = () => {
     const navigate = useNavigate(); // Initialize navigation
     const { user: currentUser, logout } = useAuth();
     const { profile, loading, fetchProfile } = useUser();
+    const { organizations, fetchUserOrgs } = useOrganizations();
+
+    useEffect(() => {
+        fetchUserOrgs(username.username);
+    }, [username, fetchUserOrgs]);
+    console.log(organizations)
 
     useEffect(() => {
         fetchProfile(username);
@@ -38,6 +45,7 @@ const ProfilePage = () => {
             </div>
             
             {isOwnProfile ? (
+                <>
                 <div className="owner-actions">
                     
                     <span>Email: {profile.email}</span>
@@ -50,6 +58,11 @@ const ProfilePage = () => {
                         Delete Account
                     </button>
                 </div>
+
+                <div>
+                    {console.log}
+                </div>
+                </>
             ) : (
                 <div className="visitor-actions">
                     <span className={`status-tag ${profile.isOnline ? 'online' : 'offline'}`}>
@@ -60,6 +73,7 @@ const ProfilePage = () => {
                     </button>
                 </div>
             )}
+
         </div>
     );
 };

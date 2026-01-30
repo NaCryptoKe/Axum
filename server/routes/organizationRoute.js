@@ -16,8 +16,6 @@ const checkRole = require('../middlewares/organizationMiddleware');
 
 router.get('/health', healthCheck);
 
-router.get('/user/:userId', getUserOrganizationsControl);
-
 router.get ('/@:slug', authenticateMiddleware, getOrganizationBySlugController);
 router.get ('/@:slug/@:username', authenticateMiddleware, getMemberController);
 router.get ('/@:slug/members', authenticateMiddleware, getAllMembersController);
@@ -28,5 +26,6 @@ router.post('/', authenticateMiddleware, createOrganization);
 router.patch('/:org_id', authenticateMiddleware, editOrganization);
 router.delete('/:org_id', authenticateMiddleware, deleteOrganization);
 router.post('/verify/:org_id', authenticateMiddleware, verifyOrganizationController);
+router.get('/@:username/orgs', authenticateMiddleware, getUserOrganizationsControl);
 
 module.exports = router;

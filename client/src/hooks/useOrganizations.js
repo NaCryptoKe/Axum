@@ -12,6 +12,7 @@ export const useOrganizations = () => {
     const [members, setMembers] = useState([]); 
     const [games, setGames] = useState([]);
     const [role, setRole] = useState(null); 
+    const [organizations, setOrganizations] = useState([]);
     
     const { user } = useContext(AuthContext);
 
@@ -124,8 +125,19 @@ export const useOrganizations = () => {
         }
     }, []);
 
+    const fetchUserOrgs = useCallback(async (username) => {
+        try {
+            const orgs = await orgService.getAllOrganizationsOfUser(username);
+            console.log(orgs);
+            if (orgs.status === 'success') setOrganizations(orgs.data || []);
+        } catch (err) {
+            console.error(err);
+        }
+    }, []) 
+
     return { 
         organization, 
+        organizations, 
         members, 
         games, 
         role, 
@@ -133,6 +145,7 @@ export const useOrganizations = () => {
         error,
         fetchAllOrgData, // <--- Use this one in your OrgPage useEffect
         createNewOrg, 
+        fetchUserOrgs,
         fetchOrgGames, 
         fetchOrgBySlug, 
         fetchOrgMembers, 

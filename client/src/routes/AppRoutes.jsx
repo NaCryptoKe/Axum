@@ -11,6 +11,7 @@ import EditProfilePage from '../pages/EditProfile';
 import CreateOrganizationPage from '../pages/CreateOrgPage';
 import OrganizationPage from '../pages/OrgPage';
 import ProtectedRoute from './ProtectedRoute';
+import UploadGamePage from '../pages/UploadGame';
 import { useAuth } from '../hooks/useAuth';
 
 const AppRoutes = () => {
@@ -27,6 +28,7 @@ const AppRoutes = () => {
             <Route path="/edit-profile/:username" element={<EditProfilePage />} />
             <Route path="/org/register" element={<CreateOrganizationPage />} />
             <Route path="/org/:slug" element={<OrganizationPage />} />
+            <Route path="/orgs/:slug/upload-game" element={<UploadGamePage />} />
 
             <Route path="/" element={<HomePage />} />
 
