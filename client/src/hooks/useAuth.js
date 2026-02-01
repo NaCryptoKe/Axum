@@ -1,6 +1,7 @@
 import { useContext, useState } from 'react';
 import { AuthContext } from '../context/AuthContext';
-import { login as loginService, 
+import { 
+    login as loginService, 
     register as registerService, 
     generateOtp as generateOtpService,
     verifyOtp as verifyOtpService
@@ -11,6 +12,7 @@ export const useAuth = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState(null);
 
+    // Ensure the hook is used within the proper provider
     if (!context) {
         throw new Error("useAuth must be used within an AuthProvider");
     }
@@ -22,19 +24,24 @@ export const useAuth = () => {
         try {
             const response = await loginService(credentials);
 
-            if (response.status === "error") {
+            // Handling the error structure from your backend/service
+            if (response.success === false || response.status === "error") {
                 const errorMessage = response.message || "An error occurred during login";
-                
                 setError(errorMessage);
                 console.error("Login Error Profile:", response.message);
                 return response;
             }
-            context.setUser(response.data.user);
+
+            // Successfully authenticated, update global user state
+            if (response.data?.user) {
+                context.setUser(response.data.user);
+            }
             
             return response;
 
         } catch (err) {
-            setError(err.message || "Login failed");
+            const msg = err.message || "Login failed";
+            setError(msg);
             throw err;
         } finally {
             setIsSubmitting(false);
@@ -46,16 +53,17 @@ export const useAuth = () => {
         setError(null);
         try {
             const response = await registerService(userData);
-            if (response.status === "error") {
-                const errorMessage = response.message || "An error occurred during login";
-                
+            
+            if (response.success === false || response.status === "error") {
+                const errorMessage = response.message || "An error occurred during registration";
                 setError(errorMessage);
-                console.error("Login Error Profile:", response.message);
+                console.error("Registration Error Profile:", response.message);
             }
 
             return response;
         } catch (err) {
-            setError(err.message || "Registration failed");
+            const msg = err.message || "Registration failed";
+            setError(msg);
             throw err;
         } finally {
             setIsSubmitting(false);
@@ -63,40 +71,53 @@ export const useAuth = () => {
     };
 
     const generateOtp = async (data) => {
+        setIsSubmitting(true); // Maintain consistency with other actions
+        setError(null);
         try {
-            console.log(`Data`, data)
+            console.log(`Generating OTP for:`, data);
             const response = await generateOtpService(data);
 
-            if (response?.status === 'error' ){
-                const errorMessage = response.message || "An error occurred during login";
-                
+            if (response.success === false || response.status === 'error') {
+                const errorMessage = response.message || "An error occurred generating OTP";
                 setError(errorMessage);
             }
-            return response
-        } catch {
-            setError(err.message || "Registration failed");
+            return response;
+        } catch (err) {
+            setError(err.message || "OTP Generation failed");
             throw err;
+        } finally {
+            setIsSubmitting(false);
         }
-    }
+    };
 
     const verifyOtp = async (data) => {
+        setIsSubmitting(true);
+        setError(null);
         try {
             const response = await verifyOtpService(data);
 
-            if (response?.status === 'error' ){
-                const errorMessage = response.message || "An error occurred during login";
-                
+            if (response.success === false || response.status === 'error') {
+                const errorMessage = response.message || "An error occurred during verification";
                 setError(errorMessage);
+                return response;
             }
-            return response
-        } catch {
-            setError(err.message || "Registration failed");
+
+            // verifyOtp controller also returns a user and cookie
+            if (response.data?.user) {
+                context.setUser(response.data.user);
+            }
+
+            return response;
+        } catch (err) {
+            setError(err.message || "Verification failed");
             throw err;
+        } finally {
+            setIsSubmitting(false);
         }
-    }
+    };
 
     return {
-        ...context, // user, logout, loading
+        ...context, // user, logout, isInitialized, setUser
         login,
         register,
         isSubmitting,
